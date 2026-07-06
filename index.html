@@ -2,382 +2,319 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Roomboy Control Sheet</title>
-  <style>
-    * {box-sizing:border-box; margin:0; padding:0; font-family:Arial, sans-serif;}
-    body {background:#f5f5f5; padding:15px; max-width:900px; margin:0 auto;}
-    .header {background:#0a2351; color:white; padding:18px; border-radius:8px; margin-bottom:20px; position:relative;}
-    .nama-user {position:absolute; top:15px; right:20px; font-size:14px; background:rgba(255,255,255,0.2); padding:5px 10px; border-radius:20px;}
-    .card {background:white; padding:18px; border-radius:8px; margin:15px 0; box-shadow:0 1px 4px #ccc;}
-    .btn {padding:12px; border:none; border-radius:6px; font-weight:bold; font-size:16px; cursor:pointer;}
-    .btn-start {background:#ffc107; color:#000; width:48%;}
-    .btn-save {background:#28a745; color:white; width:48%;}
-    .btn-login {background:#0d6efd; color:white; width:100%; margin-top:10px;}
-    .btn-bagi {background:#28a745; color:white; width:100%; margin-top:15px;}
-    table {width:100%; margin-top:10px; border-collapse:collapse;}
-    td {padding:8px 5px; font-size:14px; border-bottom:1px solid #eee;}
-    input, select {width:100%; padding:9px; border:1px solid #ddd; border-radius:4px; font-size:14px;}
-    .row {display:flex; gap:4%; margin:10px 0; flex-wrap:wrap;}
-    .col {width:48%; margin-bottom:10px;}
-    .col-3 {width:31%; margin-bottom:10px;}
-    h3 {font-size:16px; color:#0a2351; margin-bottom:12px; padding-bottom:5px; border-bottom:1px solid #eee;}
-    .info {background:#e7f0ff; padding:10px; border-radius:6px; margin:12px 0; font-size:14px;}
-    #halamanLogin, #halamanSupervisor, #halamanRoomboy {display:none;}
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Hotel Roomboy System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
 </head>
-<body>
+<body class="bg-gray-100 font-sans">
 
-<!-- HALAMAN LOGIN -->
-<div id="halamanLoginTampil">
-  <div class="header"><h2>LOGIN - HOUSEKEEPING SYSTEM</h2></div>
-  <div class="card">
-    <div class="col">
-      <label>Username</label>
-      <input type="text" id="user" placeholder="Masukkan Username" required>
-    </div>
-    <div class="col">
-      <label>Password</label>
-      <input type="password" id="pass" placeholder="Masukkan Password" required>
-    </div>
-    <button class="btn btn-login" onclick="login()">MASUK</button>
-    <p id="pesan" style="margin-top:10px; color:red; text-align:center;"></p>
-  </div>
-</div>
-
-<!-- HALAMAN SUPERVISOR -->
-<div id="halamanSupervisor">
-  <div class="header">
-    <h2>ROOMBOY CONTROL SHEET</h2>
-    <p>Date: <span id="tglSupervisor"></span></p>
-    <div class="nama-user" id="namaUserSupervisor"></div>
-  </div>
-
-  <div class="card">
-    <h3>BAGIKAN KAMAR KE PETUGAS</h3>
-    <div class="col">
-      <label>Pilih Roomboy</label>
-      <select id="pilihPetugas"></select>
-    </div>
-    <div class="col">
-      <label>Shift</label>
-      <select id="shiftBagi">
-        <option value="Morning">Morning</option>
-        <option value="Afternoon">Afternoon</option>
-        <option value="Night">Night</option>
-      </select>
-    </div>
-    <div class="col">
-      <label>Daftar Nomor Kamar (pisah dengan koma)</label>
-      <input type="text" id="daftarKamarInput" placeholder="Contoh: 201,202,203,204">
-    </div>
-    <button class="btn btn-bagi" onclick="bagikanKamar()">✅ BAGIKAN KAMAR</button>
-  </div>
-</div>
-
-<!-- HALAMAN ROOMBOY -->
-<div id="halamanRoomboy">
-  <div class="header">
-    <h2>ROOMBOY CONTROL SHEET</h2>
-    <p>Date: <span id="tglRoomboy"></span></p>
-    <div class="nama-user" id="namaUserRoomboy"></div>
-    <div class="info">
-      📋 Shift: <strong id="shiftRoomboy"></strong> &nbsp; | &nbsp;
-      Kamar Hari Ini: <strong id="kamarRoomboy"></strong>
-    </div>
-  </div>
-
-  <div class="card">
-    <h3>INFORMASI KAMAR & SHIFT</h3>
-    <div class="row">
-      <div class="col"><label>No Urut</label><input type="number" id="noUrut" min="1" placeholder="1,2,3..."></div>
-      <div class="col"><label>No Of Room</label><select id="noKamar" required></select></div>
-      <div class="col"><label>Floor / Section</label><input type="text" id="floorSection" placeholder="Contoh: Lantai 2 / Wing A"></div>
-    </div>
-
-    <div class="row" style="margin-top:15px;">
-      <div class="col">
-        <label>FO Status</label>
-        <select id="foStatus">
-          <option value="ED">ED - Expected Departure</option>
-          <option value="EA">EA - Expected Arrival</option>
-          <option value="VD">VD - Vacant Dirty</option>
-          <option value="VCU">VCU - Vacant Clean Uncheck</option>
-          <option value="DU">DU - Day Use</option>
-          <option value="ONL">ONL - Occupied No Luggage</option>
-        </select>
+  <!-- Halaman Login -->
+  <div id="halamanLogin" class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-xl shadow-lg w-full max-w-md p-6">
+      <div class="text-center mb-6">
+        <h1 class="text-2xl font-bold text-blue-700">🏨 Hotel Worksheet</h1>
+        <p class="text-gray-500 mt-1">Silakan masuk ke akun Anda</p>
       </div>
-      <div class="col">
-        <label>HK</label>
-        <select id="hkStatus">
-          <option value="">-</option>
-          <option value="HK">HK</option>
-        </select>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+          <input type="text" id="user" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Masukkan username">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+          <input type="password" id="pass" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Masukkan password">
+        </div>
+        <button onclick="login()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition">Masuk</button>
+        <div id="pesanLogin" class="text-center text-sm text-red-500 mt-2 hidden"></div>
       </div>
     </div>
-
-    <p style="margin-top:15px;">
-      <label>Room Status</label>
-      <select id="roomStatus">
-        <option value="VC">VC - Vacant Clean</option>
-        <option value="VD">VD - Vacant Dirty</option>
-        <option value="OD">OD - Occupied Dirty</option>
-        <option value="OC">OC - Occupied Clean</option>
-        <option value="OOO">OOO - Out of Order</option>
-        <option value="DND">DND - Do Not Disturb</option>
-        <option value="HU">HU - House Use</option>
-        <option value="SO">SO - Sleep Out</option>
-        <option value="DL">DL - Double Lock</option>
-      </select>
-    </p>
   </div>
 
-  <div class="card">
-    <div class="row">
-      <button class="btn btn-start" onclick="mulai()">START CLEANING</button>
-      <button class="btn btn-save" onclick="simpan()">FINISH & SAVE</button>
-    </div>
-    <p style="margin-top:15px;">Time In: <strong id="timeIn">--:--:--</strong></p>
-    <p>Time Out: <strong id="timeOut">--:--:--</strong></p>
-  </div>
-
-  <div class="card">
-    <h3>LINEN</h3>
-    <table>
-      <tr><td>Sheet Double</td><td>In: <input type="number" id="sheetDblIn" min="0" value="0"></td><td>Out: <input type="number" id="sheetDblOut" min="0" value="0"></td></tr>
-      <tr><td>Sheet Single</td><td>In: <input type="number" id="sheetSglIn" min="0" value="0"></td><td>Out: <input type="number" id="sheetSglOut" min="0" value="0"></td></tr>
-      <tr><td>Duvet Cover Double</td><td>In: <input type="number" id="duvetDblIn" min="0" value="0"></td><td>Out: <input type="number" id="duvetDblOut" min="0" value="0"></td></tr>
-      <tr><td>Duvet Cover Single</td><td>In: <input type="number" id="duvetSglIn" min="0" value="0"></td><td>Out: <input type="number" id="duvetSglOut" min="0" value="0"></td></tr>
-      <tr><td>Bath Towel</td><td>In: <input type="number" id="bathTowelIn" min="0" value="0"></td><td>Out: <input type="number" id="bathTowelOut" min="0" value="0"></td></tr>
-      <tr><td>Hand Towel</td><td>In: <input type="number" id="handTowelIn" min="0" value="0"></td><td>Out: <input type="number" id="handTowelOut" min="0" value="0"></td></tr>
-      <tr><td>Bath Mat</td><td>In: <input type="number" id="bathMatIn" min="0" value="0"></td><td>Out: <input type="number" id="bathMatOut" min="0" value="0"></td></tr>
-      <tr><td>Pillow Case</td><td>In: <input type="number" id="pillowIn" min="0" value="0"></td><td>Out: <input type="number" id="pillowOut" min="0" value="0"></td></tr>
-    </table>
-  </div>
-
-  <div class="card">
-    <h3>BATHROOM & BEDROOM AMENITIES</h3>
-    <div class="row">
-      <div class="col-3"><label>Tissue Roll</label><input type="number" id="tissueRoll" min="0" value="0"></div>
-      <div class="col-3"><label>Hand Soap</label><input type="number" id="handSoap" min="0" value="0"></div>
-      <div class="col-3"><label>Shampoo</label><input type="number" id="shampoo" min="0" value="0"></div>
-      <div class="col-3"><label>Shower Cap</label><input type="number" id="showerCap" min="0" value="0"></div>
-      <div class="col-3"><label>Toothbrush</label><input type="number" id="toothbrush" min="0" value="0"></div>
-      <div class="col-3"><label>Soap</label><input type="number" id="soap" min="0" value="0"></div>
-      <div class="col-3"><label>Shower Gel</label><input type="number" id="showerGel" min="0" value="0"></div>
-      <div class="col-3"><label>Shampoo Refill</label><input type="number" id="shampooRefill" min="0" value="0"></div>
-      <div class="col-3"><label>Laundry Bag</label><input type="number" id="laundryBag" min="0" value="0"></div>
-      <div class="col-3"><label>Laundry List</label><input type="number" id="laundryList" min="0" value="0"></div>
-      <div class="col-3"><label>Sewing Kit</label><input type="number" id="sewingKit" min="0" value="0"></div>
-      <div class="col-3"><label>Pen</label><input type="number" id="pen" min="0" value="0"></div>
-      <div class="col-3"><label>Plastic Bin</label><input type="number" id="plasticBin" min="0" value="0"></div>
-      <div class="col-3"><label>Tissue</label><input type="number" id="tissue" min="0" value="0"></div>
+  <!-- Halaman Supervisor -->
+  <div id="halamanSupervisor" class="hidden max-w-4xl mx-auto p-4">
+    <div class="bg-white rounded-lg shadow p-4 mb-4 flex justify-between items-center">
+      <h2 class="text-xl font-bold text-gray-800">📋 Pembagian Tugas Kamar</h2>
+      <button onclick="keluar()" class="text-red-600 text-sm font-medium">Keluar</button>
     </div>
 
-    <h3 style="margin-top:15px;">CONDIMEN</h3>
-    <div class="row">
-      <div class="col-3"><label>Coffee</label><input type="number" id="coffee" min="0" value="0"></div>
-      <div class="col-3"><label>Sugar</label><input type="number" id="sugar" min="0" value="0"></div>
-      <div class="col-3"><label>Tea</label><input type="number" id="tea" min="0" value="0"></div>
-      <div class="col-3"><label>Creamer</label><input type="number" id="creamer" min="0" value="0"></div>
-      <div class="col-3"><label>Shampoo Bottle</label><input type="number" id="shampooBottle" min="0" value="0"></div>
+    <div class="bg-white rounded-lg shadow p-4 mb-4 grid grid-cols-1 sm:grid-cols-4 gap-3">
+      <div><label class="text-sm text-gray-600">Tanggal</label><input type="date" id="supTanggal" class="w-full border p-2 rounded mt-1"></div>
+      <div><label class="text-sm text-gray-600">Shift</label>
+        <select id="supShift" class="w-full border p-2 rounded mt-1">
+          <option value="Pagi">Pagi</option>
+          <option value="Siang">Siang</option>
+          <option value="Sore">Sore</option>
+          <option value="Malam">Malam</option>
+        </select>
+      </div>
+      <div><label class="text-sm text-gray-600">Lantai</label><input type="text" id="supLantai" class="w-full border p-2 rounded mt-1" placeholder="Contoh: 5"></div>
+      <div><label class="text-sm text-gray-600">Nama Petugas</label><input type="text" id="supNama" class="w-full border p-2 rounded mt-1" placeholder="Nama lengkap"></div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-4 mb-4">
+      <button onclick="tambahBaris()" class="bg-blue-500 text-white px-3 py-1.5 rounded text-sm mr-2">+ Tambah Kamar</button>
+      <button onclick="simpanTugas()" class="bg-green-600 text-white px-3 py-1.5 rounded text-sm">💾 Simpan Semua</button>
+
+      <table class="w-full mt-4 text-sm">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="p-2 border text-left">No</th>
+            <th class="p-2 border text-left">No Kamar</th>
+            <th class="p-2 border text-left">Status</th>
+            <th class="p-2 border text-left">Tiba</th>
+            <th class="p-2 border text-left">Berangkat</th>
+            <th class="p-2 border text-center">Hapus</th>
+          </tr>
+        </thead>
+        <tbody id="tabelTugas"></tbody>
+      </table>
     </div>
   </div>
-</div>
 
-<script>
-// GANTI DENGAN URL BARU DARI GOOGLE APPS SCRIPT
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzI5hpD_kcoRhzYapSKl3dpcHsJ8slutuFUs_P7OzQZSFtu9v3gAVJxPqEf9x_sIbka/exec";
+  <!-- Halaman Roomboy -->
+  <div id="halamanRoomboy" class="hidden max-w-xl mx-auto p-4">
+    <div class="bg-white rounded-lg shadow p-4 mb-4 flex justify-between items-center">
+      <h2 class="text-lg font-bold text-gray-800">🛏️ My Worksheet</h2>
+      <button onclick="keluar()" class="text-red-600 text-sm font-medium">Keluar</button>
+    </div>
 
-let namaPengguna = "";
-let shiftSaya = "";
-let timeIn = "";
+    <div class="bg-white rounded-lg shadow p-4 mb-4">
+      <div class="grid grid-cols-3 gap-3 mb-3">
+        <div><label class="text-xs text-gray-600">Tanggal</label><input type="date" id="rbTanggal" class="w-full border p-1.5 rounded mt-1"></div>
+        <div><label class="text-xs text-gray-600">Shift</label>
+          <select id="rbShift" class="w-full border p-1.5 rounded mt-1">
+            <option value="Pagi">Pagi</option>
+            <option value="Siang">Siang</option>
+            <option value="Sore">Sore</option>
+            <option value="Malam">Malam</option>
+          </select>
+        </div>
+        <div><label class="text-xs text-gray-600">Nama</label><input type="text" id="rbNama" class="w-full border p-1.5 rounded mt-1" readonly></div>
+      </div>
+      <button onclick="ambilTugasRB()" class="w-full bg-blue-600 text-white py-2 rounded">📂 Ambil Daftar Kamar</button>
+    </div>
 
-document.getElementById("tglSupervisor").textContent = new Date().toLocaleDateString("en-GB");
-document.getElementById("tglRoomboy").textContent = new Date().toLocaleDateString("en-GB");
+    <div id="daftarKamarRB"></div>
+  </div>
 
-async function login() {
-  const user = document.getElementById("user").value.trim();
-  const pass = document.getElementById("pass").value.trim();
-  const pesan = document.getElementById("pesan");
+  <script>
+    const URL_GAS = "https://script.google.com/macros/s/AKfycbwVf02mo0Aig6g65N1XCZvcLV15lbUj3kX_vBwWUEREsh-PQ6SEk8WgJcMLSHuGtuyL/exec"; // GANTI DENGAN URL ANDA
+    let nomorBaris = 1;
+    let pengguna = {};
 
-  if (!user || !pass) return pesan.textContent = "⚠️ Isi Username dan Password!";
+    // --- LOGIN ---
+    async function login() {
+      const user = document.getElementById("user").value.trim();
+      const pass = document.getElementById("pass").value.trim();
+      const pesan = document.getElementById("pesanLogin");
+      pesan.classList.add("hidden");
 
-  try {
-    const res = await fetch(APPS_SCRIPT_URL, {
-      method: "POST",
-      body: JSON.stringify({ aksi: "login", user: user, pass: pass })
-    });
-    const hasil = await res.json();
+      if (!user || !pass) return pesan.textContent = "Isi username dan password!";
 
-    if (hasil.status === "sukses") {
-      namaPengguna = hasil.nama;
-      pesan.textContent = "";
-      document.getElementById("halamanLoginTampil").style.display = "none";
-
-      if (hasil.peran === "supervisor") {
-        document.getElementById("halamanSupervisor").style.display = "block";
-        document.getElementById("namaUserSupervisor").textContent = "👤 " + namaPengguna;
-        muatDaftarRoomboy();
-      } else {
-        document.getElementById("halamanRoomboy").style.display = "block";
-        document.getElementById("namaUserRoomboy").textContent = "👤 " + namaPengguna;
-        muatTugas();
+      try {
+        const res = await fetch(URL_GAS, {
+          method: "POST",
+          body: JSON.stringify({fungsi: "login", user, pass})
+        });
+        const hasil = await res.json();
+        if (hasil.status === "ok") {
+          pengguna = {nama: hasil.nama, peran: hasil.peran};
+          if (hasil.peran === "Supervisor") tampilkanHalaman("Supervisor");
+          else {
+            document.getElementById("rbNama").value = hasil.nama;
+            tampilkanHalaman("Roomboy");
+          }
+        } else {
+          pesan.textContent = hasil.pesan;
+          pesan.classList.remove("hidden");
+        }
+      } catch {
+        pesan.textContent = "Gagal terhubung ke server!";
+        pesan.classList.remove("hidden");
       }
-    } else {
-      pesan.textContent = "❌ " + hasil.pesan;
     }
-  } catch (err) {
-    pesan.textContent = "❌ Tidak dapat terhubung ke server!";
-  }
-}
 
-async function muatDaftarRoomboy() {
-  try {
-    const res = await fetch(APPS_SCRIPT_URL, {
-      method: "POST",
-      body: JSON.stringify({ aksi: "daftarRoomboy" })
-    });
-    const hasil = await res.json();
-    if (hasil.status === "sukses") {
-      const pilih = document.getElementById("pilihPetugas");
-      pilih.innerHTML = `<option value="">-- Pilih Roomboy --</option>`;
-      hasil.daftar.forEach(p => {
-        const opt = document.createElement("option");
-        opt.value = p.nama;
-        opt.textContent = p.nama;
-        pilih.appendChild(opt);
+    function tampilkanHalaman(peran) {
+      document.getElementById("halamanLogin").classList.add("hidden");
+      document.getElementById("halamanSupervisor").classList.add("hidden");
+      document.getElementById("halamanRoomboy").classList.add("hidden");
+      if (peran === "Supervisor") document.getElementById("halamanSupervisor").classList.remove("hidden");
+      else if (peran === "Roomboy") document.getElementById("halamanRoomboy").classList.remove("hidden");
+    }
+
+    function keluar() {
+      pengguna = {};
+      document.getElementById("halamanLogin").classList.remove("hidden");
+      document.getElementById("user").value = "";
+      document.getElementById("pass").value = "";
+    }
+
+    // --- FUNGSI SUPERVISOR ---
+    function tambahBaris() {
+      const tbody = document.getElementById("tabelTugas");
+      const tr = document.createElement("tr");
+      tr.className = "border-b";
+      tr.innerHTML = `
+        <td class="p-2">${nomorBaris++}</td>
+        <td class="p-2"><input type="text" class="w-20 border p-1 rounded" placeholder="201"></td>
+        <td class="p-2">
+          <select class="border p-1 rounded">
+            <option value="VC">VC</option><option value="VD">VD</option><option value="OC">OC</option>
+            <option value="OD">OD</option><option value="DND">DND</option><option value="OOO">OOO</option>
+          </select>
+        </td>
+        <td class="p-2"><input type="date" class="w-28 border p-1 rounded"></td>
+        <td class="p-2"><input type="date" class="w-28 border p-1 rounded"></td>
+        <td class="p-2 text-center"><button onclick="hapusBaris(this)" class="text-red-500 font-bold">×</button></td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    function hapusBaris(btn) {
+      btn.closest("tr").remove();
+      nomorBaris--;
+    }
+
+    async function simpanTugas() {
+      const tanggal = document.getElementById("supTanggal").value;
+      const shift = document.getElementById("supShift").value;
+      const lantai = document.getElementById("supLantai").value;
+      const nama = document.getElementById("supNama").value;
+      const baris = document.querySelectorAll("#tabelTugas tr");
+
+      if (!tanggal || !nama || baris.length === 0) return alert("Lengkapi semua data!");
+
+      const data = [];
+      baris.forEach(tr => {
+        const kolom = tr.querySelectorAll("input, select");
+        if (kolom[0].value) {
+          data.push({
+            tanggal, shift, lantai, nama,
+            noKamar: kolom[0].value,
+            status: kolom[1].value,
+            arr: kolom[2].value,
+            dep: kolom[3].value
+          });
+        }
+      });
+
+      if (data.length === 0) return alert("Masukkan nomor kamar!");
+
+      const res = await fetch(URL_GAS, {
+        method: "POST",
+        body: JSON.stringify({fungsi: "simpanTugas", data: data})
+      });
+      const hasil = await res.json();
+      alert(hasil.pesan);
+      document.getElementById("tabelTugas").innerHTML = "";
+      nomorBaris = 1;
+    }
+
+    // --- FUNGSI ROOMBOY ---
+    async function ambilTugasRB() {
+      const tanggal = document.getElementById("rbTanggal").value;
+      const shift = document.getElementById("rbShift").value;
+      const nama = document.getElementById("rbNama").value;
+      if (!tanggal) return alert("Pilih tanggal dulu!");
+
+      const res = await fetch(URL_GAS, {
+        method: "POST",
+        body: JSON.stringify({fungsi: "ambilTugas", tanggal, shift, nama})
+      });
+      const daftar = await res.json();
+      const wadah = document.getElementById("daftarKamarRB");
+      wadah.innerHTML = "";
+
+      if (daftar.length === 0) return wadah.innerHTML = "<p class='text-center text-gray-500'>Belum ada tugas untuk hari ini</p>";
+
+      daftar.forEach(kamar => {
+        const blok = document.createElement("div");
+        blok.className = "bg-white rounded-lg shadow mb-4 overflow-hidden";
+        blok.innerHTML = `
+          <div class="p-4 bg-gray-50 border-b flex justify-between items-center">
+            <div>
+              <h3 class="text-2xl font-bold text-gray-800">${kamar.noKamar}</h3>
+              <p class="text-sm text-gray-500">Lantai ${kamar.lantai}</p>
+            </div>
+            <span class="px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-sm font-semibold">${kamar.statusAwal}</span>
+          </div>
+          <div class="p-4 text-sm text-gray-600">
+            📅 Tiba: ${kamar.arr} &nbsp;&nbsp; ✈️ Berangkat: ${kamar.dep}<br>
+            Status Selesai:
+            <select class="statusAkhir border p-1 rounded ml-1">
+              <option value="VC">VC</option><option value="VD">VD</option><option value="OC">OC</option>
+              <option value="OD">OD</option><option value="DND">DND</option><option value="OOO">OOO</option>
+            </select>
+            &nbsp;&nbsp; Mulai: <input type="time" class="jamMulai border p-1 w-20 rounded">
+            &nbsp;&nbsp; Selesai: <input type="time" class="jamSelesai border p-1 w-20 rounded">
+          </div>
+          <div class="p-4 border-t">
+            <h4 class="font-semibold text-gray-700 mb-3">🧺 Linen (Ganti)</h4>
+            <div class="grid grid-cols-2 gap-y-2 text-sm">
+              <div>Sprei Double</div><select class="spreiD border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
+              <div>Sprei Single</div><select class="spreiS border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
+              <div>Sarung Selimut</div><select class="selimut border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
+              <div>Handuk Mandi</div><select class="handukM border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+              <div>Handuk Wajah</div><select class="handukW border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+              <div>Alas Mandi</div><select class="alas border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
+              <div>Sarung Bantal</div><select class="bantal border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="4">4</option></select>
+            </div>
+
+            <h4 class="font-semibold text-gray-700 mt-4 mb-3">🧴 Amenitas Terpakai</h4>
+            <div class="grid grid-cols-2 gap-y-2 text-sm">
+              <div>Tisu Toilet</div><select class="tisu border p-1 rounded"><option value="0">0</option><option value="1">1</option></select>
+              <div>Sabun Mandi</div><select class="sabun border p-1 rounded"><option value="0">0</option><option value="1">1</option></select>
+              <div>Sampo</div><select class="sampo border p-1 rounded"><option value="0">0</option><option value="1">1</option></select>
+              <div>Air Minum</div><select class="air border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
+              <div>Teh / Kopi</div><select class="teh border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
+            </div>
+
+            <input type="text" class="keterangan w-full border p-2 rounded mt-3 text-sm" placeholder="Catatan jika ada">
+            <button onclick="simpanKamar(this, '${kamar.noKamar}')" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded mt-4 font-medium">✅ Tandai Selesai & Simpan</button>
+          </div>
+        `;
+        wadah.appendChild(blok);
       });
     }
-  } catch (err) {
-    alert("❌ Gagal memuat daftar petugas");
-  }
-}
 
-async function bagikanKamar() {
-  const nama = document.getElementById("pilihPetugas").value;
-  const shift = document.getElementById("shiftBagi").value;
-  const kamar = document.getElementById("daftarKamarInput").value.trim();
+    async function simpanKamar(tombol, noKamar) {
+      const blok = tombol.closest(".bg-white");
+      const data = {
+        tanggal: document.getElementById("rbTanggal").value,
+        shift: document.getElementById("rbShift").value,
+        lantai: blok.querySelector("p").textContent.replace("Lantai ", ""),
+        nama: document.getElementById("rbNama").value,
+        noKamar: noKamar,
+        status: blok.querySelector(".statusAkhir").value,
+        jamMulai: blok.querySelector(".jamMulai").value || "-",
+        jamSelesai: blok.querySelector(".jamSelesai").value || "-",
+        spreiD: blok.querySelector(".spreiD").value,
+        spreiS: blok.querySelector(".spreiS").value,
+        selimut: blok.querySelector(".selimut").value,
+        handukM: blok.querySelector(".handukM").value,
+        handukW: blok.querySelector(".handukW").value,
+        alas: blok.querySelector(".alas").value,
+        bantal: blok.querySelector(".bantal").value,
+        tisu: blok.querySelector(".tisu").value,
+        sabun: blok.querySelector(".sabun").value,
+        sampo: blok.querySelector(".sampo").value,
+        air: blok.querySelector(".air").value,
+        teh: blok.querySelector(".teh").value,
+        keterangan: blok.querySelector(".keterangan").value
+      };
 
-  if (!nama || !kamar) return alert("⚠️ Lengkapi semua data!");
-
-  try {
-    const res = await fetch(APPS_SCRIPT_URL, {
-      method: "POST",
-      body: JSON.stringify({ aksi: "bagikanKamar", namaPetugas: nama, shift: shift, daftarKamar: kamar })
-    });
-    const hasil = await res.json();
-    alert(hasil.pesan);
-    document.getElementById("daftarKamarInput").value = "";
-  } catch (err) {
-    alert("❌ Gagal membagikan kamar");
-  }
-}
-
-async function muatTugas() {
-  try {
-    const res = await fetch(APPS_SCRIPT_URL, {
-      method: "POST",
-      body: JSON.stringify({ aksi: "ambilTugas", namaPetugas: namaPengguna })
-    });
-    const hasil = await res.json();
-
-    if (hasil.status === "ada") {
-      shiftSaya = hasil.shift;
-      const daftarKamar = hasil.kamar;
-      document.getElementById("shiftRoomboy").textContent = shiftSaya;
-      document.getElementById("kamarRoomboy").textContent = daftarKamar.join(", ");
-
-      const pilihKamar = document.getElementById("noKamar");
-      pilihKamar.innerHTML = `<option value="">-- Pilih Kamar --</option>`;
-      daftarKamar.forEach(k => {
-        const opt = document.createElement("option");
-        opt.value = k;
-        opt.textContent = k;
-        pilihKamar.appendChild(opt);
+      const res = await fetch(URL_GAS, {
+        method: "POST",
+        body: JSON.stringify({fungsi: "simpanLaporan", data: data})
       });
-    } else {
-      alert("ℹ️ " + hasil.pesan + "\nSilakan hubungi Supervisor.");
+      const hasil = await res.json();
+      alert(hasil.pesan);
+      tombol.textContent = "✅ Sudah Selesai";
+      tombol.classList.remove("bg-green-600", "hover:bg-green-700");
+      tombol.classList.add("bg-gray-400");
+      tombol.disabled = true;
     }
-  } catch (err) {
-    alert("❌ Gagal memuat tugas: " + err.message);
-  }
-}
-
-function mulai() {
-  timeIn = new Date().toLocaleTimeString("en-GB");
-  document.getElementById("timeIn").textContent = timeIn;
-}
-
-async function simpan() {
-  if (!timeIn) return alert("⚠️ Tekan tombol START CLEANING terlebih dahulu!");
-  const timeOut = new Date().toLocaleTimeString("en-GB");
-
-  const data = {
-    aksi: "simpanHasil",
-    namaPetugas: namaPengguna,
-    shift: shiftSaya,
-    floorSection: document.getElementById("floorSection").value,
-    noUrut: document.getElementById("noUrut").value,
-    noKamar: document.getElementById("noKamar").value,
-    foStatus: document.getElementById("foStatus").value,
-    hkStatus: document.getElementById("hkStatus").value,
-    roomStatus: document.getElementById("roomStatus").value,
-    timeIn: timeIn,
-    timeOut: timeOut,
-    sheetDblIn: document.getElementById("sheetDblIn").value,
-    sheetDblOut: document.getElementById("sheetDblOut").value,
-    sheetSglIn: document.getElementById("sheetSglIn").value,
-    sheetSglOut: document.getElementById("sheetSglOut").value,
-    duvetDblIn: document.getElementById("duvetDblIn").value,
-    duvetDblOut: document.getElementById("duvetDblOut").value,
-    duvetSglIn: document.getElementById("duvetSglIn").value,
-    duvetSglOut: document.getElementById("duvetSglOut").value,
-    bathTowelIn: document.getElementById("bathTowelIn").value,
-    bathTowelOut: document.getElementById("bathTowelOut").value,
-    handTowelIn: document.getElementById("handTowelIn").value,
-    handTowelOut: document.getElementById("handTowelOut").value,
-    bathMatIn: document.getElementById("bathMatIn").value,
-    bathMatOut: document.getElementById("bathMatOut").value,
-    pillowIn: document.getElementById("pillowIn").value,
-    pillowOut: document.getElementById("pillowOut").value,
-    tissueRoll: document.getElementById("tissueRoll").value,
-    handSoap: document.getElementById("handSoap").value,
-    shampoo: document.getElementById("shampoo").value,
-    showerCap: document.getElementById("showerCap").value,
-    toothbrush: document.getElementById("toothbrush").value,
-    soap: document.getElementById("soap").value,
-    showerGel: document.getElementById("showerGel").value,
-    shampooRefill: document.getElementById("shampooRefill").value,
-    laundryBag: document.getElementById("laundryBag").value,
-    laundryList: document.getElementById("laundryList").value,
-    sewingKit: document.getElementById("sewingKit").value,
-    pen: document.getElementById("pen").value,
-    plasticBin: document.getElementById("plasticBin").value,
-    tissue: document.getElementById("tissue").value,
-    coffee: document.getElementById("coffee").value,
-    sugar: document.getElementById("sugar").value,
-    tea: document.getElementById("tea").value,
-    creamer: document.getElementById("creamer").value,
-    shampooBottle: document.getElementById("shampooBottle").value
-  };
-
-  try {
-    const res = await fetch(APPS_SCRIPT_URL, {
-      method: "POST",
-      body: JSON.stringify(data)
-    });
-    const hasil = await res.json();
-    if (hasil.status === "tersimpan") {
-      alert("✅ Data berhasil disimpan!");
-      location.reload();
-    } else {
-      alert("❌ Gagal menyimpan data!");
-    }
-  } catch (err) {
-    alert("❌ Kesalahan: " + err.message);
-  }
-}
-</script>
+  </script>
 </body>
 </html>
