@@ -2,8 +2,8 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <title>Hotel Worksheet System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hotel Worksheet</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 font-sans">
@@ -18,13 +18,13 @@
       <div class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
-          <input type="text" id="user" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Masukkan username">
+          <input type="text" id="user" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Masukkan username">
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-          <input type="password" id="pass" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Masukkan password">
+          <input type="password" id="pass" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Masukkan password">
         </div>
-        <button onclick="login()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition">Masuk</button>
+        <button onclick="login()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg">Masuk</button>
         <div id="pesanLogin" class="text-center text-sm text-red-500 mt-2 hidden"></div>
       </div>
     </div>
@@ -34,12 +34,11 @@
   <div id="halamanSupervisor" class="hidden max-w-4xl mx-auto p-4">
     <div class="bg-white rounded-lg shadow p-4 mb-4 flex justify-between items-center">
       <h2 class="text-xl font-bold text-gray-800">📋 Pembagian Tugas Kamar</h2>
-      <button onclick="keluar()" class="text-red-600 text-sm font-medium">Keluar</button>
+      <button onclick="keluar()" class="text-red-600">Keluar</button>
     </div>
-
     <div class="bg-white rounded-lg shadow p-4 mb-4 grid grid-cols-1 sm:grid-cols-4 gap-3">
-      <div><label class="text-sm text-gray-600">Tanggal</label><input type="date" id="supTanggal" class="w-full border p-2 rounded mt-1"></div>
-      <div><label class="text-sm text-gray-600">Shift</label>
+      <div><label>Tanggal</label><input type="date" id="supTanggal" class="w-full border p-2 rounded mt-1"></div>
+      <div><label>Shift</label>
         <select id="supShift" class="w-full border p-2 rounded mt-1">
           <option value="Pagi">Pagi</option>
           <option value="Siang">Siang</option>
@@ -47,25 +46,14 @@
           <option value="Malam">Malam</option>
         </select>
       </div>
-      <div><label class="text-sm text-gray-600">Lantai</label><input type="text" id="supLantai" class="w-full border p-2 rounded mt-1" placeholder="Contoh: 5"></div>
-      <div><label class="text-sm text-gray-600">Nama Petugas</label><input type="text" id="supNama" class="w-full border p-2 rounded mt-1" placeholder="Nama lengkap"></div>
+      <div><label>Lantai</label><input type="text" id="supLantai" class="w-full border p-2 rounded mt-1" placeholder="Contoh: 5"></div>
+      <div><label>Nama Petugas</label><input type="text" id="supNama" class="w-full border p-2 rounded mt-1" placeholder="Nama lengkap"></div>
     </div>
-
     <div class="bg-white rounded-lg shadow p-4 mb-4">
-      <button onclick="tambahBaris()" class="bg-blue-500 text-white px-3 py-1.5 rounded text-sm mr-2">+ Tambah Kamar</button>
-      <button onclick="simpanTugas()" class="bg-green-600 text-white px-3 py-1.5 rounded text-sm">💾 Simpan Semua</button>
-
+      <button onclick="tambahBaris()" class="bg-blue-500 text-white px-3 py-1.5 rounded mr-2">+ Tambah Kamar</button>
+      <button onclick="simpanTugas()" class="bg-green-600 text-white px-3 py-1.5 rounded">💾 Simpan Semua</button>
       <table class="w-full mt-4 text-sm">
-        <thead class="bg-gray-100">
-          <tr>
-            <th class="p-2 border text-left">No</th>
-            <th class="p-2 border text-left">No Kamar</th>
-            <th class="p-2 border text-left">Status</th>
-            <th class="p-2 border text-left">Tiba</th>
-            <th class="p-2 border text-left">Berangkat</th>
-            <th class="p-2 border text-center">Hapus</th>
-          </tr>
-        </thead>
+        <thead class="bg-gray-100"><tr><th class="p-2 border">No</th><th class="p-2 border">No Kamar</th><th class="p-2 border">Status</th><th class="p-2 border">Tiba</th><th class="p-2 border">Berangkat</th><th class="p-2 border">Hapus</th></tr></thead>
         <tbody id="tabelTugas"></tbody>
       </table>
     </div>
@@ -75,13 +63,12 @@
   <div id="halamanRoomboy" class="hidden max-w-xl mx-auto p-4">
     <div class="bg-white rounded-lg shadow p-4 mb-4 flex justify-between items-center">
       <h2 class="text-lg font-bold text-gray-800">🛏️ My Worksheet</h2>
-      <button onclick="keluar()" class="text-red-600 text-sm font-medium">Keluar</button>
+      <button onclick="keluar()" class="text-red-600">Keluar</button>
     </div>
-
     <div class="bg-white rounded-lg shadow p-4 mb-4">
       <div class="grid grid-cols-3 gap-3 mb-3">
-        <div><label class="text-xs text-gray-600">Tanggal</label><input type="date" id="rbTanggal" class="w-full border p-1.5 rounded mt-1"></div>
-        <div><label class="text-xs text-gray-600">Shift</label>
+        <div><label>Tanggal</label><input type="date" id="rbTanggal" class="w-full border p-1.5 rounded mt-1"></div>
+        <div><label>Shift</label>
           <select id="rbShift" class="w-full border p-1.5 rounded mt-1">
             <option value="Pagi">Pagi</option>
             <option value="Siang">Siang</option>
@@ -89,23 +76,22 @@
             <option value="Malam">Malam</option>
           </select>
         </div>
-        <div><label class="text-xs text-gray-600">Nama</label><input type="text" id="rbNama" class="w-full border p-1.5 rounded mt-1" readonly></div>
+        <div><label>Nama</label><input type="text" id="rbNama" class="w-full border p-1.5 rounded mt-1" readonly></div>
       </div>
       <button onclick="ambilTugasRB()" class="w-full bg-blue-600 text-white py-2 rounded">📂 Ambil Daftar Kamar</button>
     </div>
-
     <div id="daftarKamarRB"></div>
   </div>
 
   <script>
-    // 👇 GANTI BARIS INI DENGAN URL DARI GOOGLE APPS SCRIPT YANG BARU!
-    const URL_GAS = "https://script.google.com/macros/s/AKfycbwODqX2Z9h8CBj1sicDsod-fyXvWAdswFBBT9KczybbFRCENXKNViMtmUiuC3K4YxBK/exec";
+    // 👇 GANTI DENGAN URL BARU DARI APPS SCRIPT
+    const URL_GAS = "https://script.google.com/macros/s/AKfycbxy0UbrgI5WBHenO--3bOs7ywx3SZ7_x-h5sltL1s9jjt8hq2zeChHlIwp3luxnOE51/exec";
 
     let nomorBaris = 1;
     let pengguna = {};
 
     // --- LOGIN ---
-    async function login() {
+    function login() {
       const user = document.getElementById("user").value.trim();
       const pass = document.getElementById("pass").value.trim();
       const pesan = document.getElementById("pesanLogin");
@@ -117,38 +103,35 @@
         return;
       }
 
-      try {
-        pesan.textContent = "Memproses...";
-        pesan.classList.remove("hidden");
+      pesan.textContent = "Memproses...";
+      pesan.classList.remove("hidden");
 
-        const res = await fetch(URL_GAS, {
-          method: "POST",
-          body: JSON.stringify({ fungsi: "login", user: user, pass: pass }),
-          headers: { "Content-Type": "application/json" },
-          mode: "cors"
-        });
+      const formData = new FormData();
+      formData.append("fungsi", "login");
+      formData.append("user", user);
+      formData.append("pass", pass);
 
-        if (!res.ok) throw new Error("Server tidak merespon");
-        const hasil = await res.json();
-
-        if (hasil.status === "ok") {
-          pengguna = { nama: hasil.nama, peran: hasil.peran };
-          if (hasil.peran === "Supervisor") {
-            tampilkanHalaman("Supervisor");
+      fetch(URL_GAS, { method: "POST", body: formData })
+        .then(res => res.json())
+        .then(hasil => {
+          if (hasil.status === "ok") {
+            pengguna = { nama: hasil.nama, peran: hasil.peran };
+            if (hasil.peran === "Supervisor") {
+              tampilkanHalaman("Supervisor");
+            } else {
+              document.getElementById("rbNama").value = hasil.nama;
+              tampilkanHalaman("Roomboy");
+            }
           } else {
-            document.getElementById("rbNama").value = hasil.nama;
-            tampilkanHalaman("Roomboy");
+            pesan.textContent = hasil.pesan;
+            pesan.classList.remove("hidden");
           }
-        } else {
-          pesan.textContent = hasil.pesan;
+        })
+        .catch(err => {
+          pesan.textContent = "❌ Gagal terhubung! Cek URL atau izin akses.";
           pesan.classList.remove("hidden");
-        }
-
-      } catch (err) {
-        pesan.textContent = "Gagal terhubung ke server! Cek URL atau izin akses.";
-        pesan.classList.remove("hidden");
-        console.error(err);
-      }
+          console.error(err);
+        });
     }
 
     function tampilkanHalaman(peran) {
@@ -156,7 +139,7 @@
       document.getElementById("halamanSupervisor").classList.add("hidden");
       document.getElementById("halamanRoomboy").classList.add("hidden");
       if (peran === "Supervisor") document.getElementById("halamanSupervisor").classList.remove("hidden");
-      else if (peran === "Roomboy") document.getElementById("halamanRoomboy").classList.remove("hidden");
+      else document.getElementById("halamanRoomboy").classList.remove("hidden");
     }
 
     function keluar() {
@@ -164,156 +147,98 @@
       document.getElementById("halamanLogin").classList.remove("hidden");
       document.getElementById("user").value = "";
       document.getElementById("pass").value = "";
-      document.getElementById("pesanLogin").classList.add("hidden");
     }
 
     // --- FUNGSI SUPERVISOR ---
     function tambahBaris() {
-      const tbody = document.getElementById("tabelTugas");
       const tr = document.createElement("tr");
       tr.className = "border-b";
-      tr.innerHTML = `
-        <td class="p-2">${nomorBaris++}</td>
-        <td class="p-2"><input type="text" class="w-20 border p-1 rounded" placeholder="201"></td>
-        <td class="p-2">
-          <select class="border p-1 rounded">
-            <option value="VC">VC</option><option value="VD">VD</option><option value="OC">OC</option>
-            <option value="OD">OD</option><option value="DND">DND</option><option value="OOO">OOO</option>
-          </select>
-        </td>
-        <td class="p-2"><input type="date" class="w-28 border p-1 rounded"></td>
-        <td class="p-2"><input type="date" class="w-28 border p-1 rounded"></td>
-        <td class="p-2 text-center"><button onclick="hapusBaris(this)" class="text-red-500 font-bold">×</button></td>
-      `;
-      tbody.appendChild(tr);
+      tr.innerHTML = `<td class="p-2">${nomorBaris++}</td><td class="p-2"><input type="text" class="w-20 border p-1 rounded"></td><td class="p-2"><select class="border p-1 rounded"><option value="VC">VC</option><option value="VD">VD</option><option value="OC">OC</option><option value="OD">OD</option><option value="DND">DND</option><option value="OOO">OOO</option></select></td><td class="p-2"><input type="date" class="w-28 border p-1 rounded"></td><td class="p-2"><input type="date" class="w-28 border p-1 rounded"></td><td class="p-2 text-center"><button onclick="hapusBaris(this)" class="text-red-500">×</button></td>`;
+      document.querySelector("#tabelTugas tbody").appendChild(tr);
     }
 
-    function hapusBaris(btn) {
-      btn.closest("tr").remove();
-      nomorBaris--;
-    }
+    function hapusBaris(btn) { btn.closest("tr").remove(); nomorBaris--; }
 
-    async function simpanTugas() {
+    function simpanTugas() {
       const tanggal = document.getElementById("supTanggal").value;
       const shift = document.getElementById("supShift").value;
       const lantai = document.getElementById("supLantai").value;
       const nama = document.getElementById("supNama").value;
       const baris = document.querySelectorAll("#tabelTugas tr");
-
-      if (!tanggal || !nama || baris.length === 0) return alert("Lengkapi semua data!");
+      if (!tanggal || !nama) return alert("Lengkapi data!");
 
       const data = [];
       baris.forEach(tr => {
         const kolom = tr.querySelectorAll("input, select");
-        if (kolom[0].value) {
-          data.push({
-            tanggal, shift, lantai, nama,
-            noKamar: kolom[0].value,
-            status: kolom[1].value,
-            arr: kolom[2].value,
-            dep: kolom[3].value
-          });
-        }
+        if (kolom[0].value) data.push({ tanggal, shift, lantai, nama, noKamar: kolom[0].value, status: kolom[1].value, arr: kolom[2].value, dep: kolom[3].value });
       });
 
-      if (data.length === 0) return alert("Masukkan nomor kamar!");
-
-      try {
-        const res = await fetch(URL_GAS, {
-          method: "POST",
-          body: JSON.stringify({ fungsi: "simpanTugas", data: data }),
-          headers: { "Content-Type": "application/json" },
-          mode: "cors"
-        });
-        const hasil = await res.json();
-        alert(hasil.pesan);
-        document.getElementById("tabelTugas").innerHTML = "";
-        nomorBaris = 1;
-      } catch (err) {
-        alert("Gagal menyimpan tugas!");
-        console.error(err);
-      }
+      const formData = new FormData();
+      formData.append("fungsi", "simpanTugas");
+      formData.append("data", JSON.stringify(data));
+      fetch(URL_GAS, { method: "POST", body: formData })
+        .then(res => res.json())
+        .then(hasil => { alert(hasil.pesan); document.querySelector("#tabelTugas tbody").innerHTML = ""; nomorBaris = 1; })
+        .catch(() => alert("Gagal menyimpan!"));
     }
 
     // --- FUNGSI ROOMBOY ---
-    async function ambilTugasRB() {
+    function ambilTugasRB() {
       const tanggal = document.getElementById("rbTanggal").value;
       const shift = document.getElementById("rbShift").value;
       const nama = document.getElementById("rbNama").value;
-      if (!tanggal) return alert("Pilih tanggal dulu!");
+      if (!tanggal) return alert("Pilih tanggal!");
 
-      try {
-        const res = await fetch(URL_GAS, {
-          method: "POST",
-          body: JSON.stringify({ fungsi: "ambilTugas", tanggal, shift, nama }),
-          headers: { "Content-Type": "application/json" },
-          mode: "cors"
-        });
-        const daftar = await res.json();
-        const wadah = document.getElementById("daftarKamarRB");
-        wadah.innerHTML = "";
+      const formData = new FormData();
+      formData.append("fungsi", "ambilTugas");
+      formData.append("tanggal", tanggal);
+      formData.append("shift", shift);
+      formData.append("nama", nama);
 
-        if (daftar.length === 0) {
-          wadah.innerHTML = "<p class='text-center text-gray-500 p-4'>Belum ada tugas untuk hari ini</p>";
-          return;
-        }
-
-        daftar.forEach(kamar => {
-          const blok = document.createElement("div");
-          blok.className = "bg-white rounded-lg shadow mb-4 overflow-hidden";
-          blok.innerHTML = `
-            <div class="p-4 bg-gray-50 border-b flex justify-between items-center">
-              <div>
-                <h3 class="text-2xl font-bold text-gray-800">${kamar.noKamar}</h3>
-                <p class="text-sm text-gray-500">Lantai ${kamar.lantai}</p>
+      fetch(URL_GAS, { method: "POST", body: formData })
+        .then(res => res.json())
+        .then(daftar => {
+          const wadah = document.getElementById("daftarKamarRB");
+          wadah.innerHTML = "";
+          if (daftar.length === 0) return wadah.innerHTML = "<p class='text-center p-4 text-gray-500'>Belum ada tugas</p>";
+          daftar.forEach(kamar => {
+            const blok = document.createElement("div");
+            blok.className = "bg-white rounded-lg shadow mb-4 p-4";
+            blok.innerHTML = `
+              <div class="flex justify-between items-center mb-3">
+                <div><h3 class="text-2xl font-bold">${kamar.noKamar}</h3><p class="text-sm text-gray-500">Lantai ${kamar.lantai}</p></div>
+                <span class="px-3 py-1 rounded-full bg-blue-100 text-blue-800">${kamar.statusAwal}</span>
               </div>
-              <span class="px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-sm font-semibold">${kamar.statusAwal}</span>
-            </div>
-            <div class="p-4 text-sm text-gray-600">
-              📅 Tiba: ${kamar.arr} &nbsp;&nbsp; ✈️ Berangkat: ${kamar.dep}<br>
-              Status Selesai:
-              <select class="statusAkhir border p-1 rounded ml-1">
-                <option value="VC">VC</option><option value="VD">VD</option><option value="OC">OC</option>
-                <option value="OD">OD</option><option value="DND">DND</option><option value="OOO">OOO</option>
-              </select>
-              &nbsp;&nbsp; Mulai: <input type="time" class="jamMulai border p-1 w-20 rounded">
-              &nbsp;&nbsp; Selesai: <input type="time" class="jamSelesai border p-1 w-20 rounded">
-            </div>
-            <div class="p-4 border-t">
-              <h4 class="font-semibold text-gray-700 mb-3">🧺 Linen (Ganti)</h4>
-              <div class="grid grid-cols-2 gap-y-2 text-sm">
+              <div class="text-sm mb-3">📅 Tiba: ${kamar.arr} &nbsp;&nbsp; ✈️ Berangkat: ${kamar.dep}</div>
+              <div class="mb-3">Status: <select class="statusAkhir border p-1 rounded"><option value="VC">VC</option><option value="VD">VD</option><option value="OC">OC</option><option value="OD">OD</option><option value="DND">DND</option></select> Mulai: <input type="time" class="jamMulai w-20 border p-1 rounded"> Selesai: <input type="time" class="jamSelesai w-20 border p-1 rounded"></div>
+              <h4 class="font-semibold mb-2">🧺 Linen</h4>
+              <div class="grid grid-cols-2 gap-2 text-sm mb-3">
                 <div>Sprei Double</div><select class="spreiD border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
                 <div>Sprei Single</div><select class="spreiS border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
-                <div>Sarung Selimut</div><select class="selimut border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
-                <div>Handuk Mandi</div><select class="handukM border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
-                <div>Handuk Wajah</div><select class="handukW border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+                <div>Selimut</div><select class="selimut border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
+                <div>Handuk Mandi</div><select class="handukM border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
+                <div>Handuk Wajah</div><select class="handukW border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
                 <div>Alas Mandi</div><select class="alas border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
                 <div>Sarung Bantal</div><select class="bantal border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="4">4</option></select>
               </div>
-
-              <h4 class="font-semibold text-gray-700 mt-4 mb-3">🧴 Amenitas Terpakai</h4>
-              <div class="grid grid-cols-2 gap-y-2 text-sm">
-                <div>Tisu Toilet</div><select class="tisu border p-1 rounded"><option value="0">0</option><option value="1">1</option></select>
-                <div>Sabun Mandi</div><select class="sabun border p-1 rounded"><option value="0">0</option><option value="1">1</option></select>
+              <h4 class="font-semibold mb-2">🧴 Amenitas</h4>
+              <div class="grid grid-cols-2 gap-2 text-sm mb-3">
+                <div>Tisu</div><select class="tisu border p-1 rounded"><option value="0">0</option><option value="1">1</option></select>
+                <div>Sabun</div><select class="sabun border p-1 rounded"><option value="0">0</option><option value="1">1</option></select>
                 <div>Sampo</div><select class="sampo border p-1 rounded"><option value="0">0</option><option value="1">1</option></select>
                 <div>Air Minum</div><select class="air border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
-                <div>Teh / Kopi</div><select class="teh border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
+                <div>Teh/Kopi</div><select class="teh border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
               </div>
-
-              <input type="text" class="keterangan w-full border p-2 rounded mt-3 text-sm" placeholder="Catatan jika ada">
-              <button onclick="simpanKamar(this, '${kamar.noKamar}')" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded mt-4 font-medium">✅ Tandai Selesai & Simpan</button>
-            </div>
-          `;
-          wadah.appendChild(blok);
-        });
-
-      } catch (err) {
-        alert("Gagal memuat daftar tugas!");
-        console.error(err);
-      }
+              <input type="text" class="keterangan w-full border p-2 rounded mb-3" placeholder="Catatan">
+              <button onclick="simpanKamar(this, '${kamar.noKamar}')" class="w-full bg-green-600 text-white py-2 rounded">✅ Simpan Selesai</button>
+            `;
+            wadah.appendChild(blok);
+          });
+        })
+        .catch(() => alert("Gagal memuat tugas!"));
     }
 
-    async function simpanKamar(tombol, noKamar) {
+    function simpanKamar(tombol, noKamar) {
       const blok = tombol.closest(".bg-white");
       const data = {
         tanggal: document.getElementById("rbTanggal").value,
@@ -339,23 +264,13 @@
         keterangan: blok.querySelector(".keterangan").value
       };
 
-      try {
-        const res = await fetch(URL_GAS, {
-          method: "POST",
-          body: JSON.stringify({ fungsi: "simpanLaporan", data: data }),
-          headers: { "Content-Type": "application/json" },
-          mode: "cors"
-        });
-        const hasil = await res.json();
-        alert(hasil.pesan);
-        tombol.textContent = "✅ Sudah Selesai";
-        tombol.classList.remove("bg-green-600", "hover:bg-green-700");
-        tombol.classList.add("bg-gray-400");
-        tombol.disabled = true;
-      } catch (err) {
-        alert("Gagal menyimpan laporan!");
-        console.error(err);
-      }
+      const formData = new FormData();
+      formData.append("fungsi", "simpanLaporan");
+      formData.append("data", JSON.stringify(data));
+      fetch(URL_GAS, { method: "POST", body: formData })
+        .then(res => res.json())
+        .then(hasil => { alert(hasil.pesan); tombol.textContent = "✅ Sudah Disimpan"; tombol.disabled = true; tombol.classList.add("bg-gray-400"); })
+        .catch(() => alert("Gagal menyimpan laporan!"));
     }
 
     tambahBaris();
