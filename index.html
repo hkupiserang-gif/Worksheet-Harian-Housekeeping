@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Roomboy Control Sheet</title>
+  <style>
+    * {box-sizing:border-box; margin:0; padding:0; font-family:Arial, sans-serif;}
+    body {background:#f5f5f5; padding:15px; max-width:600px; margin:0 auto;}
+    .header {background:#0a2351; color:white; padding:18px; border-radius:8px; margin-bottom:20px; text-align:center;}
+    .card {background:white; padding:18px; border-radius:8px; margin:15px 0; box-shadow:0 1px 4px #ccc;}
+    .btn {width:48%; padding:12px; border:none; border-radius:6px; font-weight:bold; font-size:16px; cursor:pointer;}
+    .btn-start {background:#ffc107; color:#000;}
+    .btn-save {background:#28a745; color:white;}
+    table {width:100%; margin-top:10px; border-collapse:collapse;}
+    td {padding:8px 5px; font-size:14px; border-bottom:1px solid #eee;}
+    input, select {width:100%; padding:7px; border:1px solid #ddd; border-radius:4px; font-size:14px;}
+    .row {display:flex; gap:4%; margin:10px 0; flex-wrap:wrap;}
+    .col {width:48%; margin-bottom:10px;}
+    .col-3 {width:31%; margin-bottom:10px;}
+    h3 {font-size:16px; color:#0a2351; margin-bottom:12px; padding-bottom:5px; border-bottom:1px solid #eee;}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h2>ROOMBOY CONTROL SHEET</h2>
+    <p>Date: <span id="tanggal"></span></p>
+  </div>
+
+  <div class="card">
+    <h3>INFORMATION</h3>
+    <div class="row">
+      <div class="col"><label>No</label><input type="number" id="noUrut" min="1"></div>
+      <div class="col"><label>No Of Room</label><input type="text" id="noKamar" required></div>
+      <div class="col"><label>Shift</label>
+        <select id="shift">
+          <option value="Morning">Morning</option>
+          <option value="Afternoon">Afternoon</option>
+          <option value="Night">Night</option>
+        </select>
+      </div>
+      <div class="col"><label>Floor / Section</label><input type="text" id="floorSection"></div>
+    </div>
+
+    <div class="row" style="margin-top:15px;">
+      <div class="col">
+        <label class="label">FO Status</label>
+        <select id="foStatus">
+          <option value="ED">ED - Expected Departure</option>
+          <option value="EA">EA - Expected Arrival</option>
+          <option value="VD">VD - Vacant Dirty</option>
+          <option value="VCU">VCU - Vacant Clean Uncheck</option>
+          <option value="DU">DU - Day Use</option>
+          <option value="ONL">ONL - Occupied No Luggage</option>
+        </select>
+      </div>
+      <div class="col">
+        <label class="label">HK</label>
+        <select id="hkStatus">
+          <option value="">-</option>
+          <option value="HK">HK</option>
+        </select>
+      </div>
+    </div>
+
+    <p style="margin-top:15px;">
+      <label class="label">Room Status</label>
+      <select id="roomStatus">
+        <option value="VC">VC - Vacant Clean</option>
+        <option value="VD">VD - Vacant Dirty</option>
+        <option value="OD">OD - Occupied Dirty</option>
+        <option value="OC">OC - Occupied Clean</option>
+        <option value="OOO">OOO - Out of Order</option>
+        <option value="DND">DND - Do Not Disturb</option>
+        <option value="HU">HU - House Use</option>
+        <option value="SO">SO - Sleep Out</option>
+        <option value="DL">DL - Double Lock</option>
+      </select>
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <button class="btn btn-start" onclick="mulai()">START CLEANING</button>
+      <button class="btn btn-save" onclick="simpan()">FINISH & SAVE</button>
+    </div>
+    <p style="margin-top:15px;">Time In: <strong id="timeIn">--:--:--</strong></p>
+    <p>Time Out: <strong id="timeOut">--:--:--</strong></p>
+  </div>
+
+  <div class="card">
+    <h3>LINEN</h3>
+    <table>
+      <tr><td>Sheet Double</td><td>In: <input type="number" id="sheetDblIn" min="0" value="0"></td><td>Out: <input type="number" id="sheetDblOut" min="0" value="0"></td></tr>
+      <tr><td>Sheet Single</td><td>In: <input type="number" id="sheetSglIn" min="0" value="0"></td><td>Out: <input type="number" id="sheetSglOut" min="0" value="0"></td></tr>
+      <tr><td>Duvet Cover Double</td><td>In: <input type="number" id="duvetDblIn" min="0" value="0"></td><td>Out: <input type="number" id="duvetDblOut" min="0" value="0"></td></tr>
+      <tr><td>Duvet Cover Single</td><td>In: <input type="number" id="duvetSglIn" min="0" value="0"></td><td>Out: <input type="number" id="duvetSglOut" min="0" value="0"></td></tr>
+      <tr><td>Bath Towel</td><td>In: <input type="number" id="bathTowelIn" min="0" value="0"></td><td>Out: <input type="number" id="bathTowelOut" min="0" value="0"></td></tr>
+      <tr><td>Hand Towel</td><td>In: <input type="number" id="handTowelIn" min="0" value="0"></td><td>Out: <input type="number" id="handTowelOut" min="0" value="0"></td></tr>
+      <tr><td>Bath Mat</td><td>In: <input type="number" id="bathMatIn" min="0" value="0"></td><td>Out: <input type="number" id="bathMatOut" min="0" value="0"></td></tr>
+      <tr><td>Pillow Case</td><td>In: <input type="number" id="pillowIn" min="0" value="0"></td><td>Out: <input type="number" id="pillowOut" min="0" value="0"></td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>GUEST SUPPLIES & AMENITIES</h3>
+    <div class="row">
+      <div class="col-3"><label>Tissue Roll</label><input type="number" id="tissue" min="0" value="0"></div>
+      <div class="col-3"><label>Shampoo</label><input type="number" id="shampoo" min="0" value="0"></div>
+      <div class="col-3"><label>Shower Cap</label><input type="number" id="showerCap" min="0" value="0"></div>
+      <div class="col-3"><label>Toothbrush</label><input type="number" id="toothbrush" min="0" value="0"></div>
+      <div class="col-3"><label>Soap</label><input type="number" id="soap" min="0" value="0"></div>
+      <div class="col-3"><label>Shower Gel</label><input type="number" id="gel" min="0" value="0"></div>
+      <div class="col-3"><label>Laundry Bag</label><input type="number" id="laundryBag" min="0" value="0"></div>
+      <div class="col-3"><label>Laundry List</label><input type="number" id="laundryList" min="0" value="0"></div>
+      <div class="col-3"><label>Sewing Kit</label><input type="number" id="sewingKit" min="0" value="0"></div>
+      <div class="col-3"><label>Pen & Note</label><input type="number" id="pen" min="0" value="0"></div>
+      <div class="col-3"><label>Plastic Bag</label><input type="number" id="plastic" min="0" value="0"></div>
+      <div class="col-3"><label>Shoe Mitten</label><input type="number" id="shoeMitten" min="0" value="0"></div>
+    </div>
+
+    <h3 style="margin-top:15px;">CONDIMEN</h3>
+    <div class="row">
+      <div class="col-3"><label>Coffee</label><input type="number" id="coffee" min="0" value="0"></div>
+      <div class="col-3"><label>Sugar</label><input type="number" id="sugar" min="0" value="0"></div>
+      <div class="col-3"><label>Tea</label><input type="number" id="tea" min="0" value="0"></div>
+      <div class="col-3"><label>Creamer</label><input type="number" id="creamer" min="0" value="0"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>OTHERS</h3>
+    <p><label>Remarks</label><input type="text" id="remarks" placeholder="Catatan..."></p>
+    <p style="margin-top:10px;"><label>Prepared By</label><input type="text" id="petugas" required></p>
+  </div>
+
+  <script>
+    // GANTI DENGAN URL HASIL SEBARKAN DARI APPS SCRIPT
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_xxxx_isi_url_kamu/exec";
+
+    document.getElementById("tanggal").textContent = new Date().toLocaleDateString("en-GB");
+    let timeIn = "";
+
+    function mulai() {
+      timeIn = new Date().toLocaleTimeString("en-GB");
+      document.getElementById("timeIn").textContent = timeIn;
+    }
+
+    async function simpan() {
+      if (!timeIn) return alert("Click START CLEANING first!");
+      const timeOut = new Date().toLocaleTimeString("en-GB");
+
+      const data = {
+        shift: document.getElementById("shift").value,
+        floorSection: document.getElementById("floorSection").value,
+        noUrut: document.getElementById("noUrut").value,
+        noKamar: document.getElementById("noKamar").value,
+        foStatus: document.getElementById("foStatus").value,
+        hkStatus: document.getElementById("hkStatus").value,
+        roomStatus: document.getElementById("roomStatus").value,
+        timeIn: timeIn,
+        timeOut: timeOut,
+        sheetDblIn: document.getElementById("sheetDblIn").value,
+        sheetDblOut: document.getElementById("sheetDblOut").value,
+        sheetSglIn: document.getElementById("sheetSglIn").value,
+        sheetSglOut: document.getElementById("sheetSglOut").value,
+        duvetDblIn: document.getElementById("duvetDblIn").value,
+        duvetDblOut: document.getElementById("duvetDblOut").value,
+        duvetSglIn: document.getElementById("duvetSglIn").value,
+        duvetSglOut: document.getElementById("duvetSglOut").value,
+        bathTowelIn: document.getElementById("bathTowelIn").value,
+        bathTowelOut: document.getElementById("bathTowelOut").value,
+        handTowelIn: document.getElementById("handTowelIn").value,
+        handTowelOut: document.getElementById("handTowelOut").value,
+        bathMatIn: document.getElementById("bathMatIn").value,
+        bathMatOut: document.getElementById("bathMatOut").value,
+        pillowIn: document.getElementById("pillowIn").value,
+        pillowOut: document.getElementById("pillowOut").value,
+        tissue: document.getElementById("tissue").value,
+        shampoo: document.getElementById("shampoo").value,
+        showerCap: document.getElementById("showerCap").value,
+        toothbrush: document.getElementById("toothbrush").value,
+        soap: document.getElementById("soap").value,
+        gel: document.getElementById("gel").value,
+        laundryBag: document.getElementById("laundryBag").value,
+        laundryList: document.getElementById("laundryList").value,
+        sewingKit: document.getElementById("sewingKit").value,
+        pen: document.getElementById("pen").value,
+        plastic: document.getElementById("plastic").value,
+        shoeMitten: document.getElementById("shoeMitten").value,
+        coffee: document.getElementById("coffee").value,
+        sugar: document.getElementById("sugar").value,
+        tea: document.getElementById("tea").value,
+        creamer: document.getElementById("creamer").value,
+        remarks: document.getElementById("remarks").value,
+        petugas: document.getElementById("petugas").value
+      };
+
+      try {
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify(data)
+        });
+        if (res.ok) alert("✅ Data saved successfully!");
+        else alert("❌ Failed to save data");
+      } catch (err) {
+        alert("❌ Error: " + err.message);
+      }
+    }
+  </script>
+</body>
+</html>
