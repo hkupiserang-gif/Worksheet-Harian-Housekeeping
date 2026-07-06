@@ -98,8 +98,9 @@
   </div>
 
   <script>
-    // 👇 GANTI BAGIAN INI DENGAN URL DARI GOOGLE APPS SCRIPT KAMU
-    const URL_GAS = "https://script.google.com/macros/s/AKfycbwTGN58PJCWUQytnMmADuSll_XGaVwabNBfuerLQoavQ-yIPlAgrQXa0X0fVVuSFT3o/exec";
+    // 👇 GANTI BARIS INI DENGAN URL DARI GOOGLE APPS SCRIPT YANG BARU!
+    const URL_GAS = "https://script.google.com/macros/s/AKfycbwODqX2Z9h8CBj1sicDsod-fyXvWAdswFBBT9KczybbFRCENXKNViMtmUiuC3K4YxBK/exec";
+
     let nomorBaris = 1;
     let pengguna = {};
 
@@ -117,11 +118,19 @@
       }
 
       try {
+        pesan.textContent = "Memproses...";
+        pesan.classList.remove("hidden");
+
         const res = await fetch(URL_GAS, {
           method: "POST",
-          body: JSON.stringify({ fungsi: "login", user: user, pass: pass })
+          body: JSON.stringify({ fungsi: "login", user: user, pass: pass }),
+          headers: { "Content-Type": "application/json" },
+          mode: "cors"
         });
+
+        if (!res.ok) throw new Error("Server tidak merespon");
         const hasil = await res.json();
+
         if (hasil.status === "ok") {
           pengguna = { nama: hasil.nama, peran: hasil.peran };
           if (hasil.peran === "Supervisor") {
@@ -134,8 +143,9 @@
           pesan.textContent = hasil.pesan;
           pesan.classList.remove("hidden");
         }
+
       } catch (err) {
-        pesan.textContent = "Gagal terhubung ke server!";
+        pesan.textContent = "Gagal terhubung ke server! Cek URL atau izin akses.";
         pesan.classList.remove("hidden");
         console.error(err);
       }
@@ -154,6 +164,7 @@
       document.getElementById("halamanLogin").classList.remove("hidden");
       document.getElementById("user").value = "";
       document.getElementById("pass").value = "";
+      document.getElementById("pesanLogin").classList.add("hidden");
     }
 
     // --- FUNGSI SUPERVISOR ---
@@ -207,14 +218,21 @@
 
       if (data.length === 0) return alert("Masukkan nomor kamar!");
 
-      const res = await fetch(URL_GAS, {
-        method: "POST",
-        body: JSON.stringify({ fungsi: "simpanTugas", data: data })
-      });
-      const hasil = await res.json();
-      alert(hasil.pesan);
-      document.getElementById("tabelTugas").innerHTML = "";
-      nomorBaris = 1;
+      try {
+        const res = await fetch(URL_GAS, {
+          method: "POST",
+          body: JSON.stringify({ fungsi: "simpanTugas", data: data }),
+          headers: { "Content-Type": "application/json" },
+          mode: "cors"
+        });
+        const hasil = await res.json();
+        alert(hasil.pesan);
+        document.getElementById("tabelTugas").innerHTML = "";
+        nomorBaris = 1;
+      } catch (err) {
+        alert("Gagal menyimpan tugas!");
+        console.error(err);
+      }
     }
 
     // --- FUNGSI ROOMBOY ---
@@ -224,67 +242,75 @@
       const nama = document.getElementById("rbNama").value;
       if (!tanggal) return alert("Pilih tanggal dulu!");
 
-      const res = await fetch(URL_GAS, {
-        method: "POST",
-        body: JSON.stringify({ fungsi: "ambilTugas", tanggal, shift, nama })
-      });
-      const daftar = await res.json();
-      const wadah = document.getElementById("daftarKamarRB");
-      wadah.innerHTML = "";
+      try {
+        const res = await fetch(URL_GAS, {
+          method: "POST",
+          body: JSON.stringify({ fungsi: "ambilTugas", tanggal, shift, nama }),
+          headers: { "Content-Type": "application/json" },
+          mode: "cors"
+        });
+        const daftar = await res.json();
+        const wadah = document.getElementById("daftarKamarRB");
+        wadah.innerHTML = "";
 
-      if (daftar.length === 0) {
-        wadah.innerHTML = "<p class='text-center text-gray-500'>Belum ada tugas untuk hari ini</p>";
-        return;
+        if (daftar.length === 0) {
+          wadah.innerHTML = "<p class='text-center text-gray-500 p-4'>Belum ada tugas untuk hari ini</p>";
+          return;
+        }
+
+        daftar.forEach(kamar => {
+          const blok = document.createElement("div");
+          blok.className = "bg-white rounded-lg shadow mb-4 overflow-hidden";
+          blok.innerHTML = `
+            <div class="p-4 bg-gray-50 border-b flex justify-between items-center">
+              <div>
+                <h3 class="text-2xl font-bold text-gray-800">${kamar.noKamar}</h3>
+                <p class="text-sm text-gray-500">Lantai ${kamar.lantai}</p>
+              </div>
+              <span class="px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-sm font-semibold">${kamar.statusAwal}</span>
+            </div>
+            <div class="p-4 text-sm text-gray-600">
+              📅 Tiba: ${kamar.arr} &nbsp;&nbsp; ✈️ Berangkat: ${kamar.dep}<br>
+              Status Selesai:
+              <select class="statusAkhir border p-1 rounded ml-1">
+                <option value="VC">VC</option><option value="VD">VD</option><option value="OC">OC</option>
+                <option value="OD">OD</option><option value="DND">DND</option><option value="OOO">OOO</option>
+              </select>
+              &nbsp;&nbsp; Mulai: <input type="time" class="jamMulai border p-1 w-20 rounded">
+              &nbsp;&nbsp; Selesai: <input type="time" class="jamSelesai border p-1 w-20 rounded">
+            </div>
+            <div class="p-4 border-t">
+              <h4 class="font-semibold text-gray-700 mb-3">🧺 Linen (Ganti)</h4>
+              <div class="grid grid-cols-2 gap-y-2 text-sm">
+                <div>Sprei Double</div><select class="spreiD border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
+                <div>Sprei Single</div><select class="spreiS border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
+                <div>Sarung Selimut</div><select class="selimut border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
+                <div>Handuk Mandi</div><select class="handukM border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+                <div>Handuk Wajah</div><select class="handukW border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+                <div>Alas Mandi</div><select class="alas border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
+                <div>Sarung Bantal</div><select class="bantal border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="4">4</option></select>
+              </div>
+
+              <h4 class="font-semibold text-gray-700 mt-4 mb-3">🧴 Amenitas Terpakai</h4>
+              <div class="grid grid-cols-2 gap-y-2 text-sm">
+                <div>Tisu Toilet</div><select class="tisu border p-1 rounded"><option value="0">0</option><option value="1">1</option></select>
+                <div>Sabun Mandi</div><select class="sabun border p-1 rounded"><option value="0">0</option><option value="1">1</option></select>
+                <div>Sampo</div><select class="sampo border p-1 rounded"><option value="0">0</option><option value="1">1</option></select>
+                <div>Air Minum</div><select class="air border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
+                <div>Teh / Kopi</div><select class="teh border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
+              </div>
+
+              <input type="text" class="keterangan w-full border p-2 rounded mt-3 text-sm" placeholder="Catatan jika ada">
+              <button onclick="simpanKamar(this, '${kamar.noKamar}')" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded mt-4 font-medium">✅ Tandai Selesai & Simpan</button>
+            </div>
+          `;
+          wadah.appendChild(blok);
+        });
+
+      } catch (err) {
+        alert("Gagal memuat daftar tugas!");
+        console.error(err);
       }
-
-      daftar.forEach(kamar => {
-        const blok = document.createElement("div");
-        blok.className = "bg-white rounded-lg shadow mb-4 overflow-hidden";
-        blok.innerHTML = `
-          <div class="p-4 bg-gray-50 border-b flex justify-between items-center">
-            <div>
-              <h3 class="text-2xl font-bold text-gray-800">${kamar.noKamar}</h3>
-              <p class="text-sm text-gray-500">Lantai ${kamar.lantai}</p>
-            </div>
-            <span class="px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-sm font-semibold">${kamar.statusAwal}</span>
-          </div>
-          <div class="p-4 text-sm text-gray-600">
-            📅 Tiba: ${kamar.arr} &nbsp;&nbsp; ✈️ Berangkat: ${kamar.dep}<br>
-            Status Selesai:
-            <select class="statusAkhir border p-1 rounded ml-1">
-              <option value="VC">VC</option><option value="VD">VD</option><option value="OC">OC</option>
-              <option value="OD">OD</option><option value="DND">DND</option><option value="OOO">OOO</option>
-            </select>
-            &nbsp;&nbsp; Mulai: <input type="time" class="jamMulai border p-1 w-20 rounded">
-            &nbsp;&nbsp; Selesai: <input type="time" class="jamSelesai border p-1 w-20 rounded">
-          </div>
-          <div class="p-4 border-t">
-            <h4 class="font-semibold text-gray-700 mb-3">🧺 Linen (Ganti)</h4>
-            <div class="grid grid-cols-2 gap-y-2 text-sm">
-              <div>Sprei Double</div><select class="spreiD border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
-              <div>Sprei Single</div><select class="spreiS border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
-              <div>Sarung Selimut</div><select class="selimut border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
-              <div>Handuk Mandi</div><select class="handukM border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
-              <div>Handuk Wajah</div><select class="handukW border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
-              <div>Alas Mandi</div><select class="alas border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
-              <div>Sarung Bantal</div><select class="bantal border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="4">4</option></select>
-            </div>
-
-            <h4 class="font-semibold text-gray-700 mt-4 mb-3">🧴 Amenitas Terpakai</h4>
-            <div class="grid grid-cols-2 gap-y-2 text-sm">
-              <div>Tisu Toilet</div><select class="tisu border p-1 rounded"><option value="0">0</option><option value="1">1</option></select>
-              <div>Sabun Mandi</div><select class="sabun border p-1 rounded"><option value="0">0</option><option value="1">1</option></select>
-              <div>Sampo</div><select class="sampo border p-1 rounded"><option value="0">0</option><option value="1">1</option></select>
-              <div>Air Minum</div><select class="air border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
-              <div>Teh / Kopi</div><select class="teh border p-1 rounded"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select>
-            </div>
-
-            <input type="text" class="keterangan w-full border p-2 rounded mt-3 text-sm" placeholder="Catatan jika ada">
-            <button onclick="simpanKamar(this, '${kamar.noKamar}')" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded mt-4 font-medium">✅ Tandai Selesai & Simpan</button>
-          </div>
-        `;
-        wadah.appendChild(blok);
-      });
     }
 
     async function simpanKamar(tombol, noKamar) {
@@ -313,16 +339,23 @@
         keterangan: blok.querySelector(".keterangan").value
       };
 
-      const res = await fetch(URL_GAS, {
-        method: "POST",
-        body: JSON.stringify({ fungsi: "simpanLaporan", data: data })
-      });
-      const hasil = await res.json();
-      alert(hasil.pesan);
-      tombol.textContent = "✅ Sudah Selesai";
-      tombol.classList.remove("bg-green-600", "hover:bg-green-700");
-      tombol.classList.add("bg-gray-400");
-      tombol.disabled = true;
+      try {
+        const res = await fetch(URL_GAS, {
+          method: "POST",
+          body: JSON.stringify({ fungsi: "simpanLaporan", data: data }),
+          headers: { "Content-Type": "application/json" },
+          mode: "cors"
+        });
+        const hasil = await res.json();
+        alert(hasil.pesan);
+        tombol.textContent = "✅ Sudah Selesai";
+        tombol.classList.remove("bg-green-600", "hover:bg-green-700");
+        tombol.classList.add("bg-gray-400");
+        tombol.disabled = true;
+      } catch (err) {
+        alert("Gagal menyimpan laporan!");
+        console.error(err);
+      }
     }
 
     tambahBaris();
