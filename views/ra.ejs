@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tugas & Laporan Kamar</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; font-family:Arial; }
+    body { background:#f8f9fa; max-width:700px; margin:0 auto; padding:20px; }
+    .card { background:white; border-radius:10px; padding:20px; margin-bottom:15px; box-shadow:0 1px 5px rgba(0,0,0,0.1); }
+    h2 { color:#2c3e50; margin-bottom:15px; font-size:20px; }
+    h3 { color:#34495e; margin-bottom:12px; font-size:18px; }
+    .kamar { padding:15px; border:1px solid #ddd; border-radius:8px; margin-bottom:10px; }
+    .selesai { border-color:#27ae60; background:#f8fef9; }
+    button { padding:8px 15px; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:14px; }
+    .btn-hijau { background:#27ae60; color:white; }
+    .btn-kuning { background:#f39c12; color:white; }
+    .btn-abu { background:#95a5a6; color:white; }
+    .form-group { margin-bottom:12px; }
+    label { display:block; margin-bottom:4px; font-size:14px; }
+    input, select { width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; }
+    .baris { display:flex; gap:10px; flex-wrap:wrap; }
+    .baris > div { flex:1; min-width:120px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>🏨 Halo, <%= user.nama %></h2>
+    <a href="/" style="color:#e74c3c; text-decoration:none; font-weight:bold; float:right;">Keluar</a>
+  </div>
+
+  <div class="card">
+    <h3>📋 Daftar Tugas Hari Ini</h3>
+    <% if (tugas.length === 0) { %>
+      <p style="text-align:center; color:#666; padding:15px;">Belum ada tugas yang diberikan</p>
+    <% } else { %>
+      <% tugas.forEach(t => { %>
+        <div class="kamar <%= t.selesai ? 'selesai' : '' %>">
+          <h4>Kamar <%= t.kamar %></h4>
+          <p>Status Awal: <%= t.status_awal %></p>
+          <% if (t.selesai) { %>
+            <p style="color:#27ae60; font-weight:bold; margin-top:8px;">✅ Sudah selesai</p>
+          <% } else { %>
+            <button class="btn-kuning" onclick="bukaForm('<%= t.kamar %>')">Isi Laporan</button>
+          <% } %>
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+
+  <div class="card" id="formLaporan" style="display:none;">
+    <h3>📝 Laporan Pembersihan</h3>
+    <form method="POST" action="/simpan">
+      <input type="hidden" name="tanggal" value="<%= new Date().toISOString().split('T')[0] %>">
+      <input type="hidden" name="kamar" id="kamarInput">
+
+      <div class="form-group">
+        <label>Status Kamar Setelah Dibersihkan</label>
+        <select name="status" required>
+          <option value="VC">VC - Bersih Kosong</option>
+          <option value="VD">VD - Kotor Kosong</option>
+          <option value="OC">OC - Bersih Terisi</option>
+          <option value="OD">OD - Kotor Terisi</option>
+        </select>
+      </div>
+
+      <div class="baris">
+        <div class="form-group">
+          <label>Jam Masuk</label>
+          <input type="time" name="masuk" required>
+        </div>
+        <div class="form-group">
+          <label>Jam Keluar</label>
+          <input type="time" name="keluar" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Keterangan / Kondisi Khusus</label>
+        <input type="text" name="keterangan" placeholder="Contoh: Keran bocor, lampu mati, dll">
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:15px;">
+        <button type="submit" class="btn-hijau">✅ Simpan Laporan</button>
+        <button type="button" onclick="tutupForm()" class="btn-abu">Batal</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    function bukaForm(kamar) {
+      document.getElementById('kamarInput').value = kamar;
+      document.getElementById('formLaporan').style.display = 'block';
+      window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'});
+    }
+    function tutupForm() {
+      document.getElementById('formLaporan').style.display = 'none';
+    }
+  </script>
+</body>
+</html>
