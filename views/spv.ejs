@@ -28,7 +28,7 @@
           <p class="text-sm">Selamat datang, <%= user.nama %></p>
         </div>
         <div class="flex gap-2">
-          <a href="/unduh-laporan" class="bg-hotel-accent text-white px-3 py-1.5 rounded text-sm flex items-center gap-1">
+          <a href="/unduh" class="bg-hotel-accent text-white px-3 py-1.5 rounded text-sm flex items-center gap-1">
             <i class="fa fa-download"></i> Unduh Laporan
           </a>
           <a href="/logout" class="bg-red-500 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1">
@@ -102,6 +102,7 @@
               <th class="border border-gray-200 p-2 text-center w-12">Pilih</th>
               <th class="border border-gray-200 p-2 text-left">Nomor Kamar</th>
               <th class="border border-gray-200 p-2 text-left">Lantai</th>
+              <th class="border border-gray-200 p-2 text-left">Tipe Kamar</th>
               <th class="border border-gray-200 p-2 text-left">Status Hari Ini</th>
               <th class="border border-gray-200 p-2 text-left">Diberikan Kepada</th>
               <th class="border border-gray-200 p-2 text-center">Selesai</th>
@@ -115,6 +116,7 @@
               </td>
               <td class="border border-gray-200 p-2 font-medium"><%= kamar.nomor %></td>
               <td class="border border-gray-200 p-2"><%= kamar.lantai %></td>
+              <td class="border border-gray-200 p-2"><%= kamar.tipe_kamar %></td>
               <td class="border border-gray-200 p-2">
                 <% if(kamar.status === 'VC') { %>
                   <span class="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs">Bersih & Kosong</span>
