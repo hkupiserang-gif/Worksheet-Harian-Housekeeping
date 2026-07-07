@@ -41,20 +41,34 @@ app.use((req, res, next) => {
   next();
 });
 
-// Fungsi bantu ambil data kamar
+// Fungsi bantu ambil data kamar beserta status pengerjaan
 async function ambilDataKamar(tanggal) {
   const semuaKamar = await pool.query("SELECT nomor, lantai, tipe_kamar FROM daftar_kamar ORDER BY nomor");
-  const tugasHariIni = await pool.query("SELECT kamar, status_awal, petugas, selesai FROM tugas WHERE tanggal = $1", [tanggal]);
+  const tugasHariIni = await pool.query(`
+    SELECT t.kamar, t.status_awal, t.petugas, t.selesai, l.waktu_masuk, l.waktu_keluar
+    FROM tugas t
+    LEFT JOIN laporan l ON t.tanggal = l.tanggal AND t.kamar = l.nomor_kamar
+    WHERE t.tanggal = $1
+  `, [tanggal]);
 
   return semuaKamar.rows.map(k => {
     const tugas = tugasHariIni.rows.find(t => t.kamar === k.nomor);
+    let statusProses = 'Belum Ada Tugas';
+    if (tugas) {
+      if (tugas.selesai) statusProses = '✅ Selesai';
+      else if (tugas.waktu_masuk && !tugas.waktu_keluar) statusProses = '⏳ Sedang Dikerjakan';
+      else if (tugas.petugas) statusProses = '📝 Belum Dimulai';
+    }
     return {
       nomor: k.nomor,
       lantai: k.lantai,
       tipe_kamar: k.tipe_kamar,
       status: tugas?.status_awal || null,
-      petugas: tugas?.petugas || null,
-      selesai: tugas?.selesai || false
+      petugas: tugas?.petugas || '-',
+      selesai: tugas?.selesai || false,
+      waktuMasuk: tugas?.waktu_masuk || null,
+      waktuKeluar: tugas?.waktu_keluar || null,
+      statusProses: statusProses
     };
   });
 }
@@ -153,19 +167,22 @@ app.get('/ra', async (req, res) => {
   }
 });
 
-// Simpan laporan RA (sudah disesuaikan tanpa lantai & status pilihan)
+// Simpan laporan RA
 app.post('/simpan-laporan', async (req, res) => {
   if (!req.session.user || req.session.user.peran !== 'RA') return res.redirect('/');
   try {
-    const { tanggal, kamar, shift, waktu_masuk, waktu_keluar, keterangan } = req.body;
-    const status = 'HK'; // Status tetap default
+    const { tanggal, kamar, waktu_masuk, waktu_keluar, keterangan } = req.body;
+    const shift = 'Morning'; // Shift tetap
+    const status = 'HK';
 
     await pool.query(`
       INSERT INTO laporan (tanggal, nomor_kamar, shift, status_kamar, waktu_masuk, waktu_keluar, keterangan, petugas)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     `, [tanggal, kamar, shift, status, waktu_masuk || null, waktu_keluar || null, keterangan || '', req.session.user.nama]);
 
-    await pool.query("UPDATE tugas SET selesai = true WHERE tanggal = $1 AND kamar = $2", [tanggal, kamar]);
+    if (waktu_keluar) {
+      await pool.query("UPDATE tugas SET selesai = true WHERE tanggal = $1 AND kamar = $2", [tanggal, kamar]);
+    }
 
     res.redirect('/ra?pesan=berhasil');
   } catch (err) {
