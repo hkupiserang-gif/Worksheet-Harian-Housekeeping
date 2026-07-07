@@ -1,0 +1,14 @@
+{
+  "name": "sistem-laporan",
+  "version": "1.0.0",
+  "dependencies": {
+    "express": "^4.19.2",
+    "pg": "^8.11.5",
+    "ejs": "^3.1.10",
+    "csv-writer": "^1.6.0",
+    "bcryptjs": "^2.4.3"
+  },
+  "scripts": {
+    "start": "node index.js"
+  }
+}
