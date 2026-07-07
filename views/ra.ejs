@@ -3,308 +3,188 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Room Attendant - Control Sheet</title>
-  <style>
-    * { 
-      margin: 0; 
-      padding: 0; 
-      box-sizing: border-box; 
-      font-family: Arial, Helvetica, sans-serif; 
-      font-size: 12px;
+  <title>Housekeeping - Room Attendant</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            hotel: {
+              dark: '#0F2B48',
+              primary: '#2D5B7C',
+              light: '#E8F0F5',
+              accent: '#F2994A',
+              success: '#27AE60',
+              danger: '#E74C3C',
+              neutral: '#F8FAFC'
+            }
+          },
+          fontFamily: {
+            sans: ['Segoe UI', 'Roboto', 'Arial', 'sans-serif']
+          }
+        }
+      }
     }
-    body { 
-      background: #f8f9fa; 
-      padding: 15px; 
-    }
-    .container {
-      max-width: 100%;
-      overflow-x: auto;
-    }
-    .card { 
-      background: #ffffff; 
-      border: 1px solid #333333; 
-      margin-bottom: 15px; 
-      border-radius: 4px; 
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
-    }
-    .header-top { 
-      padding: 10px 15px; 
-      border-bottom: 1px solid #333; 
-      font-size: 16px; 
-      font-weight: bold; 
-      text-align: center; 
-      background: #f8f9fa;
-    }
-    .info-bar { 
-      display: grid; 
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
-      padding: 10px 15px; 
-      gap: 10px; 
-      border-bottom: 1px solid #333; 
-      background: #ffffff;
-    }
-    .info-bar label {
-      font-weight: bold;
-      margin-right: 5px;
-    }
-    .info-bar input, .info-bar select {
-      padding: 4px 6px;
-      border: 1px solid #999;
-      border-radius: 3px;
-      width: 100%;
-    }
-    .welcome-bar {
-      padding: 10px 15px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #e9f2fa;
-      border-bottom: 1px solid #333;
-    }
-    .welcome-bar span {
-      font-size: 14px;
-      font-weight: bold;
-      color: #2c3e50;
-    }
-    .logout { 
-      color: #e74c3c; 
-      text-decoration: none; 
-      font-size: 13px; 
-      font-weight: bold;
-    }
-    table { 
-      width: 100%; 
-      border-collapse: collapse; 
-      background: #ffffff;
-    }
-    th, td { 
-      border: 1px solid #333333; 
-      padding: 6px 4px; 
-      text-align: center; 
-      vertical-align: middle; 
-    }
-    th { 
-      background: #eeeeee; 
-      font-weight: bold; 
-      font-size: 11px;
-    }
-    input[type="text"], input[type="time"], select { 
-      width: 100%; 
-      padding: 4px; 
-      border: 1px solid #cccccc; 
-      border-radius: 2px;
-      text-align: center;
-    }
-    input[type="checkbox"] { 
-      width: 18px; 
-      height: 18px; 
-      cursor: pointer;
-    }
-    .btn { 
-      padding: 8px 16px; 
-      border: none; 
-      border-radius: 4px; 
-      cursor: pointer; 
-      font-weight: bold; 
-      font-size: 13px;
-      margin: 5px;
-    }
-    .btn-hijau { 
-      background: #27ae60; 
-      color: #ffffff; 
-    }
-    .btn-abu { 
-      background: #95a5a6; 
-      color: #ffffff; 
-    }
-    .kamar-selesai {
-      background-color: #f8fef9;
-      color: #27ae60;
-      font-weight: bold;
-    }
-    .pesan-kosong {
-      padding: 30px;
-      text-align: center;
-      font-size: 14px;
-      color: #666666;
-    }
-  </style>
+  </script>
 </head>
-<body>
+<body class="bg-hotel-neutral min-h-screen">
+  <div class="container mx-auto px-3 py-4 max-w-7xl">
 
-<div class="container">
-  <!-- Baris Sambutan -->
-  <div class="card">
-    <div class="welcome-bar">
-      <span>📋 Halo, Room Attendant: <strong><%= user.nama %></strong></span>
-      <a href="/logout" class="logout">❌ Keluar</a>
-    </div>
-  </div>
-
-  <!-- Form & Tabel Laporan -->
-  <div class="card">
-    <div class="header-top">ROOMBOY CONTROL SHEET</div>
-
-    <div class="info-bar">
-      <div>
-        <label>NAME:</label>
-        <input type="text" name="nama_petugas" value="<%= user.nama %>" readonly>
-      </div>
-      <div>
-        <label>DATE:</label>
-        <input type="date" name="tanggal" value="<%= new Date().toISOString().split('T')[0] %>" readonly>
-      </div>
-      <div>
-        <label>SHIFT:</label>
-        <select name="shift">
-          <option value="Morning" selected>Morning</option>
-          <option value="Afternoon">Afternoon</option>
-          <option value="Night">Night</option>
-        </select>
-      </div>
-      <div>
-        <label>FLOOR/SECTION:</label>
-        <input type="text" name="lantai_bagian" placeholder="Contoh: Lantai 2">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-md mb-5 overflow-hidden">
+      <div class="bg-hotel-dark text-white px-5 py-4 flex flex-wrap justify-between items-center gap-3">
+        <div class="flex items-center gap-3">
+          <i class="fa fa-user-circle text-2xl"></i>
+          <div>
+            <h1 class="text-lg font-bold">Room Attendant - Control Sheet</h1>
+            <p class="text-sm opacity-90">Halo, <strong><%= user.nama %></strong></p>
+          </div>
+        </div>
+        <a href="/logout" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium transition flex items-center gap-1">
+          <i class="fa fa-sign-out"></i> Keluar
+        </a>
       </div>
     </div>
 
-    <form method="POST" action="/simpan-laporan">
-      <input type="hidden" name="kamar" id="kamarInput">
+    <!-- Info Atas -->
+    <div class="bg-white rounded-lg shadow-md mb-5 overflow-hidden">
+      <div class="bg-hotel-light px-5 py-3 grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <div><span class="font-semibold">NAME:</span> <input type="text" value="<%= user.nama %>" readonly class="border px-2 py-1 rounded w-full mt-1"></div>
+        <div><span class="font-semibold">DATE:</span> <input type="date" name="tanggal" value="<%= new Date().toISOString().split('T')[0] %>" readonly class="border px-2 py-1 rounded w-full mt-1"></div>
+        <div><span class="font-semibold">SHIFT:</span> <select name="shift" class="border px-2 py-1 rounded w-full mt-1"><option>Morning</option><option>Afternoon</option><option>Night</option></select></div>
+        <div><span class="font-semibold">FLOOR/SECTION:</span> <input type="text" name="lantai_bagian" placeholder="Contoh: Lantai 3" class="border px-2 py-1 rounded w-full mt-1"></div>
+      </div>
+    </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th rowspan="2">NO</th>
-            <th rowspan="2">NO OF ROOM</th>
-            <th colspan="3">ROOM STATUS</th>
-            <th colspan="2">TIME</th>
-            <th colspan="4">SHEET</th>
-            <th colspan="4">DUVET COVER</th>
-            <th colspan="8">LINEN</th>
-            <th colspan="7">BATH ROOM</th>
-            <th colspan="6">BED ROOM</th>
-            <th colspan="5">CONDIMEN</th>
-            <th rowspan="2">REMARKS</th>
-          </tr>
-          <tr>
-            <th>FO</th>
-            <th>HK</th>
-            <th>OUT</th>
-            <th>IN</th>
-            <th>OUT</th>
-            <th>DOUBLE IN</th>
-            <th>DOUBLE OUT</th>
-            <th>SINGLE IN</th>
-            <th>SINGLE OUT</th>
-            <th>IN</th>
-            <th>OUT</th>
-            <th>SINGLE IN</th>
-            <th>SINGLE OUT</th>
-            <th>BATH TOWEL IN</th>
-            <th>BATH TOWEL OUT</th>
-            <th>HAND TOWEL IN</th>
-            <th>HAND TOWEL OUT</th>
-            <th>BATH MAT IN</th>
-            <th>BATH MAT OUT</th>
-            <th>PILLOW CASE IN</th>
-            <th>PILLOW CASE OUT</th>
-            <th>TISSUE ROLL</th>
-            <th>HAND SOAP</th>
-            <th>SHAMPOO</th>
-            <th>SHOWER GEL</th>
-            <th>TOOTH BRUSH</th>
-            <th>TOOTH PASTE</th>
-            <th>SHOWER CAP</th>
-            <th>SLIPPER</th>
-            <th>LAUNDRY BAG</th>
-            <th>LAUNDRY LIST</th>
-            <th>MEMO PAD</th>
-            <th>PEN</th>
-            <th>PLASTIC BIN</th>
-            <th>COFFEE</th>
-            <th>SUGAR</th>
-            <th>TEA</th>
-            <th>CREAMER</th>
-            <th>MINERAL WATER</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% if (tugas.length > 0) { %>
+    <!-- Form Laporan -->
+    <% if (tugas && tugas.length > 0) { %>
+    <div class="bg-white rounded-lg shadow-md overflow-x-auto">
+      <form method="POST" action="/simpan-laporan">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-hotel-light">
+              <th class="border p-2">NO</th>
+              <th class="border p-2">NO OF ROOM</th>
+              <th colspan="3" class="border p-2">ROOM STATUS</th>
+              <th colspan="2" class="border p-2">TIME</th>
+              <th colspan="4" class="border p-2">SHEET</th>
+              <th colspan="4" class="border p-2">DUVET COVER</th>
+              <th colspan="8" class="border p-2">LINEN</th>
+              <th colspan="7" class="border p-2">BATH ROOM</th>
+              <th colspan="6" class="border p-2">BED ROOM</th>
+              <th colspan="5" class="border p-2">CONDIMEN</th>
+              <th class="border p-2">REMARKS</th>
+            </tr>
+            <tr class="bg-hotel-light">
+              <th class="border p-1"></th>
+              <th class="border p-1"></th>
+              <th class="border p-1">FO</th>
+              <th class="border p-1">HK</th>
+              <th class="border p-1">OUT</th>
+              <th class="border p-1">IN</th>
+              <th class="border p-1">OUT</th>
+              <th class="border p-1">DBL IN</th>
+              <th class="border p-1">DBL OUT</th>
+              <th class="border p-1">SGL IN</th>
+              <th class="border p-1">SGL OUT</th>
+              <th class="border p-1">IN</th>
+              <th class="border p-1">OUT</th>
+              <th class="border p-1">SGL IN</th>
+              <th class="border p-1">SGL OUT</th>
+              <th class="border p-1">BATH IN</th>
+              <th class="border p-1">BATH OUT</th>
+              <th class="border p-1">HAND IN</th>
+              <th class="border p-1">HAND OUT</th>
+              <th class="border p-1">MAT IN</th>
+              <th class="border p-1">MAT OUT</th>
+              <th class="border p-1">PILLOW IN</th>
+              <th class="border p-1">PILLOW OUT</th>
+              <th class="border p-1">TISSUE</th>
+              <th class="border p-1">SOAP</th>
+              <th class="border p-1">SHAMPOO</th>
+              <th class="border p-1">GEL</th>
+              <th class="border p-1">TOOTHBR</th>
+              <th class="border p-1">TOOTHP</th>
+              <th class="border p-1">CAP</th>
+              <th class="border p-1">SLIPPER</th>
+              <th class="border p-1">BAG</th>
+              <th class="border p-1">LIST</th>
+              <th class="border p-1">PAD</th>
+              <th class="border p-1">PEN</th>
+              <th class="border p-1">BIN</th>
+              <th class="border p-1">COFFEE</th>
+              <th class="border p-1">SUGAR</th>
+              <th class="border p-1">TEA</th>
+              <th class="border p-1">CREAMER</th>
+              <th class="border p-1">WATER</th>
+              <th class="border p-1"></th>
+            </tr>
+          </thead>
+          <tbody>
             <% tugas.forEach((t, i) => { %>
-            <tr class="<%= t.selesai ? 'kamar-selesai' : '' %>">
-              <td><%= i + 1 %></td>
-              <td><%= t.kamar %></td>
-              <td><input type="checkbox" name="status_fo" value="FO"></td>
-              <td><input type="checkbox" name="status_hk" value="HK"></td>
-              <td><input type="checkbox" name="status_out" value="OUT"></td>
-              <td><input type="time" name="waktu_masuk" required></td>
-              <td><input type="time" name="waktu_keluar" required></td>
-
-              <!-- Sheet -->
-              <td><input type="checkbox" name="sheet_double_in"></td>
-              <td><input type="checkbox" name="sheet_double_out"></td>
-              <td><input type="checkbox" name="sheet_single_in"></td>
-              <td><input type="checkbox" name="sheet_single_out"></td>
-
-              <!-- Duvet Cover -->
-              <td><input type="checkbox" name="duvet_cover_in"></td>
-              <td><input type="checkbox" name="duvet_cover_out"></td>
-              <td><input type="checkbox" name="duvet_single_in"></td>
-              <td><input type="checkbox" name="duvet_single_out"></td>
-
-              <!-- Linen -->
-              <td><input type="checkbox" name="bath_towel_in"></td>
-              <td><input type="checkbox" name="bath_towel_out"></td>
-              <td><input type="checkbox" name="hand_towel_in"></td>
-              <td><input type="checkbox" name="hand_towel_out"></td>
-              <td><input type="checkbox" name="bath_mat_in"></td>
-              <td><input type="checkbox" name="bath_mat_out"></td>
-              <td><input type="checkbox" name="pillow_case_in"></td>
-              <td><input type="checkbox" name="pillow_case_out"></td>
-
-              <!-- Bathroom -->
-              <td><input type="checkbox" name="tissue_roll"></td>
-              <td><input type="checkbox" name="hand_soap"></td>
-              <td><input type="checkbox" name="shampoo"></td>
-              <td><input type="checkbox" name="shower_gel"></td>
-              <td><input type="checkbox" name="tooth_brush"></td>
-              <td><input type="checkbox" name="tooth_paste"></td>
-              <td><input type="checkbox" name="shower_cap"></td>
-
-              <!-- Bedroom -->
-              <td><input type="checkbox" name="slipper"></td>
-              <td><input type="checkbox" name="laundry_bag"></td>
-              <td><input type="checkbox" name="laundry_list"></td>
-              <td><input type="checkbox" name="memo_pad"></td>
-              <td><input type="checkbox" name="pen"></td>
-              <td><input type="checkbox" name="plastic_bin"></td>
-
-              <!-- Condimen -->
-              <td><input type="checkbox" name="coffee"></td>
-              <td><input type="checkbox" name="sugar"></td>
-              <td><input type="checkbox" name="tea"></td>
-              <td><input type="checkbox" name="creamer"></td>
-              <td><input type="checkbox" name="mineral_water"></td>
-
-              <!-- Keterangan -->
-              <td><input type="text" name="keterangan" placeholder="Catatan"></td>
+            <tr class="hover:bg-gray-50">
+              <td class="border p-2 text-center"><%= i+1 %></td>
+              <td class="border p-2 text-center font-medium"><%= t.kamar %></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="status_fo"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="status_hk"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="status_out"></td>
+              <td class="border p-2 text-center"><input type="time" name="waktu_masuk" required class="w-full"></td>
+              <td class="border p-2 text-center"><input type="time" name="waktu_keluar" required class="w-full"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="sheet_double_in"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="sheet_double_out"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="sheet_single_in"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="sheet_single_out"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="duvet_cover_in"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="duvet_cover_out"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="duvet_single_in"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="duvet_single_out"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="bath_towel_in"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="bath_towel_out"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="hand_towel_in"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="hand_towel_out"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="bath_mat_in"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="bath_mat_out"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="pillow_case_in"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="pillow_case_out"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="tissue_roll"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="hand_soap"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="shampoo"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="shower_gel"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="tooth_brush"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="tooth_paste"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="shower_cap"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="slipper"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="laundry_bag"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="laundry_list"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="memo_pad"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="pen"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="plastic_bin"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="coffee"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="sugar"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="tea"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="creamer"></td>
+              <td class="border p-2 text-center"><input type="checkbox" name="mineral_water"></td>
+              <td class="border p-2 text-center"><input type="text" name="keterangan" placeholder="Catatan" class="w-full"></td>
             </tr>
             <% }) %>
-          <% } else { %>
-            <tr>
-              <td colspan="47" class="pesan-kosong">📝 Belum ada tugas yang diberikan hari ini</td>
-            </tr>
-          <% } %>
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+        <div class="p-4 text-center">
+          <button type="submit" class="bg-hotel-success hover:bg-green-600 text-white px-6 py-2 rounded font-medium">
+            <i class="fa fa-save mr-1"></i> Simpan Laporan
+          </button>
+        </div>
+      </form>
+    </div>
+    <% } else { %>
+    <div class="bg-white rounded-lg shadow-md p-10 text-center text-gray-500">
+      <i class="fa fa-clipboard text-5xl mb-4 opacity-30"></i>
+      <p class="text-lg">Belum ada tugas yang diberikan hari ini</p>
+    </div>
+    <% } %>
 
-      <div style="text-align: center; margin-top: 15px;">
-        <button type="submit" class="btn btn-hijau">✅ Simpan Laporan</button>
-        <button type="reset" class="btn btn-abu">🔄 Reset Form</button>
-      </div>
-    </form>
   </div>
-</div>
-
 </body>
 </html>
