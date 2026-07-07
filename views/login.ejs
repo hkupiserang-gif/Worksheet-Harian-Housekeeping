@@ -26,14 +26,12 @@
         <h1 class="text-xl font-bold">Sistem Laporan Housekeeping</h1>
         <p class="text-sm opacity-90 mt-1">Masuk ke Sistem</p>
       </div>
-
       <div class="p-6">
         <% if (pesan) { %>
         <div class="mb-4 p-3 rounded bg-red-50 border border-red-200 text-red-700 text-sm text-center">
           <%= pesan %>
         </div>
         <% } %>
-
         <form method="POST" action="/login" class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
