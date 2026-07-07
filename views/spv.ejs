@@ -22,7 +22,10 @@
   <div class="container mx-auto px-3 py-4 max-w-7xl">
     <div class="bg-white rounded-lg shadow-md mb-5 overflow-hidden">
       <div class="bg-hotel-dark text-white p-4 flex justify-between items-center">
-        <div><h1 class="text-lg font-bold">Panel Supervisor Housekeeping</h1><p class="text-sm">Selamat datang, <%= user.nama %></p></div>
+        <div>
+          <h1 class="text-lg font-bold">Panel Supervisor</h1>
+          <p class="text-sm">Selamat datang, <%= user.nama %></p>
+        </div>
         <div class="flex gap-2">
           <a href="/unduh" class="bg-hotel-accent text-white px-3 py-1 rounded text-sm"><i class="fa fa-download"></i> Unduh Laporan</a>
           <a href="/logout" class="bg-red-500 text-white px-3 py-1 rounded text-sm"><i class="fa fa-sign-out"></i> Keluar</a>
@@ -31,7 +34,7 @@
     </div>
 
     <div class="bg-white rounded-lg shadow-md mb-5 p-5">
-      <h2 class="text-base font-semibold text-hotel-dark mb-4"><i class="fa fa-plus-circle"></i> Berikan Tugas Harian</h2>
+      <h2 class="text-base font-semibold text-hotel-dark mb-4">Berikan Tugas Harian</h2>
       <form method="POST" action="/tambah-tugas" class="grid grid-cols-1 sm:grid-cols-5 gap-3">
         <div>
           <label class="text-sm text-gray-600">Tanggal</label>
@@ -61,25 +64,23 @@
             <option value="VD">VD - Kotor Kosong</option>
             <option value="OC">OC - Bersih Terisi</option>
             <option value="OD">OD - Kotor Terisi</option>
-            <option value="OOO">OOO - Tidak Beroperasi</option>
           </select>
         </div>
         <div class="self-end">
-          <button type="submit" class="w-full bg-hotel-primary text-white p-2 rounded">Simpan Tugas</button>
+          <button type="submit" class="w-full bg-hotel-primary text-white p-2 rounded">Simpan</button>
         </div>
       </form>
     </div>
 
     <div class="bg-white rounded-lg shadow-md p-5 overflow-x-auto">
-      <h2 class="text-base font-semibold text-hotel-dark mb-3"><i class="fa fa-list"></i> Daftar Tugas Hari Ini</h2>
-      <% if (tugas && tugas.length > 0) { %>
+      <h2 class="text-base font-semibold text-hotel-dark mb-3">Daftar Tugas Hari Ini</h2>
+      <% if (tugas.length > 0) { %>
       <table class="w-full border-collapse text-sm">
         <thead>
           <tr class="bg-hotel-light">
             <th class="border p-2">Tanggal</th>
             <th class="border p-2">Kamar</th>
             <th class="border p-2">Petugas</th>
-            <th class="border p-2">Status Awal</th>
             <th class="border p-2">Status</th>
           </tr>
         </thead>
@@ -87,9 +88,8 @@
           <% tugas.forEach(item => { %>
           <tr class="hover:bg-gray-50">
             <td class="border p-2"><%= item.tanggal %></td>
-            <td class="border p-2 font-medium"><%= item.kamar %></td>
+            <td class="border p-2"><%= item.kamar %></td>
             <td class="border p-2"><%= item.petugas %></td>
-            <td class="border p-2"><%= item.status_awal %></td>
             <td class="border p-2 text-center">
               <%= item.selesai ? '<span class="text-green-600">✅ Selesai</span>' : '<span class="text-orange-500">⏳ Belum</span>' %>
             </td>
@@ -98,7 +98,7 @@
         </tbody>
       </table>
       <% } else { %>
-      <p class="text-center text-gray-500 py-8">Belum ada tugas yang ditambahkan.</p>
+      <p class="text-center text-gray-500 py-8">Belum ada tugas</p>
       <% } %>
     </div>
   </div>
