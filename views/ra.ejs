@@ -22,44 +22,47 @@
   <div class="container mx-auto px-3 py-4 max-w-7xl">
     <div class="bg-white rounded-lg shadow-md mb-5 overflow-hidden">
       <div class="bg-hotel-dark text-white p-4 flex justify-between items-center">
-        <div><h1 class="text-lg font-bold">Panel Room Attendant</h1><p class="text-sm">Halo, <%= user.nama %></p></div>
+        <div>
+          <h1 class="text-lg font-bold">Panel Room Attendant</h1>
+          <p class="text-sm">Halo, <%= user.nama %></p>
+        </div>
         <a href="/logout" class="bg-red-500 text-white px-3 py-1 rounded text-sm"><i class="fa fa-sign-out"></i> Keluar</a>
       </div>
     </div>
 
-    <% if (tugas && tugas.length > 0) { %>
-    <div class="bg-white rounded-lg shadow-md p-5 overflow-x-auto">
-      <h2 class="text-base font-semibold text-hotel-dark mb-4">Form Laporan Kebersihan</h2>
+    <% if (tugas.length > 0) { %>
+    <div class="bg-white rounded-lg shadow-md p-5">
+      <h2 class="text-base font-semibold text-hotel-dark mb-4">Form Laporan</h2>
       <form method="POST" action="/simpan-laporan">
         <input type="hidden" name="tanggal" value="<%= new Date().toISOString().split('T')[0] %>">
-        <% tugas.forEach(tugasItem => { %>
-        <div class="mb-6 p-4 border rounded bg-gray-50">
-          <h3 class="font-semibold mb-3">Kamar No: <%= tugasItem.kamar %></h3>
-          <input type="hidden" name="kamar" value="<%= tugasItem.kamar %>">
+        <% tugas.forEach(item => { %>
+        <div class="mb-5 p-4 border rounded bg-gray-50">
+          <h3 class="font-semibold mb-3">Kamar <%= item.kamar %></h3>
+          <input type="hidden" name="kamar" value="<%= item.kamar %>">
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
             <div><label class="text-sm">Shift</label><select name="shift" class="w-full border p-1 rounded"><option>Morning</option><option>Afternoon</option><option>Night</option></select></div>
             <div><label class="text-sm">Lantai/Bagian</label><input type="text" name="lantai_bagian" class="w-full border p-1 rounded" placeholder="Contoh: Lantai 2"></div>
             <div><label class="text-sm">Waktu Masuk</label><input type="time" name="waktu_masuk" required class="w-full border p-1 rounded"></div>
             <div><label class="text-sm">Waktu Keluar</label><input type="time" name="waktu_keluar" required class="w-full border p-1 rounded"></div>
           </div>
-          <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 text-sm">
+          <div class="flex gap-4 mb-3 text-sm">
             <label><input type="checkbox" name="status_fo"> FO</label>
             <label><input type="checkbox" name="status_hk" checked> HK</label>
             <label><input type="checkbox" name="status_out"> OUT</label>
           </div>
-          <div class="mt-3">
-            <label class="text-sm">Keterangan Tambahan</label>
+          <div>
+            <label class="text-sm">Keterangan</label>
             <input type="text" name="keterangan" class="w-full border p-2 rounded" placeholder="Catatan jika ada">
           </div>
         </div>
         <% }) %>
-        <button type="submit" class="bg-hotel-success text-white px-5 py-2 rounded">Simpan Semua Laporan</button>
+        <button type="submit" class="bg-hotel-success text-white px-5 py-2 rounded">Simpan Laporan</button>
       </form>
     </div>
     <% } else { %>
     <div class="bg-white rounded-lg shadow-md p-10 text-center text-gray-500">
       <i class="fa fa-clipboard text-5xl mb-3 opacity-40"></i>
-      <p>Belum ada tugas yang diberikan hari ini.</p>
+      <p>Belum ada tugas yang diberikan hari ini</p>
     </div>
     <% } %>
   </div>
