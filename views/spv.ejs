@@ -17,6 +17,14 @@
       }
     }
   </script>
+  <style>
+    .status-option {
+      @apply inline-flex items-center gap-1 mr-2 text-xs px-2 py-1 rounded border cursor-pointer hover:bg-gray-100;
+    }
+    input[type="radio"]:checked + label {
+      @apply bg-blue-100 border-blue-400 text-blue-800 font-medium;
+    }
+  </style>
 </head>
 <body class="bg-hotel-neutral min-h-screen">
   <div class="container mx-auto px-3 py-4 max-w-7xl">
@@ -79,6 +87,16 @@
           </div>
         </div>
 
+        <!-- Keterangan Status -->
+        <div class="mb-3 text-xs text-gray-600">
+          <span class="font-medium">Keterangan Status:</span>
+          <span class="inline-block bg-green-100 px-2 rounded mr-1">VC</span> Bersih & Kosong |
+          <span class="inline-block bg-blue-100 px-2 rounded mr-1">VCU</span> Vacant Clean Uncheck |
+          <span class="inline-block bg-orange-100 px-2 rounded mr-1">VD</span> Kotor & Kosong |
+          <span class="inline-block bg-cyan-100 px-2 rounded mr-1">OC</span> Bersih & Terisi |
+          <span class="inline-block bg-red-100 px-2 rounded mr-1">OD</span> Kotor & Terisi
+        </div>
+
         <!-- Tombol Pilih Semua / Batal -->
         <div class="mb-3">
           <button type="button" onclick="pilihSemua()" class="text-sm text-hotel-primary hover:underline mr-4">✓ Pilih Semua Kamar</button>
@@ -109,13 +127,28 @@
                 <td class="border border-gray-200 p-2"><%= kamar.lantai %></td>
                 <td class="border border-gray-200 p-2"><%= kamar.tipe_kamar %></td>
                 <td class="border border-gray-200 p-2">
-                  <select name="status_awal_<%= kamar.nomor %>" class="w-full border border-gray-200 rounded p-1 text-xs">
-                    <option value="VC" <%= kamar.status === 'VC' ? 'selected' : '' %>>VC - Bersih & Kosong</option>
-                    <option value="VCU" <%= kamar.status === 'VCU' ? 'selected' : '' %>>VCU - Vacant Clean Uncheck</option>
-                    <option value="VD" <%= kamar.status === 'VD' ? 'selected' : '' %>>VD - Kotor & Kosong</option>
-                    <option value="OC" <%= kamar.status === 'OC' ? 'selected' : '' %>>OC - Bersih & Terisi</option>
-                    <option value="OD" <%= kamar.status === 'OD' ? 'selected' : '' %>>OD - Kotor & Terisi</option>
-                  </select>
+                  <div class="flex flex-wrap gap-2">
+                    <div class="flex items-center">
+                      <input type="radio" name="status_<%= kamar.nomor %>" value="VC" id="vc_<%= kamar.nomor %>" <%= kamar.status === 'VC' || !kamar.status ? 'checked' : '' %> class="hidden">
+                      <label for="vc_<%= kamar.nomor %>" class="status-option">VC</label>
+                    </div>
+                    <div class="flex items-center">
+                      <input type="radio" name="status_<%= kamar.nomor %>" value="VCU" id="vcu_<%= kamar.nomor %>" <%= kamar.status === 'VCU' ? 'checked' : '' %> class="hidden">
+                      <label for="vcu_<%= kamar.nomor %>" class="status-option">VCU</label>
+                    </div>
+                    <div class="flex items-center">
+                      <input type="radio" name="status_<%= kamar.nomor %>" value="VD" id="vd_<%= kamar.nomor %>" <%= kamar.status === 'VD' ? 'checked' : '' %> class="hidden">
+                      <label for="vd_<%= kamar.nomor %>" class="status-option">VD</label>
+                    </div>
+                    <div class="flex items-center">
+                      <input type="radio" name="status_<%= kamar.nomor %>" value="OC" id="oc_<%= kamar.nomor %>" <%= kamar.status === 'OC' ? 'checked' : '' %> class="hidden">
+                      <label for="oc_<%= kamar.nomor %>" class="status-option">OC</label>
+                    </div>
+                    <div class="flex items-center">
+                      <input type="radio" name="status_<%= kamar.nomor %>" value="OD" id="od_<%= kamar.nomor %>" <%= kamar.status === 'OD' ? 'checked' : '' %> class="hidden">
+                      <label for="od_<%= kamar.nomor %>" class="status-option">OD</label>
+                    </div>
+                  </div>
                 </td>
                 <td class="border border-gray-200 p-2"><%= kamar.petugas || '-' %></td>
                 <td class="border border-gray-200 p-2 text-center">
