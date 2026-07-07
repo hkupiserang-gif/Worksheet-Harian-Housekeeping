@@ -18,11 +18,14 @@
     }
   </script>
   <style>
-    .status-option {
-      @apply inline-flex items-center gap-1 mr-2 text-xs px-2 py-1 rounded border cursor-pointer hover:bg-gray-100;
+    .status-radio {
+      @apply w-4 h-4 cursor-pointer;
     }
-    input[type="radio"]:checked + label {
-      @apply bg-blue-100 border-blue-400 text-blue-800 font-medium;
+    .status-label {
+      @apply text-xs px-1.5 py-0.5 rounded border border-transparent hover:bg-gray-100 cursor-pointer;
+    }
+    input[type="radio"]:checked + .status-label {
+      @apply bg-blue-100 border-blue-300 text-blue-800 font-medium;
     }
   </style>
 </head>
@@ -90,14 +93,14 @@
         <!-- Keterangan Status -->
         <div class="mb-3 text-xs text-gray-600">
           <span class="font-medium">Keterangan Status:</span>
-          <span class="inline-block bg-green-100 px-2 rounded mr-1">VC</span> Bersih & Kosong |
-          <span class="inline-block bg-blue-100 px-2 rounded mr-1">VCU</span> Vacant Clean Uncheck |
-          <span class="inline-block bg-orange-100 px-2 rounded mr-1">VD</span> Kotor & Kosong |
-          <span class="inline-block bg-cyan-100 px-2 rounded mr-1">OC</span> Bersih & Terisi |
-          <span class="inline-block bg-red-100 px-2 rounded mr-1">OD</span> Kotor & Terisi
+          <span class="bg-green-100 px-2 rounded mx-1">VC</span> Bersih & Kosong |
+          <span class="bg-blue-100 px-2 rounded mx-1">VCU</span> Vacant Clean Uncheck |
+          <span class="bg-orange-100 px-2 rounded mx-1">VD</span> Kotor & Kosong |
+          <span class="bg-cyan-100 px-2 rounded mx-1">OC</span> Bersih & Terisi |
+          <span class="bg-red-100 px-2 rounded mx-1">OD</span> Kotor & Terisi
         </div>
 
-        <!-- Tombol Pilih Semua / Batal -->
+        <!-- Tombol Pilih Semua / Batalkan -->
         <div class="mb-3">
           <button type="button" onclick="pilihSemua()" class="text-sm text-hotel-primary hover:underline mr-4">✓ Pilih Semua Kamar</button>
           <button type="button" onclick="batalPilih()" class="text-sm text-gray-600 hover:underline">✗ Batalkan Pilihan</button>
@@ -112,7 +115,7 @@
                 <th class="border border-gray-200 p-2 text-left">Nomor Kamar</th>
                 <th class="border border-gray-200 p-2 text-left">Lantai</th>
                 <th class="border border-gray-200 p-2 text-left">Tipe Kamar</th>
-                <th class="border border-gray-200 p-2 text-left">Status Awal</th>
+                <th class="border border-gray-200 p-2 text-center">Status Awal</th>
                 <th class="border border-gray-200 p-2 text-left">Diberikan Kepada</th>
                 <th class="border border-gray-200 p-2 text-center">Selesai</th>
               </tr>
@@ -127,26 +130,26 @@
                 <td class="border border-gray-200 p-2"><%= kamar.lantai %></td>
                 <td class="border border-gray-200 p-2"><%= kamar.tipe_kamar %></td>
                 <td class="border border-gray-200 p-2">
-                  <div class="flex flex-wrap gap-2">
-                    <div class="flex items-center">
-                      <input type="radio" name="status_<%= kamar.nomor %>" value="VC" id="vc_<%= kamar.nomor %>" <%= kamar.status === 'VC' || !kamar.status ? 'checked' : '' %> class="hidden">
-                      <label for="vc_<%= kamar.nomor %>" class="status-option">VC</label>
+                  <div class="flex items-center justify-center gap-3">
+                    <div class="flex items-center gap-1">
+                      <input type="radio" name="status_<%= kamar.nomor %>" value="VC" id="vc_<%= kamar.nomor %>" <%= kamar.status === 'VC' || !kamar.status ? 'checked' : '' %> class="status-radio">
+                      <label for="vc_<%= kamar.nomor %>" class="status-label">VC</label>
                     </div>
-                    <div class="flex items-center">
-                      <input type="radio" name="status_<%= kamar.nomor %>" value="VCU" id="vcu_<%= kamar.nomor %>" <%= kamar.status === 'VCU' ? 'checked' : '' %> class="hidden">
-                      <label for="vcu_<%= kamar.nomor %>" class="status-option">VCU</label>
+                    <div class="flex items-center gap-1">
+                      <input type="radio" name="status_<%= kamar.nomor %>" value="VCU" id="vcu_<%= kamar.nomor %>" <%= kamar.status === 'VCU' ? 'checked' : '' %> class="status-radio">
+                      <label for="vcu_<%= kamar.nomor %>" class="status-label">VCU</label>
                     </div>
-                    <div class="flex items-center">
-                      <input type="radio" name="status_<%= kamar.nomor %>" value="VD" id="vd_<%= kamar.nomor %>" <%= kamar.status === 'VD' ? 'checked' : '' %> class="hidden">
-                      <label for="vd_<%= kamar.nomor %>" class="status-option">VD</label>
+                    <div class="flex items-center gap-1">
+                      <input type="radio" name="status_<%= kamar.nomor %>" value="VD" id="vd_<%= kamar.nomor %>" <%= kamar.status === 'VD' ? 'checked' : '' %> class="status-radio">
+                      <label for="vd_<%= kamar.nomor %>" class="status-label">VD</label>
                     </div>
-                    <div class="flex items-center">
-                      <input type="radio" name="status_<%= kamar.nomor %>" value="OC" id="oc_<%= kamar.nomor %>" <%= kamar.status === 'OC' ? 'checked' : '' %> class="hidden">
-                      <label for="oc_<%= kamar.nomor %>" class="status-option">OC</label>
+                    <div class="flex items-center gap-1">
+                      <input type="radio" name="status_<%= kamar.nomor %>" value="OC" id="oc_<%= kamar.nomor %>" <%= kamar.status === 'OC' ? 'checked' : '' %> class="status-radio">
+                      <label for="oc_<%= kamar.nomor %>" class="status-label">OC</label>
                     </div>
-                    <div class="flex items-center">
-                      <input type="radio" name="status_<%= kamar.nomor %>" value="OD" id="od_<%= kamar.nomor %>" <%= kamar.status === 'OD' ? 'checked' : '' %> class="hidden">
-                      <label for="od_<%= kamar.nomor %>" class="status-option">OD</label>
+                    <div class="flex items-center gap-1">
+                      <input type="radio" name="status_<%= kamar.nomor %>" value="OD" id="od_<%= kamar.nomor %>" <%= kamar.status === 'OD' ? 'checked' : '' %> class="status-radio">
+                      <label for="od_<%= kamar.nomor %>" class="status-label">OD</label>
                     </div>
                   </div>
                 </td>
@@ -169,7 +172,7 @@
     </div>
   </div>
 
-  <!-- Script Pilih Semua -->
+  <!-- Script Pilih Semua / Batalkan -->
   <script>
     function pilihSemua() {
       document.querySelectorAll('input[name="kamar[]"]').forEach(cb => cb.checked = true);
