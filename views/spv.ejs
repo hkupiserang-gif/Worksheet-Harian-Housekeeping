@@ -3,87 +3,219 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel Supervisor</title>
+  <title>Supervisor - Panel Kontrol</title>
   <style>
-    * { margin:0; padding:0; box-sizing:border-box; font-family:Arial; }
-    body { background:#f8f9fa; max-width:900px; margin:0 auto; padding:20px; }
-    .card { background:white; border-radius:10px; padding:20px; margin-bottom:15px; box-shadow:0 1px 5px rgba(0,0,0,0.1); }
-    h2 { color:#2c3e50; margin-bottom:15px; font-size:20px; }
-    h3 { color:#34495e; margin-bottom:12px; font-size:18px; }
-    table { width:100%; border-collapse:collapse; margin-top:15px; font-size:14px; }
-    th, td { border:1px solid #ddd; padding:8px; text-align:left; }
-    th { background:#f1f1f1; font-weight:bold; }
-    button, a.btn { padding:8px 15px; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:14px; text-decoration:none; display:inline-block; margin-right:8px; margin-bottom:8px; }
-    .btn-biru { background:#2980b9; color:white; }
-    .btn-hijau { background:#27ae60; color:white; }
-    .btn-merah { background:#e74c3c; color:white; float:right; }
-    .baris { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
-    .baris > div { flex:1; min-width:130px; }
-    label { display:block; margin-bottom:4px; font-size:14px; }
-    input, select { width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; }
+    * { 
+      margin: 0; 
+      padding: 0; 
+      box-sizing: border-box; 
+      font-family: Arial, Helvetica, sans-serif; 
+      font-size: 12px;
+    }
+    body { 
+      background: #f8f9fa; 
+      padding: 15px; 
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .card { 
+      background: #ffffff; 
+      border: 1px solid #333333; 
+      margin-bottom: 15px; 
+      border-radius: 4px; 
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+    }
+    .welcome-bar {
+      padding: 12px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #e9f2fa;
+      border-bottom: 1px solid #333;
+    }
+    .welcome-bar span {
+      font-size: 16px;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+    .logout { 
+      color: #e74c3c; 
+      text-decoration: none; 
+      font-size: 13px; 
+      font-weight: bold;
+    }
+    .header {
+      padding: 10px 15px;
+      background: #f1f1f1;
+      border-bottom: 1px solid #333;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    .content {
+      padding: 15px;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 15px;
+      align-items: end;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 4px;
+      font-weight: bold;
+    }
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 6px;
+      border: 1px solid #999;
+      border-radius: 3px;
+    }
+    .btn {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 12px;
+      text-decoration: none;
+      display: inline-block;
+      margin-right: 8px;
+    }
+    .btn-biru {
+      background: #2980b9;
+      color: white;
+    }
+    .btn-hijau {
+      background: #27ae60;
+      color: white;
+    }
+    .table-wrapper {
+      overflow-x: auto;
+      margin-top: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #333;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background: #f1f1f1;
+      font-weight: bold;
+    }
+    .pesan-kosong {
+      padding: 25px;
+      text-align: center;
+      color: #666;
+      font-size: 13px;
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h2>👨‍💼 Panel Supervisor</h2>
-    <a href="/unduh" class="btn-hijau">⬇️ Unduh Semua Laporan (CSV/Excel)</a>
-    <a href="/" class="btn-merah">Keluar</a>
-  </div>
 
+<div class="container">
+  <!-- Baris Sambutan Supervisor -->
   <div class="card">
-    <h3>➕ Berikan Tugas Harian</h3>
-    <form method="POST" action="/tambah-tugas">
-      <div class="baris">
-        <div>
-          <label>Tanggal</label>
-          <input type="date" name="tanggal" required>
-        </div>
-        <div>
-          <label>Nomor Kamar</label>
-          <input type="text" name="kamar" placeholder="Contoh: 101" required>
-        </div>
-        <div>
-          <label>Petugas</label>
-          <select name="petugas" required>
-            <option value="Petugas Kamar">Petugas Kamar</option>
-          </select>
-        </div>
-        <div>
-          <label>Status Awal</label>
-          <select name="status" required>
-            <option value="VC">VC - Bersih Kosong</option>
-            <option value="VD">VD - Kotor Kosong</option>
-            <option value="OC">OC - Bersih Terisi</option>
-            <option value="OD">OD - Kotor Terisi</option>
-          </select>
-        </div>
+    <div class="welcome-bar">
+      <span>👨‍💼 Halo, Supervisor: <strong><%= user.nama %></strong></span>
+      <div>
+        <a href="/unduh" class="btn btn-hijau">⬇️ Unduh Laporan Excel</a>
+        <a href="/logout" class="logout">❌ Keluar</a>
       </div>
-      <button type="submit" class="btn-biru">Simpan Tugas</button>
-    </form>
+    </div>
   </div>
 
+  <!-- Form Tambah Tugas -->
   <div class="card">
-    <h3>📋 Daftar Tugas Hari Ini</h3>
-    <% if (tugas.length === 0) { %>
-      <p style="text-align:center; color:#666; padding:15px;">Belum ada tugas yang dibuat</p>
-    <% } else { %>
-      <table>
-        <thead>
-          <tr><th>Tanggal</th><th>Kamar</th><th>Petugas</th><th>Status Awal</th><th>Selesai</th></tr>
-        </thead>
-        <tbody>
-          <% tugas.forEach(t => { %>
-            <tr>
-              <td><%= t.tanggal %></td>
-              <td><%= t.kamar %></td>
-              <td><%= t.petugas %></td>
-              <td><%= t.status_awal %></td>
-              <td><%= t.selesai ? '✅ Ya' : '❌ Belum' %></td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
-    <% } %>
+    <div class="header">➕ Berikan Tugas Room Attendant</div>
+    <div class="content">
+      <form method="POST" action="/tambah-tugas">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Tanggal</label>
+            <input type="date" name="tanggal" value="<%= new Date().toISOString().split('T')[0] %>" required>
+          </div>
+          <div class="form-group">
+            <label>Nomor Kamar</label>
+            <input type="text" name="kamar" placeholder="Contoh: 201" required>
+          </div>
+          <div class="form-group">
+            <label>Nama Room Attendant</label>
+            <select name="petugas" required>
+              <option value="Siti Aminah">Siti Aminah</option>
+              <option value="Joko Prasetyo">Joko Prasetyo</option>
+              <option value="Ani Susanti">Ani Susanti</option>
+              <!-- Nanti bisa ditambah sesuai daftar nama yang kamu berikan -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Status Awal Kamar</label>
+            <select name="status" required>
+              <option value="VC">VC - Vacant Clean</option>
+              <option value="VD">VD - Vacant Dirty</option>
+              <option value="OC">OC - Occupied Clean</option>
+              <option value="OD">OD - Occupied Dirty</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <button type="submit" class="btn btn-biru">Simpan Tugas</button>
+          </div>
+        </div>
+      </form>
+    </div>
   </div>
+
+  <!-- Daftar Tugas Hari Ini -->
+  <div class="card">
+    <div class="header">📋 Daftar Tugas Hari Ini</div>
+    <div class="content">
+      <% if (tugas.length > 0) { %>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Tanggal</th>
+                <th>Nomor Kamar</th>
+                <th>Room Attendant</th>
+                <th>Status Awal</th>
+                <th>Status Pengerjaan</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% tugas.forEach((item, index) => { %>
+              <tr>
+                <td><%= index + 1 %></td>
+                <td><%= item.tanggal %></td>
+                <td><%= item.kamar %></td>
+                <td><%= item.petugas %></td>
+                <td><%= item.status_awal %></td>
+                <td>
+                  <% if (item.selesai) { %>
+                    ✅ Selesai
+                  <% } else { %>
+                    ❌ Belum Selesai
+                  <% } %>
+                </td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <div class="pesan-kosong">Belum ada tugas yang dibuat untuk hari ini</div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
