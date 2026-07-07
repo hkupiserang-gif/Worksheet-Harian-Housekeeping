@@ -34,9 +34,9 @@ app.use(session({
 // Pesan notifikasi
 app.use((req, res, next) => {
   if (req.query.pesan === 'berhasil') {
-    res.locals.pesan = { tipe: 'sukses', teks: '✅ Tugas berhasil diberikan ke kamar yang dipilih' };
+    res.locals.pesan = { tipe: 'sukses', teks: '✅ Tugas berhasil disimpan' };
   } else if (req.query.pesan === 'gagal') {
-    res.locals.pesan = { tipe: 'error', teks: '❌ Gagal menyimpan tugas' };
+    res.locals.pesan = { tipe: 'error', teks: '❌ Gagal menyimpan data' };
   }
   next();
 });
@@ -112,7 +112,6 @@ app.post('/tambah-tugas-banyak', async (req, res) => {
     const { tanggal, petugas, ...dataLain } = req.body;
     const daftarKamar = req.body.kamar;
 
-    // Cek jika tidak ada kamar dipilih
     if (!daftarKamar || (Array.isArray(daftarKamar) && daftarKamar.length === 0)) {
       const daftarKamar = await ambilDataKamar(tanggal);
       return res.render('spv', {
@@ -147,29 +146,31 @@ app.get('/ra', async (req, res) => {
   try {
     const hariIni = new Date().toISOString().split('T')[0];
     const tugas = await pool.query("SELECT * FROM tugas WHERE tanggal = $1 AND petugas = $2", [hariIni, req.session.user.nama]);
-    res.render('ra', { user: req.session.user, tugas: tugas.rows });
+    res.render('ra', { user: req.session.user, tugas: tugas.rows, pesan: res.locals.pesan || null });
   } catch (err) {
     console.error(err);
     res.redirect('/');
   }
 });
 
+// Simpan laporan RA (sudah disesuaikan tanpa lantai & status pilihan)
 app.post('/simpan-laporan', async (req, res) => {
   if (!req.session.user || req.session.user.peran !== 'RA') return res.redirect('/');
   try {
-    const { tanggal, kamar, shift, lantai_bagian, waktu_masuk, waktu_keluar, status_hk, status_fo, status_out, keterangan } = req.body;
-    const status = status_fo ? 'FO' : status_hk ? 'HK' : status_out ? 'OUT' : 'HK';
+    const { tanggal, kamar, shift, waktu_masuk, waktu_keluar, keterangan } = req.body;
+    const status = 'HK'; // Status tetap default
 
     await pool.query(`
-      INSERT INTO laporan (tanggal, nomor_kamar, shift, lantai_bagian, status_kamar, waktu_masuk, waktu_keluar, keterangan, petugas)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-    `, [tanggal, kamar, shift, lantai_bagian, status, waktu_masuk, waktu_keluar, keterangan || '', req.session.user.nama]);
+      INSERT INTO laporan (tanggal, nomor_kamar, shift, status_kamar, waktu_masuk, waktu_keluar, keterangan, petugas)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `, [tanggal, kamar, shift, status, waktu_masuk || null, waktu_keluar || null, keterangan || '', req.session.user.nama]);
 
     await pool.query("UPDATE tugas SET selesai = true WHERE tanggal = $1 AND kamar = $2", [tanggal, kamar]);
-    res.redirect('/ra');
+
+    res.redirect('/ra?pesan=berhasil');
   } catch (err) {
-    console.error(err);
-    res.redirect('/ra');
+    console.error("Error simpan laporan RA:", err);
+    res.redirect('/ra?pesan=gagal');
   }
 });
 
@@ -232,7 +233,7 @@ app.get('/ubah-status/:id', async (req, res) => {
 app.get('/unduh', async (req, res) => {
   if (!req.session.user || req.session.user.peran !== 'SPV') return res.redirect('/');
   try {
-    const hasil = await pool.query("SELECT * FROM laporan ORDER BY tanggal DESC");
+    const hasil = await pool.query("SELECT tanggal, nomor_kamar, shift, status_kamar, waktu_masuk, waktu_keluar, keterangan, petugas FROM laporan ORDER BY tanggal DESC");
     const namaFile = `Laporan_HK_${new Date().toISOString().slice(0,10)}.csv`;
     const jalur = `/tmp/${namaFile}`;
 
@@ -242,7 +243,6 @@ app.get('/unduh', async (req, res) => {
         {id: 'tanggal', title: 'Tanggal'},
         {id: 'nomor_kamar', title: 'No Kamar'},
         {id: 'shift', title: 'Shift'},
-        {id: 'lantai_bagian', title: 'Lantai/Bagian'},
         {id: 'status_kamar', title: 'Status'},
         {id: 'waktu_masuk', title: 'Waktu Masuk'},
         {id: 'waktu_keluar', title: 'Waktu Keluar'},
