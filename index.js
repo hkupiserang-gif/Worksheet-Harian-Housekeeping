@@ -39,9 +39,9 @@ app.get('/manifest.json', (req, res) => {
 // Pesan notifikasi
 app.use((req, res, next) => {
   if (req.query.pesan === 'berhasil') {
-    res.locals.pesan = { tipe: 'sukses', teks: '✅ Tugas berhasil disimpan' };
+    res.locals.pesan = { tipe: 'sukses', teks: '✅ Laporan berhasil disimpan' };
   } else if (req.query.pesan === 'gagal') {
-    res.locals.pesan = { tipe: 'error', teks: '❌ Gagal menyimpan data' };
+    res.locals.pesan = { tipe: 'error', teks: '❌ Gagal menyimpan data, periksa kembali isian' };
   }
   next();
 });
@@ -50,7 +50,8 @@ app.use((req, res, next) => {
 async function ambilDataKamar(tanggal) {
   const semuaKamar = await pool.query("SELECT nomor, lantai, tipe_kamar FROM daftar_kamar ORDER BY nomor");
   const tugasHariIni = await pool.query(`
-    SELECT t.kamar, t.status_awal, t.petugas, t.selesai, l.waktu_masuk, l.waktu_keluar
+    SELECT t.kamar, t.status_awal, t.petugas, t.selesai, 
+           l.waktu_masuk, l.waktu_keluar, l.linen, l.amenities, l.keterangan
     FROM tugas t
     LEFT JOIN laporan l ON t.tanggal = l.tanggal AND t.kamar = l.nomor_kamar
     WHERE t.tanggal = $1
@@ -73,6 +74,9 @@ async function ambilDataKamar(tanggal) {
       selesai: tugas?.selesai || false,
       waktuMasuk: tugas?.waktu_masuk || null,
       waktuKeluar: tugas?.waktu_keluar || null,
+      linen: tugas?.linen || null,
+      amenities: tugas?.amenities || null,
+      keterangan: tugas?.keterangan || '',
       statusProses: statusProses
     };
   });
@@ -164,7 +168,13 @@ app.get('/ra', async (req, res) => {
   if (!req.session.user || req.session.user.peran !== 'RA') return res.redirect('/');
   try {
     const hariIni = new Date().toISOString().split('T')[0];
-    const tugas = await pool.query("SELECT * FROM tugas WHERE tanggal = $1 AND petugas = $2", [hariIni, req.session.user.nama]);
+    const tugas = await pool.query(`
+      SELECT t.*, l.waktu_masuk, l.waktu_keluar, l.linen, l.amenities, l.keterangan
+      FROM tugas t
+      LEFT JOIN laporan l ON t.tanggal = l.tanggal AND t.kamar = l.nomor_kamar
+      WHERE t.tanggal = $1 AND t.petugas = $2
+      ORDER BY t.kamar
+    `, [hariIni, req.session.user.nama]);
     res.render('ra', { user: req.session.user, tugas: tugas.rows, pesan: res.locals.pesan || null });
   } catch (err) {
     console.error(err);
@@ -172,26 +182,82 @@ app.get('/ra', async (req, res) => {
   }
 });
 
-// Simpan laporan RA
+// Simpan laporan RA DIPERBAIKI
 app.post('/simpan-laporan', async (req, res) => {
   if (!req.session.user || req.session.user.peran !== 'RA') return res.redirect('/');
   try {
-    const { tanggal, kamar, waktu_masuk, waktu_keluar, keterangan } = req.body;
+    const { 
+      tanggal, kamar, waktu_masuk, waktu_keluar, 
+      sheet_double, sheet_single, duvet_double, duvet_single,
+      bath_towel, hand_towel, bath_mat, pillow_case,
+      tissue, hand_soap, shampoo, shower_gel, tooth_brush,
+      sterilizer, shower_cap, slipper, laundry_bag, laundry_list,
+      memo_pad, pencil, plastic_bin, tissue_box, coffee, sugar,
+      tea, creamer, mineral_water, keterangan
+    } = req.body;
+
     const shift = 'Morning';
     const status = 'HK';
 
-    await pool.query(`
-      INSERT INTO laporan (tanggal, nomor_kamar, shift, status_kamar, waktu_masuk, waktu_keluar, keterangan, petugas)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-    `, [tanggal, kamar, shift, status, waktu_masuk || null, waktu_keluar || null, keterangan || '', req.session.user.nama]);
+    // Gabungkan data linen dan amenities menjadi JSON
+    const linenData = {
+      sheet_double: sheet_double || 0,
+      sheet_single: sheet_single || 0,
+      duvet_double: duvet_double || 0,
+      duvet_single: duvet_single || 0,
+      bath_towel: bath_towel || 0,
+      hand_towel: hand_towel || 0,
+      bath_mat: bath_mat || 0,
+      pillow_case: pillow_case || 0
+    };
 
+    const amenitiesData = {
+      tissue: tissue || 0,
+      hand_soap: hand_soap || 0,
+      shampoo: shampoo || 0,
+      shower_gel: shower_gel || 0,
+      tooth_brush: tooth_brush || 0,
+      sterilizer: sterilizer || 0,
+      shower_cap: shower_cap || 0,
+      slipper: slipper || 0,
+      laundry_bag: laundry_bag || 0,
+      laundry_list: laundry_list || 0,
+      memo_pad: memo_pad || 0,
+      pencil: pencil || 0,
+      plastic_bin: plastic_bin || 0,
+      tissue_box: tissue_box || 0,
+      coffee: coffee || 0,
+      sugar: sugar || 0,
+      tea: tea || 0,
+      creamer: creamer || 0,
+      mineral_water: mineral_water || 0
+    };
+
+    // Simpan ke database
+    await pool.query(`
+      INSERT INTO laporan (
+        tanggal, nomor_kamar, shift, status_kamar, waktu_masuk, waktu_keluar,
+        linen, amenities, keterangan, petugas
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      ON CONFLICT (tanggal, nomor_kamar) DO UPDATE SET
+        waktu_masuk = $5, waktu_keluar = $6, linen = $7, amenities = $8,
+        keterangan = $9, petugas = $10
+    `, [
+      tanggal, kamar, shift, status,
+      waktu_masuk || null, waktu_keluar || null,
+      JSON.stringify(linenData), JSON.stringify(amenitiesData),
+      keterangan || '', req.session.user.nama
+    ]);
+
+    // Update status selesai jika ada waktu keluar
     if (waktu_keluar) {
       await pool.query("UPDATE tugas SET selesai = true WHERE tanggal = $1 AND kamar = $2", [tanggal, kamar]);
     }
 
     res.redirect('/ra?pesan=berhasil');
   } catch (err) {
-    console.error("Error simpan laporan RA:", err);
+    console.error("❌ Error simpan laporan:", err);
     res.redirect('/ra?pesan=gagal');
   }
 });
@@ -255,7 +321,7 @@ app.get('/ubah-status/:id', async (req, res) => {
 app.get('/unduh', async (req, res) => {
   if (!req.session.user || req.session.user.peran !== 'SPV') return res.redirect('/');
   try {
-    const hasil = await pool.query("SELECT tanggal, nomor_kamar, shift, status_kamar, waktu_masuk, waktu_keluar, keterangan, petugas FROM laporan ORDER BY tanggal DESC");
+    const hasil = await pool.query("SELECT tanggal, nomor_kamar, shift, status_kamar, waktu_masuk, waktu_keluar, linen, amenities, keterangan, petugas FROM laporan ORDER BY tanggal DESC");
     const namaFile = `Laporan_HK_${new Date().toISOString().slice(0,10)}.csv`;
     const jalur = `/tmp/${namaFile}`;
 
@@ -268,8 +334,10 @@ app.get('/unduh', async (req, res) => {
         {id: 'status_kamar', title: 'Status'},
         {id: 'waktu_masuk', title: 'Waktu Masuk'},
         {id: 'waktu_keluar', title: 'Waktu Keluar'},
-        {id: 'petugas', title: 'Petugas'},
-        {id: 'keterangan', title: 'Keterangan'}
+        {id: 'linen', title: 'Linen Dipakai'},
+        {id: 'amenities', title: 'Amenities Dipakai'},
+        {id: 'keterangan', title: 'Keterangan'},
+        {id: 'petugas', title: 'Petugas'}
       ]
     });
 
