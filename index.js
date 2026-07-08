@@ -6,7 +6,7 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 8888;
 
-// ===================== KONEKSI DATABASE =====================
+// Koneksi Database Railway
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
@@ -14,10 +14,10 @@ const pool = new Pool({
 
 pool.connect((err) => {
   if (err) console.error("❌ Koneksi DB gagal:", err);
-  else console.log("✅ DB terhubung");
+  else console.log("✅ Database terhubung");
 });
 
-// ===================== KONFIGURASI =====================
+// Konfigurasi Aplikasi
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.urlencoded({ extended: true }));
@@ -30,7 +30,7 @@ app.use(session({
   cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 }
 }));
 
-// Pesan notifikasi
+// Notifikasi
 app.use((req, res, next) => {
   res.locals.pesan = null;
   if (req.query.pesan === 'berhasil') res.locals.pesan = { tipe: 'sukses', teks: '✅ Data berhasil disimpan' };
@@ -38,7 +38,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// ===================== HALAMAN LOGIN =====================
+// Halaman Login
 app.get('/', (req, res) => {
   if (req.session.user) {
     if (req.session.user.peran === 'SPV') return res.redirect('/spv');
@@ -67,7 +67,7 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// ===================== HALAMAN SUPERVISOR =====================
+// Halaman Supervisor
 app.get('/spv', async (req, res) => {
   if (!req.session.user || req.session.user.peran !== 'SPV') return res.redirect('/');
   try {
@@ -105,14 +105,15 @@ app.post('/tambah-tugas', async (req, res) => {
   }
 });
 
-// ===================== HALAMAN ROOM ATTENDANT =====================
+// ===================== HALAMAN RA - PERBAIKAN UTAMA =====================
 app.get('/ra', async (req, res) => {
   if (!req.session.user || req.session.user.peran !== 'RA') return res.redirect('/');
   try {
     const hariIni = new Date().toISOString().split('T')[0];
     const daftarTugas = await pool.query(`
       SELECT 
-        t.*, l.waktu_masuk, l.waktu_keluar,
+        t.*, 
+        l.waktu_masuk, l.waktu_keluar,
         l.sheet_twin, l.sheet_king, l.duvet_twin, l.duvet_king,
         l.bath_towel, l.hand_towel, l.bath_mat, l.pillow_case,
         l.shampoo, l.soap, l.shower_gel, l.shower_cap, l.dental_kit,
@@ -123,6 +124,7 @@ app.get('/ra', async (req, res) => {
       WHERE t.tanggal = $1 AND t.petugas = $2
       ORDER BY t.kamar
     `, [hariIni, req.session.user.nama]);
+
     res.render('ra', {
       user: req.session.user,
       tanggal: hariIni,
@@ -130,12 +132,12 @@ app.get('/ra', async (req, res) => {
       pesan: res.locals.pesan
     });
   } catch (err) {
-    console.error("RA page error:", err);
+    console.error("RA Load Error:", err);
     res.redirect('/?pesan=gagal');
   }
 });
 
-// Mulai pengerjaan
+// Proses Mulai Kamar
 app.post('/mulai-kamar', async (req, res) => {
   try {
     const { tanggal, kamar } = req.body;
@@ -147,12 +149,12 @@ app.post('/mulai-kamar', async (req, res) => {
     `, [tanggal, kamar, waktuMulai, req.session.user.nama]);
     res.redirect('/ra?pesan=berhasil');
   } catch (err) {
-    console.error("Mulai kamar error:", err);
+    console.error("Mulai Error:", err);
     res.redirect('/ra?pesan=gagal');
   }
 });
 
-// Selesai pengerjaan
+// Proses Selesai Kamar
 app.post('/selesai-kamar', async (req, res) => {
   try {
     const {
@@ -195,12 +197,12 @@ app.post('/selesai-kamar', async (req, res) => {
     await pool.query("UPDATE tugas SET selesai = true WHERE tanggal = $1 AND kamar = $2", [tanggal, kamar]);
     res.redirect('/ra?pesan=berhasil');
   } catch (err) {
-    console.error("Selesai kamar error:", err);
+    console.error("Selesai Error:", err);
     res.redirect('/ra?pesan=gagal');
   }
 });
 
-// ===================== HALAMAN ORDER TAKER =====================
+// Halaman Order Taker
 app.get('/ot', async (req, res) => {
   if (!req.session.user || req.session.user.peran !== 'OT') return res.redirect('/');
   try {
@@ -236,7 +238,7 @@ app.post('/selesai-permintaan', async (req, res) => {
   }
 });
 
-// ===================== LOGOUT =====================
+// Logout
 app.get('/logout', (req, res) => {
   req.session.destroy(() => res.redirect('/'));
 });
