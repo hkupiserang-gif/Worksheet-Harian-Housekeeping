@@ -3,429 +3,71 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel Room Attendant - Horison Hotel</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            hotel: {
-              dark: '#0F2B48',
-              primary: '#2D5B7C',
-              light: '#E8F0F5',
-              in: '#FBBF24',
-              out: '#22C55E',
-              danger: '#E74C3C',
-              success: '#27AE60'
-            }
-          }
-        }
-      }
-    }
-  </script>
+  <title>Panel Petugas Kamar</title>
   <style>
-    .btn-time {
-      @apply px-3 py-1.5 rounded text-sm font-medium transition-all w-14 text-center border-none;
-    }
-    .btn-in { @apply bg-hotel-in hover:bg-amber-400 text-gray-900 cursor-pointer; }
-    .btn-out { @apply bg-hotel-out hover:bg-green-500 text-white cursor-pointer; }
-    .btn-disabled { @apply bg-gray-300 text-gray-500 cursor-not-allowed; }
-    .select-angka { @apply w-14 border border-gray-300 rounded p-1 text-center text-sm; }
-    .section-title { @apply text-base font-bold text-gray-800 mb-3 mt-5; }
-    .input-waktu { @apply w-24 border border-gray-300 rounded p-2 text-sm bg-gray-50; }
+    * {margin:0; padding:0; box-sizing:border-box; font-family:Arial, sans-serif;}
+    body {background:#f8fafc;}
+    header {background:#004b8d; color:white; padding:12px 24px; display:flex; justify-content:space-between; align-items:center;}
+    .container {max-width:1000px; margin:24px auto; padding:0 16px;}
+    .pesan {padding:10px; border-radius:4px; margin-bottom:16px; font-size:14px;}
+    .pesan.error {background:#ffe9e9; color:#b02020; border:1px solid #f8cccc;}
+    .pesan.sukses {background:#e6f9ed; color:#157c38; border:1px solid #c8f0d6;}
+    .card {background:white; border-radius:6px; padding:16px; box-shadow:0 1px 3px #0002; margin-bottom:20px;}
+    h3 {margin-bottom:12px; color:#222;}
+    .form-group {margin-bottom:12px;}
+    label {display:block; font-size:14px; margin-bottom:4px; color:#444;}
+    input, textarea {width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; font-size:14px;}
+    textarea {resize:vertical; min-height:60px;}
+    button {padding:9px 14px; background:#004b8d; color:white; border:none; border-radius:4px; cursor:pointer; font-size:14px;}
+    button:hover {background:#003a6e;}
+    a {color:white; text-decoration:none;}
   </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
-  <div class="container mx-auto px-3 py-4 max-w-7xl">
-    <!-- Header -->
-    <div class="bg-white rounded-lg shadow-md mb-5 overflow-hidden">
-      <div class="bg-hotel-dark text-white p-4 flex justify-between items-center">
-        <div class="flex items-center gap-3">
-          <img src="https://i.imgur.com/xQDZfY0.png" alt="Horison Hotel" class="h-12">
-          <div>
-            <h1 class="text-lg font-bold">Panel Room Attendant</h1>
-            <p class="text-sm">Halo, <%= user.nama %></p>
-          </div>
-        </div>
-        <a href="/logout" class="bg-hotel-danger text-white px-3 py-1.5 rounded text-sm flex items-center gap-1">
-          <i class="fa fa-sign-out"></i> Keluar
-        </a>
-      </div>
+<body>
+  <header>
+    <h2>Panel Petugas Kamar</h2>
+    <div>
+      Halo, <%= user.nama %> | <a href="/logout">Keluar</a>
     </div>
+  </header>
 
-    <!-- Notifikasi -->
+  <div class="container">
     <% if (pesan) { %>
-    <div class="mb-4 p-3 rounded text-sm <%= pesan.tipe === 'sukses' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200' %>">
-      <%= pesan.teks %>
-    </div>
+      <div class="pesan <%= pesan.tipe %>"><%= pesan.teks %></div>
     <% } %>
 
     <% if (tugas.length === 0) { %>
-    <div class="bg-white rounded-lg shadow p-8 text-center text-gray-500">
-      <i class="fa fa-check-circle fa-3x mb-3"></i>
-      <p>Tidak ada tugas kebersihan untuk hari ini</p>
-    </div>
-    <% } else { %>
-
-    <form method="POST" action="/simpan-laporan" class="space-y-6">
-      <% tugas.forEach(item => { %>
-      <div class="bg-white rounded-lg shadow p-5 border-l-4 border-hotel-primary" id="kamar_<%= item.kamar %>">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-lg font-semibold text-hotel-dark">Kamar <%= item.kamar %></h3>
-          <span class="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600">Status: <%= item.status_awal %></span>
-        </div>
-
-        <!-- ✅ Input tersembunyi WAJIB -->
-        <input type="hidden" name="tanggal" value="<%= new Date().toISOString().split('T')[0] %>">
-        <input type="hidden" name="kamar" value="<%= item.kamar %>">
-        <input type="hidden" name="shift" value="Morning">
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Shift</label>
-            <input type="text" value="Morning" readonly class="w-full border border-gray-300 rounded p-2 text-sm bg-gray-100">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Waktu Masuk</label>
-            <div class="flex items-center gap-2">
-              <input type="text" name="waktu_masuk" id="masuk_<%= item.kamar %>" readonly placeholder="--:--" class="input-waktu" value="<%= item.waktu_masuk || '' %>">
-              <button type="button" onclick="catatMasuk('<%= item.kamar %>')" id="btn_in_<%= item.kamar %>" class="btn-time <%= item.waktu_masuk ? 'btn-disabled' : 'btn-in' %>" <%= item.waktu_masuk ? 'disabled' : '' %>>IN</button>
-            </div>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Waktu Keluar</label>
-            <div class="flex items-center gap-2">
-              <input type="text" name="waktu_keluar" id="keluar_<%= item.kamar %>" readonly placeholder="--:--" class="input-waktu" value="<%= item.waktu_keluar || '' %>">
-              <button type="button" onclick="catatKeluar('<%= item.kamar %>')" id="btn_out_<%= item.kamar %>" class="btn-time <%= item.waktu_masuk && !item.waktu_keluar ? 'btn-out' : 'btn-disabled' %>" <%= !item.waktu_masuk || item.waktu_keluar ? 'disabled' : '' %>>OUT</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Linen -->
-        <h4 class="section-title">Linen Digunakan</h4>
-        <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-3">
-          <% const linen = item.linen ? JSON.parse(item.linen) : {}; %>
-          <div class="text-center">
-            <label class="block text-xs text-gray-600 mb-1">Sheet Double</label>
-            <select name="sheet_double" class="select-angka">
-              <option value="0" <%= linen.sheet_double === 0 ? 'selected' : '' %>>0</option>
-              <option value="1" <%= linen.sheet_double === 1 ? 'selected' : '' %>>1</option>
-              <option value="2" <%= linen.sheet_double === 2 ? 'selected' : '' %>>2</option>
-              <option value="3" <%= linen.sheet_double === 3 ? 'selected' : '' %>>3</option>
-              <option value="4" <%= linen.sheet_double === 4 ? 'selected' : '' %>>4</option>
-            </select>
-          </div>
-          <div class="text-center">
-            <label class="block text-xs text-gray-600 mb-1">Sheet Single</label>
-            <select name="sheet_single" class="select-angka">
-              <option value="0" <%= linen.sheet_single === 0 ? 'selected' : '' %>>0</option>
-              <option value="1" <%= linen.sheet_single === 1 ? 'selected' : '' %>>1</option>
-              <option value="2" <%= linen.sheet_single === 2 ? 'selected' : '' %>>2</option>
-              <option value="3" <%= linen.sheet_single === 3 ? 'selected' : '' %>>3</option>
-              <option value="4" <%= linen.sheet_single === 4 ? 'selected' : '' %>>4</option>
-            </select>
-          </div>
-          <div class="text-center">
-            <label class="block text-xs text-gray-600 mb-1">Duvet Double</label>
-            <select name="duvet_double" class="select-angka">
-              <option value="0" <%= linen.duvet_double === 0 ? 'selected' : '' %>>0</option>
-              <option value="1" <%= linen.duvet_double === 1 ? 'selected' : '' %>>1</option>
-              <option value="2" <%= linen.duvet_double === 2 ? 'selected' : '' %>>2</option>
-              <option value="3" <%= linen.duvet_double === 3 ? 'selected' : '' %>>3</option>
-              <option value="4" <%= linen.duvet_double === 4 ? 'selected' : '' %>>4</option>
-            </select>
-          </div>
-          <div class="text-center">
-            <label class="block text-xs text-gray-600 mb-1">Duvet Single</label>
-            <select name="duvet_single" class="select-angka">
-              <option value="0" <%= linen.duvet_single === 0 ? 'selected' : '' %>>0</option>
-              <option value="1" <%= linen.duvet_single === 1 ? 'selected' : '' %>>1</option>
-              <option value="2" <%= linen.duvet_single === 2 ? 'selected' : '' %>>2</option>
-              <option value="3" <%= linen.duvet_single === 3 ? 'selected' : '' %>>3</option>
-              <option value="4" <%= linen.duvet_single === 4 ? 'selected' : '' %>>4</option>
-            </select>
-          </div>
-          <div class="text-center">
-            <label class="block text-xs text-gray-600 mb-1">Bath Towel</label>
-            <select name="bath_towel" class="select-angka">
-              <option value="0" <%= linen.bath_towel === 0 ? 'selected' : '' %>>0</option>
-              <option value="1" <%= linen.bath_towel === 1 ? 'selected' : '' %>>1</option>
-              <option value="2" <%= linen.bath_towel === 2 ? 'selected' : '' %>>2</option>
-              <option value="3" <%= linen.bath_towel === 3 ? 'selected' : '' %>>3</option>
-              <option value="4" <%= linen.bath_towel === 4 ? 'selected' : '' %>>4</option>
-            </select>
-          </div>
-          <div class="text-center">
-            <label class="block text-xs text-gray-600 mb-1">Hand Towel</label>
-            <select name="hand_towel" class="select-angka">
-              <option value="0" <%= linen.hand_towel === 0 ? 'selected' : '' %>>0</option>
-              <option value="1" <%= linen.hand_towel === 1 ? 'selected' : '' %>>1</option>
-              <option value="2" <%= linen.hand_towel === 2 ? 'selected' : '' %>>2</option>
-              <option value="3" <%= linen.hand_towel === 3 ? 'selected' : '' %>>3</option>
-              <option value="4" <%= linen.hand_towel === 4 ? 'selected' : '' %>>4</option>
-            </select>
-          </div>
-          <div class="text-center">
-            <label class="block text-xs text-gray-600 mb-1">Bath Mat</label>
-            <select name="bath_mat" class="select-angka">
-              <option value="0" <%= linen.bath_mat === 0 ? 'selected' : '' %>>0</option>
-              <option value="1" <%= linen.bath_mat === 1 ? 'selected' : '' %>>1</option>
-              <option value="2" <%= linen.bath_mat === 2 ? 'selected' : '' %>>2</option>
-              <option value="3" <%= linen.bath_mat === 3 ? 'selected' : '' %>>3</option>
-              <option value="4" <%= linen.bath_mat === 4 ? 'selected' : '' %>>4</option>
-            </select>
-          </div>
-          <div class="text-center">
-            <label class="block text-xs text-gray-600 mb-1">Pillow Case</label>
-            <select name="pillow_case" class="select-angka">
-              <option value="0" <%= linen.pillow_case === 0 ? 'selected' : '' %>>0</option>
-              <option value="1" <%= linen.pillow_case === 1 ? 'selected' : '' %>>1</option>
-              <option value="2" <%= linen.pillow_case === 2 ? 'selected' : '' %>>2</option>
-              <option value="3" <%= linen.pillow_case === 3 ? 'selected' : '' %>>3</option>
-              <option value="4" <%= linen.pillow_case === 4 ? 'selected' : '' %>>4</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Amenities -->
-        <h4 class="section-title">Guest Supplies & Amenities</h4>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 lg:grid-cols-9 gap-3">
-          <% const amen = item.amenities ? JSON.parse(item.amenities) : {}; %>
-          <div class="text-center">
-            <label class="block text-xs text-gray-600 mb-1">Tissue</label>
-            <select name="tissue" class="select-angka">
-              <option value="0" <%= amen.tissue === 0 ? 'selected' : '' %>>0</option>
-              <option value="1" <%= amen.tissue === 1 ? 'selected' : '' %>>1</option>
-              <option value="2" <%= amen.tissue === 2 ? 'selected' : '' %>>2</option>
-              <option value="3" <%= amen.tissue === 3 ? 'selected' : '' %>>3</option>
-              <option value="4" <%= amen.tissue === 4 ? 'selected' : '' %>>4</option>
-            </select>
-          </div>
-          <div class="text-center">
-            <label class="block text-xs text-gray-600 mb-1">Hand Soap</label>
-            <select name="hand_soap" class="select-angka">
-              <option value="0" <%= amen.hand_soap === 0 ? 'selected' : '' %>>0</option>
-              <option value="1" <%= amen.hand_soap === 1 ? 'selected' : '' %>>1</option>
-              <option value="2" <%= amen.hand_soap === 2 ? 'selected' : '' %>>2</option>
-              <option value="3" <%= amen.hand_soap === 3 ? 'selected' : '' %>>3</option>
-              <option value="4" <%= amen.hand_soap === 4 ? 'selected' : '' %>>4</option>
-            </select>
-          </div>
-          <div class="text-center">
-            <label class="block text-xs text-gray-600 mb-1">Shampoo</label>
-            <select name="shampoo" class="select-angka">
-              <option value="0" <%= amen.shampoo === 0 ? 'selected' : '' %>>0</option>
-              <option value="1" <%= amen.shampoo === 1 ? 'selected' : '' %>>1</option>
-              <option value="2" <%= amen.shampoo === 2 ? 'selected' : '' %>>2</option>
-              <option value="3" <%= amen.shampoo === 3 ? 'selected' : '' %>>3</option>
-              <option value="4" <%= amen.shampoo === 4 ? 'selected' : '' %>>4</option>
-            </select>
-          </div>
-          <div class="text-center">
-            <label class="block text-xs text-gray-600 mb-1">Shower Gel</label>
-            <select name="shower_gel" class="select-angka">
-              <option value="0" <%= amen.shower_gel === 0 ? 'selected' : '' %>>0</option>
-              <option value="1" <%= amen.shower_gel === 1 ? 'selected' : '' %>>1</option>
-              <option value="2" <%= amen.shower_gel === 2 ? 'selected' : '' %>>2</option>
-              <option value="3" <%= amen.shower_gel === 3 ? 'selected' : '' %>>3</option>
-              <option value="4" <%= amen.shower_gel === 4 ? 'selected' : '' %>>4</option>
-            </select>
-          </div>
-          <div class="text-center">
-            <label class="block text-xs text-gray-600 mb-1">Tooth Brush</label>
-            <select name="tooth_brush" class="select-angka">
-              <option value="0" <%= amen.tooth_brush === 0 ? 'selected' : '' %>>0</option>
-              <option value="1" <%= amen.tooth_brush === 1 ? 'selected' : '' %>>1</option>
-              <option value="2" <%= amen.tooth_brush === 2 ? 'selected' : '' %>>2</option>
-              <option value="3" <%= amen.tooth_brush === 3 ? 'selected' : '' %>>3</option>
-              <option value="4" <%= amen.tooth_brush === 4 ? 'selected' : '' %>>4</option>
-            </select>
-          </div>
-          <div class="text-center">
-            <label class="block text-xs text-gray-600 mb-1">Sterilizer</label>
-            <select name="sterilizer" class="select-angka">
-              <option value="0" <%= amen.sterilizer === 0 ? 'selected' : '' %>>0</option>
-              <option value="1" <%= amen.sterilizer === 1 ? 'selected' : '' %>>1</option>
-              <option value="2" <%= amen.sterilizer === 2 ? 'selected' : '' %>>2</option>
-              <option value="3" <%= amen.sterilizer === 3 ? 'selected' : '' %>>3</option>
-              <option value="4" <%= amen.sterilizer === 4 ? 'selected' : '' %>>4</option>
-            </select>
-          </div>
-          <div class="text-center">
-            <label class="block text-xs text-gray-600 mb-1">Shower Cap</label>
-            <select name="shower_cap" class="select-angka">
-              <option value="0" <%= amen.shower_cap === 0 ? 'selected' : '' %>>0</option>
-              <option value="1" <%= amen.shower_cap === 1 ? 'selected' : '' %>>1</option>
-              <option value="2" <%= amen.shower_cap === 2 ? 'selected' : '' %>>2</option>
-              <option value="3" <%= amen.shower_cap === 3 ? 'selected' : '' %>>3</option>
-              <option value="4" <%= amen.shower_cap === 4 ? 'selected' : '' %>>4</option>
-            </select>
-          </div>
-          <div class="text-center">
-            <label class="block text-xs text-gray-600 mb-1">Slipper</label>
-            <select name="slipper" class="select-angka">
-              <option value="0" <%= amen.slipper === 0 ? 'selected' : '' %>>0</option>
-              <option value="1" <%= amen.slipper === 1 ? 'selected' : '' %>>1</option>
-              <option value="2" <%= amen.slipper === 2 ? 'selected' : '' %>>2</option>
-              <option value="3" <%= amen.slipper === 3 ? 'selected' : '' %>>3</option>
-              <option value="4" <%= amen.slipper === 4 ? 'selected' : '' %>>4</option>
-            </select>
-          </div>
-          <div class="text-center">
-            <label class="block text-xs text-gray-600 mb-1">Laundry Bag</label>
-            <select name="laundry_bag" class="select-angka">
-              <option value="0" <%= amen.laundry_bag === 0 ? 'selected' : '' %>>0</option>
-              <option value="1" <%= amen.laundry_bag === 1 ? 'selected' : '' %>>1</option>
-              <option value="2" <%= amen.laundry_bag === 2 ? 'selected' : '' %>>2</option>
-              <option value="3" <%= amen.laundry_bag === 3 ? 'selected' : '' %>>3</option>
-              <option value="4" <%= amen.laundry_bag === 4 ? 'selected' : '' %>>4</option>
-            </select>
-          </div>
-          <div class="text-center">
-            <label class="block text-xs text-gray-600 mb-1">Laundry List</label>
-            <select name="laundry_list" class="select-angka">
-              <option value="0" <%= amen.laundry_list === 0 ? 'selected' : '' %>>0</option>
-              <option value="1" <%= amen.laundry_list === 1 ? 'selected' : '' %>>1</option>
-              <option value="2" <%= amen.laundry_list === 2 ? 'selected' : '' %>>2</option>
-              <option value="3" <%= amen.laundry_list === 3 ? 'selected' : '' %>>3</option>
-              <option value="4" <%= amen.laundry_list === 4 ? 'selected' : '' %>>4</option>
-            </select>
-          </div>
-          <div class="text-center">
-            <label class="block text-xs text-gray-600 mb-1">Memo Pad</label>
-            <select name="memo_pad" class="select-angka">
-              <option value="0" <%= amen.memo_pad === 0 ? 'selected' : '' %>>0</option>
-              <option value="1" <%= amen.memo_pad === 1 ? 'selected' : '' %>>1</option>
-              <option value="2" <%= amen.memo_pad === 2 ? 'selected' : '' %>>2</option>
-              <option value="3" <%= amen.memo_pad === 3 ? 'selected' : '' %>>3</option>
-              <option value="4" <%= amen.memo_pad === 4 ? 'selected' : '' %>>4</option>
-            </select>
-          </div>
-          <div class="text-center">
-            <label class="block text-xs text-gray-600 mb-1">Pencil</label>
-            <select name="pencil" class="select-angka">
-              <option value="0" <%= amen.pencil === 0 ? 'selected' : '' %>>0</option>
-              <option value="1" <%= amen.pencil === 1 ? 'selected' : '' %>>1</option>
-              <option value="2" <%= amen.pencil === 2 ? 'selected' : '' %>>2</option>
-              <option value="3" <%= amen.pencil === 3 ? 'selected' : '' %>>3</option>
-              <option value="4" <%= amen.pencil === 4 ? 'selected' : '' %>>4</option>
-            </select>
-          </div>
-          <div class="text-center">
-            <label class="block text-xs text-gray-600 mb-1">Plastic Bin</label>
-            <select name="plastic_bin" class="select-angka">
-              <option value="0" <%= amen.plastic_bin === 0 ? 'selected' : '' %>>0</option>
-              <option value="1" <%= amen.plastic_bin === 1 ? 'selected' : '' %>>1</option>
-              <option value="2" <%= amen.plastic_bin === 2 ? 'selected' : '' %>>2</option>
-              <option value="3" <%= amen.plastic_bin === 3 ? 'selected' : '' %>>3</option>
-              <option value="4" <%= amen.plastic_bin === 4 ? 'selected' : '' %>>4</option>
-            </select>
-          </div>
-          <div class="text-center">
-            <label class="block text-xs text-gray-600 mb-1">Tissue Box</label>
-            <select name="tissue_box" class="select-angka">
-              <option value="0" <%= amen.tissue_box === 0 ? 'selected' : '' %>>0</option>
-              <option value="1" <%= amen.tissue_box === 1 ? 'selected' : '' %>>1</option>
-              <option value="2" <%= amen.tissue_box === 2 ? 'selected' : '' %>>2</option>
-              <option value="3" <%= amen.tissue_box === 3 ? 'selected' : '' %>>3</option>
-              <option value="4" <%= amen.tissue_box === 4 ? 'selected' : '' %>>4</option>
-            </select>
-          </div>
-          <div class="text-center">
-            <label class="block text-xs text-gray-600 mb-1">Coffee</label>
-            <select name="coffee" class="select-angka">
-              <option value="0" <%= amen.coffee === 0 ? 'selected' : '' %>>0</option>
-              <option value="1" <%= amen.coffee === 1 ? 'selected' : '' %>>1</option>
-              <option value="2" <%= amen.coffee === 2 ? 'selected' : '' %>>2</option>
-              <option value="3" <%= amen.coffee === 3 ? 'selected' : '' %>>3</option>
-              <option value="4" <%= amen.coffee === 4 ? 'selected' : '' %>>4</option>
-            </select>
-          </div>
-          <div class="text-center">
-            <label class="block text-xs text-gray-600 mb-1">Sugar</label>
-            <select name="sugar" class="select-angka">
-              <option value="0" <%= amen.sugar === 0 ? 'selected' : '' %>>0</option>
-              <option value="1" <%= amen.sugar === 1 ? 'selected' : '' %>>1</option>
-              <option value="2" <%= amen.sugar === 2 ? 'selected' : '' %>>2</option>
-              <option value="3" <%= amen.sugar === 3 ? 'selected' : '' %>>3</option>
-              <option value="4" <%= amen.sugar === 4 ? 'selected' : '' %>>4</option>
-            </select>
-          </div>
-          <div class="text-center">
-            <label class="block text-xs text-gray-600 mb-1">Tea</label>
-            <select name="tea" class="select-angka">
-              <option value="0" <%= amen.tea === 0 ? 'selected' : '' %>>0</option>
-              <option value="1" <%= amen.tea === 1 ? 'selected' : '' %>>1</option>
-              <option value="2" <%= amen.tea === 2 ? 'selected' : '' %>>2</option>
-              <option value="3" <%= amen.tea === 3 ? 'selected' : '' %>>3</option>
-              <option value="4" <%= amen.tea === 4 ? 'selected' : '' %>>4</option>
-            </select>
-          </div>
-          <div class="text-center">
-            <label class="block text-xs text-gray-600 mb-1">Creamer</label>
-            <select name="creamer" class="select-angka">
-              <option value="0" <%= amen.creamer === 0 ? 'selected' : '' %>>0</option>
-              <option value="1" <%= amen.creamer === 1 ? 'selected' : '' %>>1</option>
-              <option value="2" <%= amen.creamer === 2 ? 'selected' : '' %>>2</option>
-              <option value="3" <%= amen.creamer === 3 ? 'selected' : '' %>>3</option>
-              <option value="4" <%= amen.creamer === 4 ? 'selected' : '' %>>4</option>
-            </select>
-          </div>
-          <div class="text-center">
-            <label class="block text-xs text-gray-600 mb-1">Mineral Water</label>
-            <select name="mineral_water" class="select-angka">
-              <option value="0" <%= amen.mineral_water === 0 ? 'selected' : '' %>>0</option>
-              <option value="1" <%= amen.mineral_water === 1 ? 'selected' : '' %>>1</option>
-              <option value="2" <%= amen.mineral_water === 2 ? 'selected' : '' %>>2</option>
-              <option value="3" <%= amen.mineral_water === 3 ? 'selected' : '' %>>3</option>
-              <option value="4" <%= amen.mineral_water === 4 ? 'selected' : '' %>>4</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Keterangan & Tombol -->
-        <div class="mt-5 flex flex-col md:flex-row gap-4 items-end">
-          <div class="flex-1">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Keterangan Tambahan</label>
-            <textarea name="keterangan" rows="2" class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-hotel-primary" placeholder="Tambahkan catatan jika diperlukan..."><%= item.keterangan || '' %></textarea>
-          </div>
-          <button type="submit" class="w-full md:w-auto bg-hotel-primary hover:bg-hotel-dark text-white font-medium px-6 py-2 rounded">
-            Simpan Laporan
-          </button>
-        </div>
+      <div class="card">
+        <p style="text-align:center; color:#777; padding:20px;">Belum ada tugas yang diberikan untuk hari ini</p>
       </div>
+    <% } else { %>
+      <% tugas.forEach(t => { %>
+        <div class="card">
+          <h3>Kamar <%= t.kamar %> • Status: <%= t.status_awal %></h3>
+          <form action="/simpan-laporan" method="POST">
+            <input type="hidden" name="tanggal" value="<%= t.tanggal %>">
+            <input type="hidden" name="kamar" value="<%= t.kamar %>">
+
+            <div class="form-group">
+              <label>Waktu Mulai Bekerja:</label>
+              <input type="time" name="waktu_masuk" value="<%= t.waktu_masuk || '' %>">
+            </div>
+
+            <div class="form-group">
+              <label>Waktu Selesai Bekerja:</label>
+              <input type="time" name="waktu_keluar" value="<%= t.waktu_keluar || '' %>">
+            </div>
+
+            <div class="form-group">
+              <label>Keterangan / Catatan:</label>
+              <textarea name="keterangan" placeholder="Contoh: ganti sprei, isi ulang perlengkapan..."><%= t.keterangan || '' %></textarea>
+            </div>
+
+            <button type="submit">Simpan Laporan</button>
+          </form>
+        </div>
       <% }) %>
-    </form>
     <% } %>
   </div>
-
-  <!-- ✅ Fungsi tombol IN/OUT -->
-  <script>
-    function catatMasuk(kamar) {
-      const sekarang = new Date();
-      const jam = sekarang.toTimeString().slice(0, 5);
-      document.getElementById(`masuk_${kamar}`).value = jam;
-
-      const btnIn = document.getElementById(`btn_in_${kamar}`);
-      btnIn.className = "btn-time btn-disabled";
-      btnIn.disabled = true;
-
-      const btnOut = document.getElementById(`btn_out_${kamar}`);
-      btnOut.className = "btn-time btn-out";
-      btnOut.disabled = false;
-    }
-
-    function catatKeluar(kamar) {
-      const sekarang = new Date();
-      const jam = sekarang.toTimeString().slice(0, 5);
-      document.getElementById(`keluar_${kamar}`).value = jam;
-
-      const btnOut = document.getElementById(`btn_out_${kamar}`);
-      btnOut.className = "btn-time btn-disabled";
-      btnOut.disabled = true;
-    }
-  </script>
 </body>
 </html>
