@@ -13,18 +13,33 @@
     tailwind.config = {
       theme: {
         extend: {
-          colors: { hotel: { dark: '#0F2B48', primary: '#2D5B7C', light: '#E8F0F5', accent: '#F2994A', success: '#27AE60', danger: '#E74C3C', neutral: '#F8FAFC' } }
+          colors: {
+            hotel: {
+              dark: '#0F2B48',
+              primary: '#2D5B7C',
+              light: '#E8F0F5',
+              accent: '#F2994A',
+              success: '#27AE60',
+              danger: '#E74C3C',
+              neutral: '#F8FAFC',
+              in: '#FBBF24', // Kuning
+              out: '#22C55E'  // Hijau
+            }
+          }
         }
       }
     }
   </script>
   <style>
-    .btn-time { @apply px-3 py-1.5 rounded text-sm font-medium transition-all w-14 text-center border-none; }
-    .btn-in { @apply bg-green-500 hover:bg-green-600 text-white cursor-pointer; }
-    .btn-out { @apply bg-blue-500 hover:bg-blue-600 text-white cursor-pointer; }
+    .btn-time {
+      @apply px-3 py-1.5 rounded text-sm font-medium transition-all w-14 text-center border-none;
+    }
+    .btn-in { @apply bg-hotel-in hover:bg-amber-400 text-gray-900 cursor-pointer; }
+    .btn-out { @apply bg-hotel-out hover:bg-green-500 text-white cursor-pointer; }
     .btn-disabled { @apply bg-gray-300 text-gray-500 cursor-not-allowed; }
     .select-angka { @apply w-14 border border-gray-300 rounded p-1 text-center text-sm; }
     .section-title { @apply text-base font-bold text-gray-800 mb-3 mt-5; }
+    .input-waktu { @apply w-24 border border-gray-300 rounded p-2 text-sm bg-gray-50; }
   </style>
 </head>
 <body class="bg-hotel-neutral min-h-screen">
@@ -81,14 +96,14 @@
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Waktu Masuk</label>
             <div class="flex items-center gap-2">
-              <input type="text" name="waktu_masuk" id="masuk_<%= item.kamar %>" readonly placeholder="Belum dicatat" class="flex-1 border border-gray-300 rounded p-2 text-sm bg-gray-50" value="<%= item.waktu_masuk || '' %>">
+              <input type="text" name="waktu_masuk" id="masuk_<%= item.kamar %>" readonly placeholder="--:--" class="input-waktu" value="<%= item.waktu_masuk || '' %>">
               <button type="button" onclick="catatMasuk('<%= item.kamar %>')" id="btn_in_<%= item.kamar %>" class="btn-time <%= item.waktu_masuk ? 'btn-disabled' : 'btn-in' %>" <%= item.waktu_masuk ? 'disabled' : '' %>>IN</button>
             </div>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Waktu Keluar</label>
             <div class="flex items-center gap-2">
-              <input type="text" name="waktu_keluar" id="keluar_<%= item.kamar %>" readonly placeholder="Belum dicatat" class="flex-1 border border-gray-300 rounded p-2 text-sm bg-gray-50" value="<%= item.waktu_keluar || '' %>">
+              <input type="text" name="waktu_keluar" id="keluar_<%= item.kamar %>" readonly placeholder="--:--" class="input-waktu" value="<%= item.waktu_keluar || '' %>">
               <button type="button" onclick="catatKeluar('<%= item.kamar %>')" id="btn_out_<%= item.kamar %>" class="btn-time <%= item.waktu_masuk && !item.waktu_keluar ? 'btn-out' : 'btn-disabled' %>" <%= !item.waktu_masuk || item.waktu_keluar ? 'disabled' : '' %>>OUT</button>
             </div>
           </div>
