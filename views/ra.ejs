@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel Room Attendant</title>
+  <title>Panel Room Attendant - Horison Hotel</title>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#0F2B48">
   <link rel="icon" href="https://i.imgur.com/xQDZfY0.png">
@@ -22,23 +22,20 @@
     .btn-time {
       @apply px-4 py-1.5 rounded text-sm font-medium transition-all w-16 text-center cursor-pointer;
     }
-    .btn-in {
-      @apply bg-green-500 hover:bg-green-600 text-white;
-    }
-    .btn-out {
-      @apply bg-blue-500 hover:bg-blue-600 text-white;
-    }
-    .btn-disabled {
-      @apply bg-gray-300 text-gray-500 cursor-not-allowed;
-    }
+    .btn-in { @apply bg-green-500 hover:bg-green-600 text-white; }
+    .btn-out { @apply bg-blue-500 hover:bg-blue-600 text-white; }
+    .btn-disabled { @apply bg-gray-300 text-gray-500 cursor-not-allowed; }
+    .input-angka { @apply w-16 border border-gray-300 rounded p-1 text-center text-sm; }
+    .section-title { @apply text-sm font-semibold text-gray-700 mb-2 border-b pb-1; }
   </style>
 </head>
 <body class="bg-hotel-neutral min-h-screen">
-  <div class="container mx-auto px-3 py-4 max-w-5xl">
+  <div class="container mx-auto px-3 py-4 max-w-7xl">
+    <!-- Header -->
     <div class="bg-white rounded-lg shadow-md mb-5 overflow-hidden">
       <div class="bg-hotel-dark text-white p-4 flex justify-between items-center">
         <div class="flex items-center gap-3">
-          <img src="https://i.imgur.com/xQDZfY0.png" alt="Logo" class="h-12">
+          <img src="https://i.imgur.com/xQDZfY0.png" alt="Horison Hotel" class="h-12">
           <div>
             <h1 class="text-lg font-bold">Panel Room Attendant</h1>
             <p class="text-sm">Halo, <%= user.nama %></p>
@@ -50,6 +47,7 @@
       </div>
     </div>
 
+    <!-- Pesan Notifikasi -->
     <% if (pesan) { %>
     <div class="mb-4 p-3 rounded text-sm <%= pesan.tipe === 'sukses' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200' %>">
       <%= pesan.teks %>
@@ -63,11 +61,12 @@
     </div>
     <% } else { %>
 
-    <form method="POST" action="/simpan-laporan" class="space-y-5">
+    <form method="POST" action="/simpan-laporan" class="space-y-6">
       <% tugas.forEach(item => { %>
       <div class="bg-white rounded-lg shadow p-5 border-l-4 border-hotel-primary" id="kamar_<%= item.kamar %>">
+        <!-- Header Kamar -->
         <div class="flex justify-between items-center mb-4">
-          <h3 class="text-base font-semibold text-hotel-dark">Kamar <%= item.kamar %></h3>
+          <h3 class="text-lg font-semibold text-hotel-dark">Kamar <%= item.kamar %></h3>
           <span class="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600">Status: <%= item.status_awal %></span>
         </div>
 
@@ -75,33 +74,155 @@
         <input type="hidden" name="kamar" value="<%= item.kamar %>">
         <input type="hidden" name="shift" value="Morning">
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+        <!-- Shift & Waktu -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Shift</label>
             <input type="text" value="Morning" readonly class="w-full border border-gray-300 rounded p-2 text-sm bg-gray-100">
           </div>
-
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Waktu Masuk</label>
             <div class="flex items-center gap-2">
-              <input type="text" name="waktu_masuk" id="masuk_<%= item.kamar %>" readonly placeholder="Belum dicatat" class="flex-1 border border-gray-300 rounded p-2 text-sm bg-gray-50">
-              <button type="button" onclick="catatMasuk('<%= item.kamar %>')" id="btn_in_<%= item.kamar %>" class="btn-time btn-in">IN</button>
+              <input type="text" name="waktu_masuk" id="masuk_<%= item.kamar %>" readonly placeholder="Belum dicatat" class="flex-1 border border-gray-300 rounded p-2 text-sm bg-gray-50" value="<%= item.waktuMasuk || '' %>">
+              <button type="button" onclick="catatMasuk('<%= item.kamar %>')" id="btn_in_<%= item.kamar %>" class="btn-time <%= item.waktuMasuk ? 'btn-disabled' : 'btn-in' %>" <%= item.waktuMasuk ? 'disabled' : '' %>>IN</button>
             </div>
           </div>
-
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Waktu Keluar</label>
             <div class="flex items-center gap-2">
-              <input type="text" name="waktu_keluar" id="keluar_<%= item.kamar %>" readonly placeholder="Belum dicatat" class="flex-1 border border-gray-300 rounded p-2 text-sm bg-gray-50">
-              <button type="button" onclick="catatKeluar('<%= item.kamar %>')" id="btn_out_<%= item.kamar %>" class="btn-time btn-disabled" disabled>OUT</button>
+              <input type="text" name="waktu_keluar" id="keluar_<%= item.kamar %>" readonly placeholder="Belum dicatat" class="flex-1 border border-gray-300 rounded p-2 text-sm bg-gray-50" value="<%= item.waktuKeluar || '' %>">
+              <button type="button" onclick="catatKeluar('<%= item.kamar %>')" id="btn_out_<%= item.kamar %>" class="btn-time <%= item.waktuMasuk && !item.waktuKeluar ? 'btn-out' : 'btn-disabled' %>" <%= !item.waktuMasuk || item.waktuKeluar ? 'disabled' : '' %>>OUT</button>
             </div>
           </div>
         </div>
 
-        <div class="mt-4 flex flex-col md:flex-row gap-3 items-end">
+        <!-- Linen Section -->
+        <div class="mb-5">
+          <h4 class="section-title">Linen Digunakan</h4>
+          <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-3">
+            <div class="text-center">
+              <label class="block text-xs text-gray-600 mb-1">Sheet Double</label>
+              <input type="number" min="0" name="sheet_double" class="input-angka" value="<%= item.linen?.sheet_double || 0 %>">
+            </div>
+            <div class="text-center">
+              <label class="block text-xs text-gray-600 mb-1">Sheet Single</label>
+              <input type="number" min="0" name="sheet_single" class="input-angka" value="<%= item.linen?.sheet_single || 0 %>">
+            </div>
+            <div class="text-center">
+              <label class="block text-xs text-gray-600 mb-1">Duvet Double</label>
+              <input type="number" min="0" name="duvet_double" class="input-angka" value="<%= item.linen?.duvet_double || 0 %>">
+            </div>
+            <div class="text-center">
+              <label class="block text-xs text-gray-600 mb-1">Duvet Single</label>
+              <input type="number" min="0" name="duvet_single" class="input-angka" value="<%= item.linen?.duvet_single || 0 %>">
+            </div>
+            <div class="text-center">
+              <label class="block text-xs text-gray-600 mb-1">Bath Towel</label>
+              <input type="number" min="0" name="bath_towel" class="input-angka" value="<%= item.linen?.bath_towel || 0 %>">
+            </div>
+            <div class="text-center">
+              <label class="block text-xs text-gray-600 mb-1">Hand Towel</label>
+              <input type="number" min="0" name="hand_towel" class="input-angka" value="<%= item.linen?.hand_towel || 0 %>">
+            </div>
+            <div class="text-center">
+              <label class="block text-xs text-gray-600 mb-1">Bath Mat</label>
+              <input type="number" min="0" name="bath_mat" class="input-angka" value="<%= item.linen?.bath_mat || 0 %>">
+            </div>
+            <div class="text-center">
+              <label class="block text-xs text-gray-600 mb-1">Pillow Case</label>
+              <input type="number" min="0" name="pillow_case" class="input-angka" value="<%= item.linen?.pillow_case || 0 %>">
+            </div>
+          </div>
+        </div>
+
+        <!-- Amenities Section -->
+        <div class="mb-5">
+          <h4 class="section-title">Guest Supplies & Amenities</h4>
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 lg:grid-cols-9 gap-3">
+            <div class="text-center">
+              <label class="block text-xs text-gray-600 mb-1">Tissue</label>
+              <input type="number" min="0" name="tissue" class="input-angka" value="<%= item.amenities?.tissue || 0 %>">
+            </div>
+            <div class="text-center">
+              <label class="block text-xs text-gray-600 mb-1">Hand Soap</label>
+              <input type="number" min="0" name="hand_soap" class="input-angka" value="<%= item.amenities?.hand_soap || 0 %>">
+            </div>
+            <div class="text-center">
+              <label class="block text-xs text-gray-600 mb-1">Shampoo</label>
+              <input type="number" min="0" name="shampoo" class="input-angka" value="<%= item.amenities?.shampoo || 0 %>">
+            </div>
+            <div class="text-center">
+              <label class="block text-xs text-gray-600 mb-1">Shower Gel</label>
+              <input type="number" min="0" name="shower_gel" class="input-angka" value="<%= item.amenities?.shower_gel || 0 %>">
+            </div>
+            <div class="text-center">
+              <label class="block text-xs text-gray-600 mb-1">Tooth Brush</label>
+              <input type="number" min="0" name="tooth_brush" class="input-angka" value="<%= item.amenities?.tooth_brush || 0 %>">
+            </div>
+            <div class="text-center">
+              <label class="block text-xs text-gray-600 mb-1">Sterilizer</label>
+              <input type="number" min="0" name="sterilizer" class="input-angka" value="<%= item.amenities?.sterilizer || 0 %>">
+            </div>
+            <div class="text-center">
+              <label class="block text-xs text-gray-600 mb-1">Shower Cap</label>
+              <input type="number" min="0" name="shower_cap" class="input-angka" value="<%= item.amenities?.shower_cap || 0 %>">
+            </div>
+            <div class="text-center">
+              <label class="block text-xs text-gray-600 mb-1">Slipper</label>
+              <input type="number" min="0" name="slipper" class="input-angka" value="<%= item.amenities?.slipper || 0 %>">
+            </div>
+            <div class="text-center">
+              <label class="block text-xs text-gray-600 mb-1">Laundry Bag</label>
+              <input type="number" min="0" name="laundry_bag" class="input-angka" value="<%= item.amenities?.laundry_bag || 0 %>">
+            </div>
+            <div class="text-center">
+              <label class="block text-xs text-gray-600 mb-1">Laundry List</label>
+              <input type="number" min="0" name="laundry_list" class="input-angka" value="<%= item.amenities?.laundry_list || 0 %>">
+            </div>
+            <div class="text-center">
+              <label class="block text-xs text-gray-600 mb-1">Memo Pad</label>
+              <input type="number" min="0" name="memo_pad" class="input-angka" value="<%= item.amenities?.memo_pad || 0 %>">
+            </div>
+            <div class="text-center">
+              <label class="block text-xs text-gray-600 mb-1">Pencil</label>
+              <input type="number" min="0" name="pencil" class="input-angka" value="<%= item.amenities?.pencil || 0 %>">
+            </div>
+            <div class="text-center">
+              <label class="block text-xs text-gray-600 mb-1">Plastic Bin</label>
+              <input type="number" min="0" name="plastic_bin" class="input-angka" value="<%= item.amenities?.plastic_bin || 0 %>">
+            </div>
+            <div class="text-center">
+              <label class="block text-xs text-gray-600 mb-1">Tissue Box</label>
+              <input type="number" min="0" name="tissue_box" class="input-angka" value="<%= item.amenities?.tissue_box || 0 %>">
+            </div>
+            <div class="text-center">
+              <label class="block text-xs text-gray-600 mb-1">Coffee</label>
+              <input type="number" min="0" name="coffee" class="input-angka" value="<%= item.amenities?.coffee || 0 %>">
+            </div>
+            <div class="text-center">
+              <label class="block text-xs text-gray-600 mb-1">Sugar</label>
+              <input type="number" min="0" name="sugar" class="input-angka" value="<%= item.amenities?.sugar || 0 %>">
+            </div>
+            <div class="text-center">
+              <label class="block text-xs text-gray-600 mb-1">Tea</label>
+              <input type="number" min="0" name="tea" class="input-angka" value="<%= item.amenities?.tea || 0 %>">
+            </div>
+            <div class="text-center">
+              <label class="block text-xs text-gray-600 mb-1">Creamer</label>
+              <input type="number" min="0" name="creamer" class="input-angka" value="<%= item.amenities?.creamer || 0 %>">
+            </div>
+            <div class="text-center">
+              <label class="block text-xs text-gray-600 mb-1">Mineral Water</label>
+              <input type="number" min="0" name="mineral_water" class="input-angka" value="<%= item.amenities?.mineral_water || 0 %>">
+            </div>
+          </div>
+        </div>
+
+        <!-- Keterangan & Tombol Simpan -->
+        <div class="flex flex-col md:flex-row gap-4 items-end">
           <div class="flex-1">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Keterangan (jika ada)</label>
-            <textarea name="keterangan" rows="2" class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-hotel-primary" placeholder="Tambahkan catatan jika diperlukan..."></textarea>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Keterangan Tambahan</label>
+            <textarea name="keterangan" rows="2" class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-hotel-primary" placeholder="Tambahkan catatan jika diperlukan..."><%= item.keterangan || '' %></textarea>
           </div>
           <button type="submit" class="w-full md:w-auto bg-hotel-primary hover:bg-hotel-dark text-white font-medium px-6 py-2 rounded">
             Simpan Laporan
@@ -113,6 +234,7 @@
     <% } %>
   </div>
 
+  <!-- Script Tombol IN/OUT -->
   <script>
     function catatMasuk(kamar) {
       const sekarang = new Date();
