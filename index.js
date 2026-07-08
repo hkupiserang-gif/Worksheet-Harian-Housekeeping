@@ -115,9 +115,9 @@ app.get('/ra', async (req, res) => {
         t.*, l.waktu_masuk, l.waktu_keluar,
         l.sheet_twin, l.sheet_king, l.duvet_twin, l.duvet_king,
         l.bath_towel, l.hand_towel, l.bath_mat, l.pillow_case,
-        l.shampoo, l.soap, l.shower_gel, l.shower_cap, l.sewing_kit,
-        l.laundry_bag, l.lotion, l.mo, l.prgl, l.magic, l.shoe,
-        l.sugar, l.tea, l.orange_r, l.mineral
+        l.shampoo, l.soap, l.shower_gel, l.shower_cap, l.dental_kit,
+        l.laundry_bag, l.laundry_list, l.dnd_sign, l.magic, l.shoe,
+        l.sugar, l.tea, l.coffee, l.creamer, l.mineral
       FROM tugas t
       LEFT JOIN laporan l ON t.tanggal = l.tanggal AND t.kamar = l.nomor_kamar
       WHERE t.tanggal = $1 AND t.petugas = $2
@@ -159,9 +159,9 @@ app.post('/selesai-kamar', async (req, res) => {
       tanggal, kamar, waktu_masuk,
       sheet_twin, sheet_king, duvet_twin, duvet_king,
       bath_towel, hand_towel, bath_mat, pillow_case,
-      shampoo, soap, shower_gel, shower_cap, sewing_kit,
-      laundry_bag, lotion, mo, prgl, magic, shoe,
-      sugar, tea, orange_r, mineral
+      shampoo, soap, shower_gel, shower_cap, dental_kit,
+      laundry_bag, laundry_list, dnd_sign, magic, shoe,
+      sugar, tea, coffee, creamer, mineral
     } = req.body;
 
     const waktuSelesai = new Date().toTimeString().slice(0, 5);
@@ -171,24 +171,24 @@ app.post('/selesai-kamar', async (req, res) => {
         tanggal, nomor_kamar, waktu_masuk, waktu_keluar,
         sheet_twin, sheet_king, duvet_twin, duvet_king,
         bath_towel, hand_towel, bath_mat, pillow_case,
-        shampoo, soap, shower_gel, shower_cap, sewing_kit,
-        laundry_bag, lotion, mo, prgl, magic, shoe,
-        sugar, tea, orange_r, mineral, petugas
+        shampoo, soap, shower_gel, shower_cap, dental_kit,
+        laundry_bag, laundry_list, dnd_sign, magic, shoe,
+        sugar, tea, coffee, creamer, mineral, petugas
       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28)
       ON CONFLICT (tanggal, nomor_kamar) DO UPDATE SET
         waktu_masuk=$3, waktu_keluar=$4,
         sheet_twin=$5, sheet_king=$6, duvet_twin=$7, duvet_king=$8,
         bath_towel=$9, hand_towel=$10, bath_mat=$11, pillow_case=$12,
-        shampoo=$13, soap=$14, shower_gel=$15, shower_cap=$16, sewing_kit=$17,
-        laundry_bag=$18, lotion=$19, mo=$20, prgl=$21, magic=$22, shoe=$23,
-        sugar=$24, tea=$25, orange_r=$26, mineral=$27
+        shampoo=$13, soap=$14, shower_gel=$15, shower_cap=$16, dental_kit=$17,
+        laundry_bag=$18, laundry_list=$19, dnd_sign=$20, magic=$21, shoe=$22,
+        sugar=$23, tea=$24, coffee=$25, creamer=$26, mineral=$27
     `, [
       tanggal, kamar, waktu_masuk, waktuSelesai,
       sheet_twin || 0, sheet_king || 0, duvet_twin || 0, duvet_king || 0,
       bath_towel || 0, hand_towel || 0, bath_mat || 0, pillow_case || 0,
-      shampoo || 0, soap || 0, shower_gel || 0, shower_cap || 0, sewing_kit || 0,
-      laundry_bag || 0, lotion || 0, mo || 0, prgl || 0, magic || 0, shoe || 0,
-      sugar || 0, tea || 0, orange_r || 0, mineral || 0,
+      shampoo || 0, soap || 0, shower_gel || 0, shower_cap || 0, dental_kit || 0,
+      laundry_bag || 0, laundry_list || 0, dnd_sign || 0, magic || 0, shoe || 0,
+      sugar || 0, tea || 0, coffee || 0, creamer || 0, mineral || 0,
       req.session.user.nama
     ]);
 
