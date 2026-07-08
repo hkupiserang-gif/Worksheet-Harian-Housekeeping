@@ -187,16 +187,20 @@
             <td>
               <% if (!t.selesai) { %>
                 <% if (!t.waktu_masuk) { %>
+                  <!-- Tombol Mulai -->
                   <form action="/mulai-kamar" method="POST" onsubmit="this.querySelector('button').disabled=true;">
                     <input type="hidden" name="tanggal" value="<%= t.tanggal %>">
                     <input type="hidden" name="kamar" value="<%= t.kamar %>">
                     <button type="submit" class="btn btn-mulai">Mulai</button>
                   </form>
                 <% } else { %>
+                  <!-- Form Isi Data & Selesai -->
                   <form action="/selesai-kamar" method="POST" onsubmit="this.querySelector('button').disabled=true;">
                     <input type="hidden" name="tanggal" value="<%= t.tanggal %>">
                     <input type="hidden" name="kamar" value="<%= t.kamar %>">
                     <input type="hidden" name="waktu_masuk" value="<%= t.waktu_masuk %>">
+                    <button type="submit" class="btn btn-selesai">Selesai</button>
+                </td>
 
                     <!-- SHEET -->
                     <td><select name="sheet_twin"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.sheet_twin==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
@@ -230,13 +234,11 @@
                     <td><select name="coffee"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.coffee==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
                     <td><select name="creamer"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.creamer==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
                     <td><select name="mineral"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.mineral==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
-
-                    <td><button type="submit" class="btn btn-selesai">Selesai</button></td>
                   </form>
                 <% } %>
               <% } else { %>
-                <span style="color: #28a745; font-weight: bold;">✅ Selesai</span>
-                <!-- Tampil data jika sudah selesai -->
+                <!-- Sudah selesai -->
+                <td><span style="color: #28a745; font-weight: bold;">✅ Selesai</span></td>
                 <td><%= t.sheet_twin || 0 %></td>
                 <td><%= t.sheet_king || 0 %></td>
                 <td><%= t.duvet_twin || 0 %></td>
@@ -261,7 +263,6 @@
                 <td><%= t.creamer || 0 %></td>
                 <td><%= t.mineral || 0 %></td>
               <% } %>
-            </td>
           </tr>
           <% }) %>
         </tbody>
