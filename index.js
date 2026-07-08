@@ -2,7 +2,7 @@ const express = require('express');
 const session = require('express-session');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
-const { Parser } = require('json2csv');
+const { parse } = require('json2csv');
 
 const app = express();
 const PORT = process.env.PORT || 8888;
@@ -188,10 +188,7 @@ app.get('/spv', (req, res) => {
       db.all(query, param, (err, daftarTugas) => {
         const kamarSudahAda = daftarTugas.filter(x => x.tanggal === hariIni).map(x => x.kamar);
 
-        // Ambil data permintaan tamu untuk tanggal ini
         db.all(`SELECT * FROM permintaan_tamu WHERE tanggal = ? ORDER BY waktu_masuk DESC`, [cariTanggal], (err, daftarPermintaan) => {
-
-          // Kelompokkan kamar per lantai
           const kamarPerLantai = {};
           daftarKamar.forEach(k => {
             if (!kamarPerLantai[k.lantai]) kamarPerLantai[k.lantai] = [];
@@ -221,7 +218,7 @@ app.get('/unduh-excel', (req, res) => {
   const tanggal = req.query.tanggal || new Date().toISOString().split('T')[0];
   db.all(`
     SELECT t.tanggal, t.kamar, k.lantai, k.tipe_kamar, t.petugas, t.status_awal,
-           l.waktu_masuk, l.waktu_keluar, t.selesai
+           l.waktu_masuk, l.waktu_keluar, CASE WHEN t.selesai = 1 THEN '✅ Selesai' ELSE '❌ Belum' END AS status_selesai
     FROM tugas t
     JOIN kamar k ON t.kamar = k.nomor_kamar
     LEFT JOIN laporan l ON t.tanggal = l.tanggal AND t.kamar = l.nomor_kamar
@@ -229,12 +226,15 @@ app.get('/unduh-excel', (req, res) => {
     ORDER BY t.kamar
   `, [tanggal], (err, data) => {
     if (err) return res.send('Gagal memuat data');
-    const fields = ['tanggal', 'kamar', 'lantai', 'tipe_kamar', 'petugas', 'status_awal', 'waktu_masuk', 'waktu_keluar', 'selesai'];
-    const parser = new Parser({ fields });
-    const csv = parser.parse(data);
-    res.setHeader('Content-Disposition', `attachment; filename="laporan-${tanggal}.csv"`);
-    res.setHeader('Content-Type', 'text/csv');
-    res.send(csv);
+    try {
+      const fields = ['tanggal', 'kamar', 'lantai', 'tipe_kamar', 'petugas', 'status_awal', 'waktu_masuk', 'waktu_keluar', 'status_selesai'];
+      const csv = parse(data, { fields });
+      res.setHeader('Content-Disposition', `attachment; filename="Laporan_Kebersihan_${tanggal}.csv"`);
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.send('\uFEFF' + csv);
+    } catch (err) {
+      res.send('Gagal membuat file: ' + err.message);
+    }
   });
 });
 
@@ -250,7 +250,7 @@ app.post('/tambah-tugas', (req, res) => {
   });
 });
 
-// HALAMAN RA & OT Tetap sama seperti sebelumnya
+// HALAMAN RA
 app.get('/ra', (req, res) => {
   if (!req.session.user || req.session.user.peran !== 'RA') return res.redirect('/');
   const hariIni = new Date().toISOString().split('T')[0];
@@ -280,6 +280,7 @@ app.post('/selesai-kamar', (req, res) => {
   });
 });
 
+// HALAMAN OT
 app.get('/ot', (req, res) => {
   if (!req.session.user || req.session.user.peran !== 'OT') return res.redirect('/');
   const hariIni = new Date().toISOString().split('T')[0];
