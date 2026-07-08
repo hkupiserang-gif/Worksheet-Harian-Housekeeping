@@ -22,10 +22,10 @@
     .header a {color: white; text-decoration: none; margin-left: 8px;}
     .header a:hover {text-decoration: underline;}
 
-    /* Logo di Konten */
+    /* Logo */
     .logo-container {
       text-align: center;
-      margin: 24px 0;
+      margin: 20px 0;
     }
     .logo {
       font-size: 32px;
@@ -40,9 +40,9 @@
     }
 
     .container {
-      max-width: 900px;
+      max-width: 1100px;
       margin: 0 auto;
-      padding: 0 16px;
+      padding: 0 16px 30px;
     }
 
     .pesan {
@@ -69,18 +69,25 @@
       font-weight: 600;
     }
 
-    form {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    .form-header {
+      display: flex;
+      flex-wrap: wrap;
       gap: 12px;
-      align-items: end;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #eee;
     }
-    input, select {
-      padding: 8px 10px;
+    .form-header label {
+      font-size: 14px;
+      color: #444;
+      margin-right: 4px;
+    }
+    .form-header input, .form-header select {
+      padding: 7px 9px;
       border: 1px solid #ddd;
       border-radius: 4px;
       font-size: 14px;
-      background: white;
     }
     button {
       padding: 9px 16px;
@@ -96,6 +103,49 @@
       background-color: #003a78;
     }
 
+    /* Tampilan daftar kamar ke bawah */
+    .kamar-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+    }
+    .kamar-item {
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 12px;
+      background: #fdfdfd;
+    }
+    .kamar-header {
+      font-weight: bold;
+      font-size: 15px;
+      color: #002b5c;
+      margin-bottom: 8px;
+    }
+    .kamar-info {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 10px;
+    }
+    .status-pilihan {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .status-pilihan label {
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      padding: 4px 6px;
+      border-radius: 3px;
+      background: #f0f4f8;
+    }
+    input[type="checkbox"] {
+      cursor: pointer;
+    }
+
+    /* Tabel tugas */
     table {
       width: 100%;
       border-collapse: collapse;
@@ -111,9 +161,6 @@
       background-color: #f5f7fa;
       font-weight: 600;
       color: #444;
-    }
-    tr:hover {
-      background-color: #fafbfc;
     }
     .text-center {
       text-align: center;
@@ -147,29 +194,54 @@
     <!-- Form Buat Tugas -->
     <div class="card">
       <h3>Buat Tugas Kebersihan</h3>
-      <form action="/tambah-tugas" method="POST">
-        <input type="date" name="tanggal" value="<%= tanggal %>" required>
-        <select name="petugas" required>
-          <option value="">Pilih Petugas</option>
-          <% daftarRA.forEach(ra => { %>
-            <option value="<%= ra.nama %>"><%= ra.nama %></option>
-          <% }) %>
-        </select>
-        <select name="kamar" required>
-          <option value="">Pilih Kamar</option>
+      <form action="/tambah-tugas" method="POST" id="formTugas">
+        <div class="form-header">
+          <div>
+            <label>Tanggal:</label>
+            <input type="date" name="tanggal" value="<%= tanggal %>" required>
+          </div>
+          <div>
+            <label>Petugas:</label>
+            <select name="petugas" required>
+              <option value="">-- Pilih Petugas --</option>
+              <% daftarRA.forEach(ra => { %>
+                <option value="<%= ra.nama %>"><%= ra.nama %></option>
+              <% }) %>
+            </select>
+          </div>
+          <button type="submit">Simpan Tugas Terpilih</button>
+        </div>
+
+        <!-- Daftar Kamar ke bawah dengan pilihan status -->
+        <div class="kamar-grid">
           <% daftarKamar.forEach(k => { %>
-            <option value="<%= k.nomor_kamar %>"><%= k.nomor_kamar %> | <%= k.lantai %> | <%= k.tipe_kamar %></option>
+            <div class="kamar-item">
+              <div class="kamar-header"><%= k.nomor_kamar %></div>
+              <div class="kamar-info"><%= k.lantai %> • <%= k.tipe_kamar %></div>
+              <div class="status-pilihan">
+                <label>
+                  <input type="checkbox" name="kamar[]" value="<%= k.nomor_kamar %>">
+                  Pilih
+                </label>
+                <label>
+                  <input type="radio" name="status_<%= k.nomor_kamar %>" value="VD" checked> VD
+                </label>
+                <label>
+                  <input type="radio" name="status_<%= k.nomor_kamar %>" value="VC"> VC
+                </label>
+                <label>
+                  <input type="radio" name="status_<%= k.nomor_kamar %>" value="VCU"> VCU
+                </label>
+                <label>
+                  <input type="radio" name="status_<%= k.nomor_kamar %>" value="OC"> OC
+                </label>
+                <label>
+                  <input type="radio" name="status_<%= k.nomor_kamar %>" value="OD"> OD
+                </label>
+              </div>
+            </div>
           <% }) %>
-        </select>
-        <select name="status_awal" required>
-          <option value="">Status</option>
-          <option value="VD">VD</option>
-          <option value="VC">VC</option>
-          <option value="VCU">VCU</option>
-          <option value="OC">OC</option>
-          <option value="OD">OD</option>
-        </select>
-        <button type="submit">Simpan Tugas</button>
+        </div>
       </form>
     </div>
 
@@ -194,7 +266,7 @@
                 <td><%= t.lantai || '-' %></td>
                 <td><%= t.petugas %></td>
                 <td><%= t.status_awal %></td>
-                <td><%= t.selesai ? '✅ Ya' : '⏳ Belum' %></td>
+                <td><%= t.selesai ? '✅ Sudah' : '⏳ Belum' %></td>
               </tr>
             <% }) %>
           <% } else { %>
@@ -204,6 +276,18 @@
       </table>
     </div>
   </div>
+
+  <!-- Validasi sebelum kirim -->
+  <script>
+    document.getElementById('formTugas').addEventListener('submit', function(e) {
+      const dipilih = document.querySelectorAll('input[name="kamar[]"]:checked');
+      if (dipilih.length === 0) {
+        e.preventDefault();
+        alert('Pilih minimal satu kamar terlebih dahulu!');
+        return false;
+      }
+    });
+  </script>
 
 </body>
 </html>
