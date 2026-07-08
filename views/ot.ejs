@@ -4,28 +4,31 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Panel Order Taker</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0F2B48">
+  <link rel="icon" href="https://i.imgur.com/xQDZfY0.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
   <script>
     tailwind.config = {
       theme: {
         extend: {
-          colors: {
-            hotel: { dark: '#0F2B48', primary: '#2D5B7C', light: '#E8F0F5', accent: '#F2994A', success: '#27AE60', danger: '#E74C3C', neutral: '#F8FAFC' }
-          }
+          colors: { hotel: { dark: '#0F2B48', primary: '#2D5B7C', light: '#E8F0F5', accent: '#F2994A', success: '#27AE60', danger: '#E74C3C', neutral: '#F8FAFC' } }
         }
       }
     }
   </script>
 </head>
 <body class="bg-hotel-neutral min-h-screen">
-  <div class="container mx-auto px-3 py-4 max-w-6xl">
-    <!-- Header -->
+  <div class="container mx-auto px-3 py-4 max-w-5xl">
     <div class="bg-white rounded-lg shadow-md mb-5 overflow-hidden">
       <div class="bg-hotel-dark text-white p-4 flex justify-between items-center">
-        <div>
-          <h1 class="text-lg font-bold">Panel Order Taker</h1>
-          <p class="text-sm">Selamat datang, <%= user.nama %></p>
+        <div class="flex items-center gap-3">
+          <img src="https://i.imgur.com/xQDZfY0.png" alt="Logo" class="h-12">
+          <div>
+            <h1 class="text-lg font-bold">Panel Order Taker</h1>
+            <p class="text-sm">Halo, <%= user.nama %></p>
+          </div>
         </div>
         <a href="/logout" class="bg-red-500 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1">
           <i class="fa fa-sign-out"></i> Keluar
@@ -33,107 +36,91 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-      <!-- Form Input Request -->
-      <div class="lg:col-span-1">
-        <div class="bg-white rounded-lg shadow-md p-5 h-fit">
-          <h2 class="text-base font-semibold text-hotel-dark mb-4 flex items-center gap-2">
-            <i class="fa fa-pencil-square-o"></i> Catat Permintaan / Pinjaman Tamu
-          </h2>
+    <div class="bg-white rounded-lg shadow p-5 mb-5">
+      <h2 class="text-base font-semibold text-hotel-dark mb-4 flex items-center gap-2">
+        <i class="fa fa-clipboard"></i> Catatan Permintaan Tamu
+      </h2>
 
-          <% if (pesan) { %>
-          <div class="mb-4 p-2.5 rounded text-sm <%= pesan.tipe === 'sukses' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200' %>">
-            <%= pesan.teks %>
-          </div>
-          <% } %>
-
-          <form method="POST" action="/simpan-request" class="space-y-3">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
-              <input type="date" name="tanggal" value="<%= new Date().toISOString().split('T')[0] %>" required class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-hotel-primary">
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Jam</label>
-              <input type="time" name="jam" required class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-hotel-primary">
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Nomor Kamar</label>
-              <input type="text" name="nomor_kamar" placeholder="Contoh: 205" required class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-hotel-primary">
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Nama Barang / Permintaan</label>
-              <textarea name="barang" rows="2" placeholder="Contoh: Setrika, Kursi Tambahan, Handuk Ekstra..." required class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-hotel-primary"></textarea>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <select name="status" required class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-hotel-primary">
-                <option value="Dipinjam / Diproses">Dipinjam / Diproses</option>
-                <option value="Sudah Dikembalikan">Sudah Dikembalikan</option>
-                <option value="Selesai Diberikan">Selesai Diberikan</option>
-              </select>
-            </div>
-
-            <button type="submit" class="w-full bg-hotel-primary hover:bg-hotel-dark text-white font-medium py-2 rounded mt-2">
-              <i class="fa fa-save mr-1"></i> Simpan Catatan
-            </button>
-          </form>
-        </div>
+      <% if (pesan) { %>
+      <div class="mb-4 p-3 rounded text-sm <%= pesan.tipe === 'sukses' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200' %>">
+        <%= pesan.teks %>
       </div>
+      <% } %>
 
-      <!-- Daftar Riwayat -->
-      <div class="lg:col-span-2">
-        <div class="bg-white rounded-lg shadow-md p-5">
-          <h2 class="text-base font-semibold text-hotel-dark mb-4 flex items-center gap-2">
-            <i class="fa fa-list-alt"></i> Daftar Permintaan & Pinjaman
-          </h2>
-
-          <% if (daftarRequest && daftarRequest.length > 0) { %>
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm border-collapse">
-              <thead>
-                <tr class="bg-hotel-light">
-                  <th class="border border-gray-200 p-2 text-left">Tanggal</th>
-                  <th class="border border-gray-200 p-2 text-left">Jam</th>
-                  <th class="border border-gray-200 p-2 text-left">Kamar</th>
-                  <th class="border border-gray-200 p-2 text-left">Barang / Permintaan</th>
-                  <th class="border border-gray-200 p-2 text-left">Status</th>
-                  <th class="border border-gray-200 p-2 text-center">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% daftarRequest.forEach(req => { %>
-                <tr class="hover:bg-gray-50">
-                  <td class="border border-gray-200 p-2"><%= req.tanggal %></td>
-                  <td class="border border-gray-200 p-2"><%= req.jam %></td>
-                  <td class="border border-gray-200 p-2 font-medium"><%= req.nomor_kamar %></td>
-                  <td class="border border-gray-200 p-2"><%= req.barang %></td>
-                  <td class="border border-gray-200 p-2">
-                    <% if(req.status === 'Sudah Dikembalikan' || req.status === 'Selesai Diberikan') { %>
-                      <span class="text-green-700 bg-green-50 px-2 py-0.5 rounded text-xs"><%= req.status %></span>
-                    <% } else { %>
-                      <span class="text-orange-700 bg-orange-50 px-2 py-0.5 rounded text-xs"><%= req.status %></span>
-                    <% } %>
-                  </td>
-                  <td class="border border-gray-200 p-2 text-center">
-                    <a href="/ubah-status/<%= req.id %>" class="text-blue-600 hover:underline text-xs">Ubah Status</a>
-                  </td>
-                </tr>
-                <% }) %>
-              </tbody>
-            </table>
-          </div>
-          <% } else { %>
-          <div class="text-center py-10 text-gray-500">
-            <i class="fa fa-clipboard text-4xl mb-2 opacity-30"></i>
-            <p>Belum ada catatan permintaan atau pinjaman</p>
-          </div>
-          <% } %>
+      <form method="POST" action="/simpan-request" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
+          <input type="date" name="tanggal" value="<%= new Date().toISOString().split('T')[0] %>" required class="w-full border border-gray-300 rounded p-2 text-sm">
         </div>
-      </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Jam</label>
+          <input type="time" name="jam" required class="w-full border border-gray-300 rounded p-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nomor Kamar</label>
+          <input type="text" name="nomor_kamar" required class="w-full border border-gray-300 rounded p-2 text-sm" placeholder="Contoh: 201">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Barang / Permintaan</label>
+          <input type="text" name="barang" required class="w-full border border-gray-300 rounded p-2 text-sm" placeholder="Contoh: Handuk, Air Mineral">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <select name="status" required class="w-full border border-gray-300 rounded p-2 text-sm">
+            <option value="Belum Dikembalikan">Belum Dikembalikan</option>
+            <option value="Sudah Dikembalikan">Sudah Dikembalikan</option>
+          </select>
+        </div>
+        <div class="md:col-span-4">
+          <button type="submit" class="w-full bg-hotel-primary hover:bg-hotel-dark text-white py-2 rounded">
+            <i class="fa fa-save mr-1"></i> Simpan Catatan
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-5">
+      <h3 class="text-base font-semibold text-hotel-dark mb-3">Daftar Permintaan Terkini</h3>
+      <% if (daftarRequest.length === 0) { %>
+        <p class="text-center text-gray-500 py-6">Belum ada catatan permintaan</p>
+      <% } else { %>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="bg-hotel-light">
+                <th class="border p-2 text-left">Tanggal</th>
+                <th class="border p-2 text-left">Jam</th>
+                <th class="border p-2 text-left">Kamar</th>
+                <th class="border p-2 text-left">Permintaan</th>
+                <th class="border p-2 text-center">Status</th>
+                <th class="border p-2 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% daftarRequest.forEach(req => { %>
+              <tr class="hover:bg-gray-50">
+                <td class="border p-2"><%= req.tanggal %></td>
+                <td class="border p-2"><%= req.jam %></td>
+                <td class="border p-2 font-medium"><%= req.nomor_kamar %></td>
+                <td class="border p-2"><%= req.barang %></td>
+                <td class="border p-2 text-center">
+                  <span class="px-2 py-1 rounded text-xs <%= req.status === 'Sudah Dikembalikan' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700' %>">
+                    <%= req.status %>
+                  </span>
+                </td>
+                <td class="border p-2 text-center">
+                  <% if (req.status === 'Belum Dikembalikan') { %>
+                    <a href="/ubah-status/<%= req.id %>" class="text-blue-600 hover:underline">Tandai Selesai</a>
+                  <% } else { %>
+                    -
+                  <% } %>
+                </td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
     </div>
   </div>
 </body>
