@@ -3,36 +3,239 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel Order Taker</title>
+  <title>Panel Order Taker - Horison Hotel</title>
   <style>
-    * {margin:0; padding:0; box-sizing:border-box; font-family:Arial, sans-serif;}
-    body {background:#f8fafc;}
-    header {background:#004b8d; color:white; padding:12px 24px; display:flex; justify-content:space-between; align-items:center;}
-    .container {max-width:900px; margin:24px auto; padding:0 16px;}
-    .pesan {padding:10px; border-radius:4px; margin-bottom:16px; font-size:14px;}
+    * {margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', Arial, sans-serif;}
+    body {background-color: #f8fafc;}
+
+    /* Header Utama */
+    .header {
+      background-color: #004b97;
+      color: white;
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .header h2 {font-size: 18px; font-weight: 600;}
+    .header a {color: white; text-decoration: none; margin-left: 8px;}
+    .header a:hover {text-decoration: underline;}
+
+    /* Logo */
+    .logo-container {
+      text-align: center;
+      margin: 20px 0;
+    }
+    .logo {
+      font-size: 32px;
+      font-weight: bold;
+      color: #002b5c;
+      letter-spacing: 1px;
+    }
+    .sub-logo {
+      font-size: 14px;
+      color: #555;
+      margin-top: 4px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 16px 30px;
+    }
+
+    .pesan {
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      text-align: center;
+    }
     .pesan.error {background:#ffe9e9; color:#b02020; border:1px solid #f8cccc;}
     .pesan.sukses {background:#e6f9ed; color:#157c38; border:1px solid #c8f0d6;}
-    .card {background:white; border-radius:6px; padding:20px; box-shadow:0 1px 3px #0002; margin-bottom:20px;}
-    h3 {margin-bottom:12px; color:#222;}
-    a {color:white; text-decoration:none;}
+
+    .card {
+      background: white;
+      border-radius: 6px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-bottom: 24px;
+    }
+    .card h3 {
+      font-size: 16px;
+      color: #222;
+      margin-bottom: 16px;
+      font-weight: 600;
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      align-items: end;
+    }
+    input, select, textarea {
+      padding: 8px 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      width: 100%;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+    button {
+      padding: 9px 16px;
+      background-color: #004b97;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #003a78;
+    }
+    .btn-selesai {
+      background-color: #28a745;
+    }
+    .btn-selesai:hover {
+      background-color: #1e7e34;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    th {
+      background-color: #f5f7fa;
+      font-weight: 600;
+      color: #444;
+    }
+    .text-center {
+      text-align: center;
+      padding: 24px;
+      color: #777;
+    }
+    .status-diproses {
+      color: #d67e00;
+      font-weight: 500;
+    }
+    .status-selesai {
+      color: #28a745;
+      font-weight: 500;
+    }
   </style>
 </head>
 <body>
-  <header>
+
+  <!-- Header Atas -->
+  <div class="header">
     <h2>Panel Order Taker</h2>
     <div>
       Halo, <%= user.nama %> | <a href="/logout">Keluar</a>
     </div>
-  </header>
+  </div>
 
   <div class="container">
+    <!-- Logo Hotel -->
+    <div class="logo-container">
+      <div class="logo">HORISON</div>
+      <div class="sub-logo">TC-UPI SERANG • HOTEL & CONVENTION</div>
+    </div>
+
+    <!-- Pesan Notifikasi -->
     <% if (pesan) { %>
       <div class="pesan <%= pesan.tipe %>"><%= pesan.teks %></div>
     <% } %>
+
+    <!-- Form Tambah Permintaan -->
     <div class="card">
-      <h3>Fitur Permintaan Tamu</h3>
-      <p style="color:#555;">Fitur pencatatan permintaan tamu sedang dalam pengembangan.</p>
+      <h3>Catat Permintaan Tamu</h3>
+      <form action="/tambah-permintaan" method="POST">
+        <div>
+          <label>No. Kamar</label>
+          <select name="nomor_kamar" required>
+            <option value="">-- Pilih Kamar --</option>
+            <% daftarKamar.forEach(k => { %>
+              <option value="<%= k.nomor_kamar %>"><%= k.nomor_kamar %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div>
+          <label>Jenis Permintaan</label>
+          <select name="jenis_permintaan" required>
+            <option value="">-- Pilih --</option>
+            <option value="Tambah Handuk">Tambah Handuk</option>
+            <option value="Tambah Air Mineral">Tambah Air Mineral</option>
+            <option value="Tambah Sabun & Sampo">Tambah Sabun & Sampo</option>
+            <option value="Kebersihan Tambahan">Kebersihan Tambahan</option>
+            <option value="Perbaikan Fasilitas">Perbaikan Fasilitas</option>
+            <option value="Lainnya">Lainnya</option>
+          </select>
+        </div>
+        <div style="grid-column: span 2;">
+          <label>Keterangan Tambahan</label>
+          <textarea name="keterangan" placeholder="Tulis detail permintaan..."></textarea>
+        </div>
+        <div>
+          <button type="submit">Simpan Permintaan</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Daftar Permintaan Hari Ini -->
+    <div class="card">
+      <h3>Daftar Permintaan Hari Ini (<%= tanggal %>)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>No. Kamar</th>
+            <th>Jenis Permintaan</th>
+            <th>Waktu Masuk</th>
+            <th>Status</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (daftarPermintaan.length > 0) { %>
+            <% daftarPermintaan.forEach(p => { %>
+              <tr>
+                <td><strong><%= p.nomor_kamar %></strong></td>
+                <td><%= p.jenis_permintaan %><br><small style="color:#666;"><%= p.keterangan || '-' %></small></td>
+                <td><%= p.waktu_masuk ? p.waktu_masuk.slice(0,5) : '-' %></td>
+                <td class="<%= p.status === 'Selesai' ? 'status-selesai' : 'status-diproses' %>">
+                  <%= p.status %>
+                </td>
+                <td>
+                  <% if (p.status === 'Diproses') { %>
+                    <form action="/selesai-permintaan" method="POST" style="display:inline;">
+                      <input type="hidden" name="id" value="<%= p.id %>">
+                      <button type="submit" class="btn-selesai" style="padding:4px 8px; font-size:12px;">Selesai</button>
+                    </form>
+                  <% } else { %>
+                    <span style="color:#28a745;">✓</span>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr><td colspan="5" class="text-center">Belum ada permintaan tamu hari ini</td></tr>
+          <% } %>
+        </tbody>
+      </table>
     </div>
   </div>
+
 </body>
 </html>
