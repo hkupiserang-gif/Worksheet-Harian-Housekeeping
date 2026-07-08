@@ -3,58 +3,166 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel Supervisor</title>
+  <title>Panel Supervisor - Horison Hotel</title>
   <style>
-    * {margin:0; padding:0; box-sizing:border-box; font-family:Arial, sans-serif;}
-    body {background:#f8fafc;}
-    header {background:#004b8d; color:white; padding:12px 24px; display:flex; justify-content:space-between; align-items:center;}
-    .container {max-width:1200px; margin:24px auto; padding:0 16px;}
-    .pesan {padding:10px; border-radius:4px; margin-bottom:16px; font-size:14px;}
+    * {margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', Arial, sans-serif;}
+    body {background-color: #f8fafc;}
+
+    /* Header Utama */
+    .header {
+      background-color: #004b97;
+      color: white;
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .header h2 {font-size: 18px; font-weight: 600;}
+    .header a {color: white; text-decoration: none; margin-left: 8px;}
+    .header a:hover {text-decoration: underline;}
+
+    /* Logo di Konten */
+    .logo-container {
+      text-align: center;
+      margin: 24px 0;
+    }
+    .logo {
+      font-size: 32px;
+      font-weight: bold;
+      color: #002b5c;
+      letter-spacing: 1px;
+    }
+    .sub-logo {
+      font-size: 14px;
+      color: #555;
+      margin-top: 4px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+
+    .pesan {
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      text-align: center;
+    }
     .pesan.error {background:#ffe9e9; color:#b02020; border:1px solid #f8cccc;}
     .pesan.sukses {background:#e6f9ed; color:#157c38; border:1px solid #c8f0d6;}
-    .card {background:white; border-radius:6px; padding:16px; box-shadow:0 1px 3px #0002; margin-bottom:20px;}
-    h3 {margin-bottom:12px; color:#222;}
-    form {display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px; align-items:end;}
-    input, select {padding:8px; border:1px solid #ddd; border-radius:4px; font-size:14px;}
-    button {padding:9px 12px; background:#004b8d; color:white; border:none; border-radius:4px; cursor:pointer; font-size:14px;}
-    button:hover {background:#003a6e;}
-    table {width:100%; border-collapse:collapse; margin-top:12px;}
-    th, td {padding:10px; text-align:left; border-bottom:1px solid #eee; font-size:14px;}
-    th {background:#f2f5f9; font-weight:600;}
-    a {color:white; text-decoration:none;}
+
+    .card {
+      background: white;
+      border-radius: 6px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-bottom: 24px;
+    }
+    .card h3 {
+      font-size: 16px;
+      color: #222;
+      margin-bottom: 16px;
+      font-weight: 600;
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      align-items: end;
+    }
+    input, select {
+      padding: 8px 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      background: white;
+    }
+    button {
+      padding: 9px 16px;
+      background-color: #004b97;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #003a78;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    th {
+      background-color: #f5f7fa;
+      font-weight: 600;
+      color: #444;
+    }
+    tr:hover {
+      background-color: #fafbfc;
+    }
+    .text-center {
+      text-align: center;
+      padding: 24px;
+      color: #777;
+    }
   </style>
 </head>
 <body>
-  <header>
+
+  <!-- Header Atas -->
+  <div class="header">
     <h2>Panel Supervisor</h2>
     <div>
       Halo, <%= user.nama %> | <a href="/logout">Keluar</a>
     </div>
-  </header>
+  </div>
 
   <div class="container">
+    <!-- Logo Hotel -->
+    <div class="logo-container">
+      <div class="logo">HORISON</div>
+      <div class="sub-logo">TC-UPI SERANG • HOTEL & CONVENTION</div>
+    </div>
+
+    <!-- Pesan Notifikasi -->
     <% if (pesan) { %>
       <div class="pesan <%= pesan.tipe %>"><%= pesan.teks %></div>
     <% } %>
 
+    <!-- Form Buat Tugas -->
     <div class="card">
       <h3>Buat Tugas Kebersihan</h3>
       <form action="/tambah-tugas" method="POST">
         <input type="date" name="tanggal" value="<%= tanggal %>" required>
         <select name="petugas" required>
-          <option value="">-- Pilih Petugas --</option>
+          <option value="">Pilih Petugas</option>
           <% daftarRA.forEach(ra => { %>
             <option value="<%= ra.nama %>"><%= ra.nama %></option>
           <% }) %>
         </select>
         <select name="kamar" required>
-          <option value="">-- Pilih Kamar --</option>
+          <option value="">Pilih Kamar</option>
           <% daftarKamar.forEach(k => { %>
             <option value="<%= k.nomor_kamar %>"><%= k.nomor_kamar %> | <%= k.lantai %> | <%= k.tipe_kamar %></option>
           <% }) %>
         </select>
         <select name="status_awal" required>
-          <option value="">-- Status --</option>
+          <option value="">Status</option>
           <option value="VD">VD</option>
           <option value="VC">VC</option>
           <option value="VCU">VCU</option>
@@ -65,6 +173,7 @@
       </form>
     </div>
 
+    <!-- Daftar Tugas -->
     <div class="card">
       <h3>Daftar Tugas Hari Ini (<%= tanggal %>)</h3>
       <table>
@@ -85,15 +194,16 @@
                 <td><%= t.lantai || '-' %></td>
                 <td><%= t.petugas %></td>
                 <td><%= t.status_awal %></td>
-                <td><%= t.selesai ? '✅ Sudah' : '⏳ Belum' %></td>
+                <td><%= t.selesai ? '✅ Ya' : '⏳ Belum' %></td>
               </tr>
             <% }) %>
           <% } else { %>
-            <tr><td colspan="5" style="text-align:center; color:#777; padding:20px;">Belum ada tugas dibuat hari ini</td></tr>
+            <tr><td colspan="5" class="text-center">Belum ada tugas dibuat hari ini</td></tr>
           <% } %>
         </tbody>
       </table>
     </div>
   </div>
+
 </body>
 </html>
