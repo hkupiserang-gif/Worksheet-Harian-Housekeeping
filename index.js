@@ -30,7 +30,7 @@ app.use(session({
   cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 }
 }));
 
-// ✅ Berikan variabel pesan ke SEMUA halaman
+// Variabel pesan global
 app.use((req, res, next) => {
   res.locals.pesan = null;
   if (req.query.pesan === 'berhasil') res.locals.pesan = { tipe: 'sukses', teks: '✅ Berhasil disimpan' };
@@ -76,9 +76,15 @@ app.get('/spv', async (req, res) => {
   if (!req.session.user || req.session.user.peran !== 'SPV') return res.redirect('/');
   try {
     const hariIni = new Date().toISOString().split('T')[0];
-    const kamar = await pool.query("SELECT * FROM kamar ORDER BY nomor_kamar");
+    const kamar = await pool.query("SELECT nomor_kamar, lantai, tipe_kamar FROM kamar WHERE aktif = true ORDER BY nomor_kamar");
     const daftarRA = await pool.query("SELECT nama FROM pengguna WHERE peran = 'RA' AND aktif = true ORDER BY nama");
-    const tugas = await pool.query("SELECT * FROM tugas WHERE tanggal = $1 ORDER BY kamar", [hariIni]);
+    const tugas = await pool.query(`
+      SELECT t.*, k.lantai 
+      FROM tugas t
+      JOIN kamar k ON t.kamar = k.nomor_kamar
+      WHERE t.tanggal = $1 
+      ORDER BY t.kamar
+    `, [hariIni]);
 
     res.render('spv', {
       user: req.session.user,
@@ -94,7 +100,7 @@ app.get('/spv', async (req, res) => {
       user: req.session.user,
       tanggal: new Date().toISOString().split('T')[0],
       daftarKamar: [], daftarRA: [], daftarTugas: [],
-      pesan: { tipe: 'error', teks: '❌ Gagal memuat data' }
+      pesan: { tipe: 'error', teks: '❌ Gagal memuat data kamar' }
     });
   }
 });
@@ -105,7 +111,8 @@ app.post('/tambah-tugas', async (req, res) => {
     await pool.query(`
       INSERT INTO tugas (tanggal, kamar, petugas, status_awal)
       VALUES ($1, $2, $3, $4)
-      ON CONFLICT (tanggal, kamar) DO UPDATE SET petugas = $3, status_awal = $4
+      ON CONFLICT (tanggal, kamar) DO UPDATE 
+      SET petugas = $3, status_awal = $4
     `, [tanggal, kamar, petugas, status_awal]);
     res.redirect('/spv?pesan=berhasil');
   } catch (err) {
@@ -121,8 +128,10 @@ app.get('/ra', async (req, res) => {
     const hariIni = new Date().toISOString().split('T')[0];
     const tugas = await pool.query(`
       SELECT t.*, l.waktu_masuk, l.waktu_keluar, l.keterangan
-      FROM tugas t LEFT JOIN laporan l ON t.tanggal = l.tanggal AND t.kamar = l.nomor_kamar
-      WHERE t.tanggal = $1 AND t.petugas = $2 ORDER BY kamar
+      FROM tugas t 
+      LEFT JOIN laporan l ON t.tanggal = l.tanggal AND t.kamar = l.nomor_kamar
+      WHERE t.tanggal = $1 AND t.petugas = $2 
+      ORDER BY t.kamar
     `, [hariIni, req.session.user.nama]);
 
     res.render('ra', {
