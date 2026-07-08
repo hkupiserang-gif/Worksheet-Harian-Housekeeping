@@ -384,4 +384,47 @@
           </div>
         </div>
 
-        <!-- Keterangan & Tombol Simpan
+        <!-- Keterangan & Tombol Simpan -->
+        <div class="mt-5 flex flex-col md:flex-row gap-4 items-end">
+          <div class="flex-1">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Keterangan Tambahan</label>
+            <textarea name="keterangan" rows="2" class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-hotel-primary" placeholder="Tambahkan catatan jika diperlukan..."><%= item.keterangan || '' %></textarea>
+          </div>
+          <button type="submit" class="w-full md:w-auto bg-hotel-primary hover:bg-hotel-dark text-white font-medium px-6 py-2 rounded">
+            Simpan Laporan
+          </button>
+        </div>
+      </div>
+      <% }) %>
+    </form>
+    <% } %>
+  </div>
+
+  <!-- Script Tombol IN/OUT -->
+  <script>
+    function catatMasuk(kamar) {
+      const sekarang = new Date();
+      const jam = sekarang.toTimeString().slice(0, 5);
+      document.getElementById(`masuk_${kamar}`).value = jam;
+      const btnIn = document.getElementById(`btn_in_${kamar}`);
+      btnIn.classList.remove('btn-in');
+      btnIn.classList.add('btn-disabled');
+      btnIn.disabled = true;
+      const btnOut = document.getElementById(`btn_out_${kamar}`);
+      btnOut.classList.remove('btn-disabled');
+      btnOut.classList.add('btn-out');
+      btnOut.disabled = false;
+    }
+
+    function catatKeluar(kamar) {
+      const sekarang = new Date();
+      const jam = sekarang.toTimeString().slice(0, 5);
+      document.getElementById(`keluar_${kamar}`).value = jam;
+      const btnOut = document.getElementById(`btn_out_${kamar}`);
+      btnOut.classList.remove('btn-out');
+      btnOut.classList.add('btn-disabled');
+      btnOut.disabled = true;
+    }
+  </script>
+</body>
+</html>
