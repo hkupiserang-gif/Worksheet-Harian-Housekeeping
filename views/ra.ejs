@@ -38,9 +38,10 @@
     }
 
     .container {
-      max-width: 1600px;
+      max-width: 100%;
       margin: 0 auto;
       padding: 0 16px 30px;
+      overflow-x: auto;
     }
 
     .pesan {
@@ -59,7 +60,6 @@
       padding: 20px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
       margin-bottom: 24px;
-      overflow-x: auto;
     }
     .card h3 {
       font-size: 16px;
@@ -76,7 +76,7 @@
       font-size: 12px;
     }
     th, td {
-      padding: 8px 5px;
+      padding: 8px 6px;
       text-align: center;
       border: 1px solid #e2e8f0;
       vertical-align: middle;
@@ -104,6 +104,7 @@
     }
     .btn-mulai {background: #0066cc; color: white;}
     .btn-selesai {background: #28a745; color: white;}
+    .btn:disabled {background: #94a3b8; cursor: not-allowed;}
     .text-left {text-align: left;}
     .text-center {padding: 30px; color: #777;}
   </style>
@@ -139,12 +140,12 @@
             <th rowspan="2">No Kamar</th>
             <th rowspan="2">Status</th>
             <th colspan="2">Waktu</th>
+            <th rowspan="2">Aksi</th>
             <th colspan="4">SHEET</th>
             <th colspan="4">TOWEL</th>
             <th colspan="5">BATHROOM</th>
             <th colspan="6">BEDROOM</th>
             <th colspan="4">CONDIMEN</th>
-            <th rowspan="2">Aksi</th>
           </tr>
           <tr>
             <th>In</th>
@@ -182,51 +183,56 @@
             <td><%= t.waktu_masuk || '-' %></td>
             <td><%= t.waktu_keluar || '-' %></td>
 
-            <% if (!t.selesai) { %>
-              <% if (!t.waktu_masuk) { %>
-                <!-- Tombol Mulai -->
-                <td colspan="28" style="padding: 0;">
-                  <form action="/mulai-kamar" method="POST" style="width:100%;">
+            <!-- Kolom Aksi -->
+            <td>
+              <% if (!t.selesai) { %>
+                <% if (!t.waktu_masuk) { %>
+                  <form action="/mulai-kamar" method="POST" onsubmit="this.querySelector('button').disabled=true;">
                     <input type="hidden" name="tanggal" value="<%= t.tanggal %>">
                     <input type="hidden" name="kamar" value="<%= t.kamar %>">
                     <button type="submit" class="btn btn-mulai">Mulai</button>
                   </form>
-                </td>
-              <% } else { %>
-                <!-- Form Isi Data & Selesai -->
-                <form action="/selesai-kamar" method="POST">
-                  <input type="hidden" name="tanggal" value="<%= t.tanggal %>">
-                  <input type="hidden" name="kamar" value="<%= t.kamar %>">
-                  <input type="hidden" name="waktu_masuk" value="<%= t.waktu_masuk %>">
+                <% } else { %>
+                  <form action="/selesai-kamar" method="POST" onsubmit="this.querySelector('button').disabled=true;">
+                    <input type="hidden" name="tanggal" value="<%= t.tanggal %>">
+                    <input type="hidden" name="kamar" value="<%= t.kamar %>">
+                    <input type="hidden" name="waktu_masuk" value="<%= t.waktu_masuk %>">
 
-                  <td><select name="sheet_twin"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.sheet_twin==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
-                  <td><select name="sheet_king"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.sheet_king==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
-                  <td><select name="duvet_twin"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.duvet_twin==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
-                  <td><select name="duvet_king"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.duvet_king==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
-                  <td><select name="bath_towel"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.bath_towel==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
-                  <td><select name="hand_towel"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.hand_towel==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
-                  <td><select name="bath_mat"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.bath_mat==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
-                  <td><select name="pillow_case"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.pillow_case==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
-                  <td><select name="shampoo"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.shampoo==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
-                  <td><select name="soap"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.soap==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
-                  <td><select name="shower_gel"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.shower_gel==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
-                  <td><select name="shower_cap"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.shower_cap==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
-                  <td><select name="sewing_kit"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.sewing_kit==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
-                  <td><select name="laundry_bag"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.laundry_bag==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
-                  <td><select name="lotion"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.lotion==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
-                  <td><select name="mo"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.mo==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
-                  <td><select name="prgl"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.prgl==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
-                  <td><select name="magic"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.magic==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
-                  <td><select name="shoe"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.shoe==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
-                  <td><select name="sugar"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.sugar==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
-                  <td><select name="tea"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.tea==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
-                  <td><select name="orange_r"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.orange_r==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
-                  <td><select name="mineral"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.mineral==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
-                  <td><button type="submit" class="btn btn-selesai">Selesai</button></td>
-                </form>
+                    <!-- Linen & Amenities -->
+                    <td><select name="sheet_twin"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.sheet_twin==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
+                    <td><select name="sheet_king"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.sheet_king==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
+                    <td><select name="duvet_twin"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.duvet_twin==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
+                    <td><select name="duvet_king"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.duvet_king==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
+                    <td><select name="bath_towel"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.bath_towel==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
+                    <td><select name="hand_towel"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.hand_towel==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
+                    <td><select name="bath_mat"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.bath_mat==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
+                    <td><select name="pillow_case"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.pillow_case==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
+                    <td><select name="shampoo"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.shampoo==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
+                    <td><select name="soap"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.soap==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
+                    <td><select name="shower_gel"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.shower_gel==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
+                    <td><select name="shower_cap"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.shower_cap==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
+                    <td><select name="sewing_kit"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.sewing_kit==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
+                    <td><select name="laundry_bag"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.laundry_bag==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
+                    <td><select name="lotion"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.lotion==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
+                    <td><select name="mo"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.mo==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
+                    <td><select name="prgl"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.prgl==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
+                    <td><select name="magic"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.magic==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
+                    <td><select name="shoe"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.shoe==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
+                    <td><select name="sugar"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.sugar==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
+                    <td><select name="tea"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.tea==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
+                    <td><select name="orange_r"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.orange_r==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
+                    <td><select name="mineral"><% for(let i=0;i<=4;i++) { %><option value="<%=i%>" <%= t.mineral==i ? 'selected' : '' %>><%=i%></option><% } %></select></td>
+
+                    <button type="submit" class="btn btn-selesai">Selesai</button>
+                  </form>
+                <% } %>
+              <% } else { %>
+                <span style="color: #28a745; font-weight: bold;">✅ Selesai</span>
               <% } %>
-            <% } else { %>
-              <!-- Tampilan data yang sudah selesai -->
+            </td>
+
+            <!-- Tampilan data jika sudah selesai -->
+            <% if (t.selesai) { %>
               <td><%= t.sheet_twin || 0 %></td>
               <td><%= t.sheet_king || 0 %></td>
               <td><%= t.duvet_twin || 0 %></td>
@@ -250,7 +256,6 @@
               <td><%= t.tea || 0 %></td>
               <td><%= t.orange_r || 0 %></td>
               <td><%= t.mineral || 0 %></td>
-              <td><span style="color: #28a745; font-weight: bold;">✅ Selesai</span></td>
             <% } %>
           </tr>
           <% }) %>
