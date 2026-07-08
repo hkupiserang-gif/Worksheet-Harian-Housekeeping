@@ -100,7 +100,7 @@ app.get('/ra', async (req, res) => {
   }
 });
 
-// Simpan Laporan RA
+// Simpan Laporan RA - DIPERBAIKI
 app.post('/simpan-laporan', async (req, res) => {
   if (!req.session.user || req.session.user.peran !== 'RA') return res.redirect('/');
   try {
@@ -114,6 +114,7 @@ app.post('/simpan-laporan', async (req, res) => {
       tea, creamer, mineral_water, keterangan
     } = req.body;
 
+    // Susun data linen
     const linenData = {
       sheet_double: Number(sheet_double) || 0,
       sheet_single: Number(sheet_single) || 0,
@@ -125,6 +126,7 @@ app.post('/simpan-laporan', async (req, res) => {
       pillow_case: Number(pillow_case) || 0
     };
 
+    // Susun data amenities
     const amenitiesData = {
       tissue: Number(tissue) || 0,
       hand_soap: Number(hand_soap) || 0,
@@ -147,6 +149,7 @@ app.post('/simpan-laporan', async (req, res) => {
       mineral_water: Number(mineral_water) || 0
     };
 
+    // Simpan ke database
     await pool.query(`
       INSERT INTO laporan (
         tanggal, nomor_kamar, shift, status_kamar, waktu_masuk, waktu_keluar,
@@ -163,18 +166,19 @@ app.post('/simpan-laporan', async (req, res) => {
       keterangan || '', req.session.user.nama
     ]);
 
+    // Update status selesai jika ada waktu keluar
     if (waktu_keluar) {
       await pool.query("UPDATE tugas SET selesai = true WHERE tanggal = $1 AND kamar = $2", [tanggal, kamar]);
     }
 
     res.redirect('/ra?pesan=berhasil');
   } catch (err) {
-    console.error("❌ Error simpan:", err);
+    console.error("❌ Error simpan laporan:", err);
     res.redirect('/ra?pesan=gagal');
   }
 });
 
-// --- RUTE LAINNYA (SPV / OT / UNDUH / LOGOUT) Tetap sama seperti sebelumnya ---
+// --- RUTE LAINNYA ---
 app.get('/spv', async (req, res) => {
   if (!req.session.user || req.session.user.peran !== 'SPV') return res.redirect('/');
   try {
