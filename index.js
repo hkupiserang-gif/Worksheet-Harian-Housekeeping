@@ -7,12 +7,17 @@ const { parse } = require('json2csv');
 const app = express();
 const PORT = process.env.PORT || 8888;
 
+// =======================
 // Koneksi Database
+// =======================
 const db = new sqlite3.Database('./database.db', (err) => {
-  if (err) console.error("❌ Koneksi gagal:", err.message);
-  else console.log("✅ Terhubung ke SQLite");
+  if (err) console.error("❌ Koneksi database gagal:", err.message);
+  else console.log("✅ Terhubung ke database SQLite");
 });
 
+// =======================
+// Buat Tabel Jika Belum Ada
+// =======================
 db.serialize(() => {
   // Tabel Pengguna
   db.run(`CREATE TABLE IF NOT EXISTS pengguna (
@@ -24,6 +29,7 @@ db.serialize(() => {
     aktif BOOLEAN DEFAULT 1
   )`);
 
+  // Isi data pengguna awal jika belum ada
   db.get(`SELECT 1 FROM pengguna WHERE username = 'nizar'`, (err, row) => {
     if (!row) {
       db.run(`INSERT INTO pengguna (nama, username, password, peran) VALUES
@@ -42,7 +48,7 @@ db.serialize(() => {
     }
   });
 
-  // Tabel Kamar
+  // Tabel Daftar Kamar
   db.run(`CREATE TABLE IF NOT EXISTS kamar (
     nomor_kamar TEXT PRIMARY KEY,
     lantai TEXT NOT NULL,
@@ -50,6 +56,7 @@ db.serialize(() => {
     aktif BOOLEAN DEFAULT 1
   )`);
 
+  // Isi data kamar awal jika belum ada
   db.get(`SELECT 1 FROM kamar WHERE nomor_kamar = '201'`, (err, row) => {
     if (!row) {
       const daftarKamar = [
@@ -81,6 +88,7 @@ db.serialize(() => {
     }
   });
 
+  // Tabel Tugas Kebersihan
   db.run(`CREATE TABLE IF NOT EXISTS tugas (
     tanggal TEXT,
     kamar TEXT,
@@ -90,6 +98,7 @@ db.serialize(() => {
     PRIMARY KEY (tanggal, kamar)
   )`);
 
+  // Tabel Laporan Lengkap
   db.run(`CREATE TABLE IF NOT EXISTS laporan (
     tanggal TEXT,
     nomor_kamar TEXT,
@@ -122,6 +131,7 @@ db.serialize(() => {
     PRIMARY KEY (tanggal, nomor_kamar)
   )`);
 
+  // Tabel Permintaan Tamu
   db.run(`CREATE TABLE IF NOT EXISTS permintaan_tamu (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     tanggal TEXT DEFAULT (DATE('now')),
@@ -135,37 +145,57 @@ db.serialize(() => {
   )`);
 });
 
+// =======================
+// Konfigurasi Aplikasi
+// =======================
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(session({ secret: 'horison2026', resave: false, saveUninitialized: false, cookie: { maxAge: 86400000 } }));
+app.use(session({
+  secret: 'horison2026hotel',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { maxAge: 86400000 }
+}));
 
+// Pesan notifikasi
 app.use((req, res, next) => {
   res.locals.pesan = null;
-  if (req.query.pesan === 'berhasil') res.locals.pesan = { tipe: 'sukses', teks: '✅ Berhasil' };
-  if (req.query.pesan === 'gagal') res.locals.pesan = { tipe: 'error', teks: '❌ Gagal' };
+  if (req.query.pesan === 'berhasil') res.locals.pesan = { tipe: 'sukses', teks: '✅ Berhasil disimpan' };
+  if (req.query.pesan === 'gagal') res.locals.pesan = { tipe: 'error', teks: '❌ Terjadi kesalahan' };
   next();
 });
 
-// Login
+// =======================
+// Halaman Login
+// =======================
 app.get('/', (req, res) => {
-  if (req.session.user) return res.redirect(req.session.user.peran === 'SPV' ? '/spv' : req.session.user.peran === 'RA' ? '/ra' : '/ot');
+  if (req.session.user) {
+    if (req.session.user.peran === 'SPV') return res.redirect('/spv');
+    if (req.session.user.peran === 'RA') return res.redirect('/ra');
+    if (req.session.user.peran === 'OT') return res.redirect('/ot');
+  }
   res.render('login', { pesan: res.locals.pesan });
 });
 
 app.post('/login', (req, res) => {
-  db.get(`SELECT * FROM pengguna WHERE username = ? AND aktif = 1`, [req.body.username.trim()], (err, u) => {
-    if (u && u.password === req.body.password) {
-      req.session.user = { id: u.id, nama: u.nama, peran: u.peran };
-      return res.redirect(u.peran === 'SPV' ? '/spv' : u.peran === 'RA' ? '/ra' : '/ot');
+  const { username, password } = req.body;
+  db.get(`SELECT * FROM pengguna WHERE username = ? AND aktif = 1`, [username.trim()], (err, user) => {
+    if (user && user.password === password) {
+      req.session.user = { id: user.id, nama: user.nama, peran: user.peran };
+      if (user.peran === 'SPV') return res.redirect('/spv');
+      if (user.peran === 'RA') return res.redirect('/ra');
+      if (user.peran === 'OT') return res.redirect('/ot');
     }
-    res.render('login', { pesan: { tipe: 'error', teks: '❌ Salah username/password' } });
+    res.render('login', { pesan: { tipe: 'error', teks: '❌ Username atau Password salah' } });
   });
 });
 
-// HALAMAN SUPERVISOR
+// =======================
+// Halaman Supervisor
+// =======================
 app.get('/spv', (req, res) => {
   if (!req.session.user || req.session.user.peran !== 'SPV') return res.redirect('/');
   const hariIni = new Date().toISOString().split('T')[0];
@@ -213,12 +243,19 @@ app.get('/spv', (req, res) => {
   });
 });
 
-// Unduh Excel
+// Unduh Laporan Excel
 app.get('/unduh-excel', (req, res) => {
   const tanggal = req.query.tanggal || new Date().toISOString().split('T')[0];
   db.all(`
-    SELECT t.tanggal, t.kamar, k.lantai, k.tipe_kamar, t.petugas, t.status_awal,
-           l.waktu_masuk, l.waktu_keluar, CASE WHEN t.selesai = 1 THEN '✅ Selesai' ELSE '❌ Belum' END AS status_selesai
+    SELECT 
+      t.tanggal, t.kamar AS no_kamar, k.lantai, k.tipe_kamar, t.petugas, t.status_awal,
+      l.waktu_masuk, l.waktu_keluar,
+      l.sheet_twin, l.sheet_king, l.duvet_twin, l.duvet_king,
+      l.bath_towel, l.hand_towel, l.bath_mat, l.pillow_case,
+      l.shampoo, l.soap, l.shower_gel, l.shower_cap, l.dental_kit,
+      l.laundry_bag, l.laundry_list, l.dnd_sign,
+      l.magic, l.shoe, l.sugar, l.tea, l.coffee, l.creamer, l.mineral,
+      CASE WHEN t.selesai = 1 THEN 'Selesai' ELSE 'Belum Selesai' END AS status_selesai
     FROM tugas t
     JOIN kamar k ON t.kamar = k.nomor_kamar
     LEFT JOIN laporan l ON t.tanggal = l.tanggal AND t.kamar = l.nomor_kamar
@@ -227,7 +264,16 @@ app.get('/unduh-excel', (req, res) => {
   `, [tanggal], (err, data) => {
     if (err) return res.send('Gagal memuat data');
     try {
-      const fields = ['tanggal', 'kamar', 'lantai', 'tipe_kamar', 'petugas', 'status_awal', 'waktu_masuk', 'waktu_keluar', 'status_selesai'];
+      const fields = [
+        'tanggal', 'no_kamar', 'lantai', 'tipe_kamar', 'petugas', 'status_awal',
+        'waktu_masuk', 'waktu_keluar',
+        'sheet_twin', 'sheet_king', 'duvet_twin', 'duvet_king',
+        'bath_towel', 'hand_towel', 'bath_mat', 'pillow_case',
+        'shampoo', 'soap', 'shower_gel', 'shower_cap', 'dental_kit',
+        'laundry_bag', 'laundry_list', 'dnd_sign',
+        'magic', 'shoe', 'sugar', 'tea', 'coffee', 'creamer', 'mineral',
+        'status_selesai'
+      ];
       const csv = parse(data, { fields });
       res.setHeader('Content-Disposition', `attachment; filename="Laporan_Kebersihan_${tanggal}.csv"`);
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
@@ -240,66 +286,132 @@ app.get('/unduh-excel', (req, res) => {
 
 app.post('/tambah-tugas', (req, res) => {
   const { tanggal, petugas, kamar } = req.body;
-  const daftar = Array.isArray(kamar) ? kamar : [kamar];
-  let selesai = 0;
-  daftar.forEach(k => {
+  const daftarKamar = Array.isArray(kamar) ? kamar : [kamar];
+  let prosesSelesai = 0;
+
+  daftarKamar.forEach(k => {
     const status = req.body[`status_${k}`] || 'VD';
     db.run(`INSERT OR REPLACE INTO tugas VALUES (?, ?, ?, ?, 0)`, [tanggal, k, petugas, status], () => {
-      if (++selesai === daftar.length) res.redirect('/spv?pesan=berhasil');
+      if (++prosesSelesai === daftarKamar.length) res.redirect('/spv?pesan=berhasil');
     });
   });
 });
 
-// HALAMAN RA
+// =======================
+// Halaman Room Attendant (RA)
+// =======================
 app.get('/ra', (req, res) => {
   if (!req.session.user || req.session.user.peran !== 'RA') return res.redirect('/');
   const hariIni = new Date().toISOString().split('T')[0];
+
   db.all(`
     SELECT t.*, l.* FROM tugas t
     LEFT JOIN laporan l ON t.tanggal = l.tanggal AND t.kamar = l.nomor_kamar
     WHERE t.tanggal = ? AND t.petugas = ? ORDER BY t.kamar
-  `, [hariIni, req.session.user.nama], (err, tugas) => {
-    res.render('ra', { user: req.session.user, tanggal: hariIni, tugas, pesan: res.locals.pesan });
+  `, [hariIni, req.session.user.nama], (err, daftarTugas) => {
+    res.render('ra', {
+      user: req.session.user,
+      tanggal: hariIni,
+      tugas: daftarTugas,
+      pesan: res.locals.pesan
+    });
   });
 });
 
+// Mulai Kerja → Catat Jam Masuk
 app.post('/mulai-kamar', (req, res) => {
-  const w = new Date().toTimeString().slice(0,5);
-  db.run(`INSERT OR REPLACE INTO laporan (tanggal, nomor_kamar, waktu_masuk, petugas) VALUES (?, ?, ?, ?)`,
-    [req.body.tanggal, req.body.kamar, w, req.session.user.nama], () => res.redirect('/ra?pesan=berhasil'));
-});
-
-app.post('/selesai-kamar', (req, res) => {
-  const { tanggal, kamar, waktu_masuk, sheet_twin, sheet_king, duvet_twin, duvet_king, bath_towel, hand_towel, bath_mat, pillow_case, shampoo, soap, shower_gel, shower_cap, dental_kit, laundry_bag, laundry_list, dnd_sign, magic, shoe, sugar, tea, coffee, creamer, mineral } = req.body;
-  const wKeluar = new Date().toTimeString().slice(0,5);
+  const waktuMasuk = new Date().toTimeString().slice(0, 5);
   db.run(`
-    INSERT OR REPLACE INTO laporan VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `, [tanggal, kamar, waktu_masuk, wKeluar, sheet_twin||0, sheet_king||0, duvet_twin||0, duvet_king||0, bath_towel||0, hand_towel||0, bath_mat||0, pillow_case||0, shampoo||0, soap||0, shower_gel||0, shower_cap||0, dental_kit||0, laundry_bag||0, laundry_list||0, dnd_sign||0, magic||0, shoe||0, sugar||0, tea||0, coffee||0, creamer||0, mineral||0, req.session.user.nama], () => {
-    db.run(`UPDATE tugas SET selesai = 1 WHERE tanggal = ? AND kamar = ?`, [tanggal, kamar]);
+    INSERT OR REPLACE INTO laporan (tanggal, nomor_kamar, waktu_masuk, petugas)
+    VALUES (?, ?, ?, ?)
+  `, [req.body.tanggal, req.body.kamar, waktuMasuk, req.session.user.nama], (err) => {
+    if (err) console.error("Error mulai kerja:", err);
     res.redirect('/ra?pesan=berhasil');
   });
 });
 
-// HALAMAN OT
+// Selesai Kerja → Simpan Semua Data + Jam Keluar
+app.post('/selesai-kamar', (req, res) => {
+  const {
+    tanggal, kamar, waktu_masuk,
+    sheet_twin, sheet_king, duvet_twin, duvet_king,
+    bath_towel, hand_towel, bath_mat, pillow_case,
+    shampoo, soap, shower_gel, shower_cap, dental_kit,
+    laundry_bag, laundry_list, dnd_sign,
+    magic, shoe, sugar, tea, coffee, creamer, mineral
+  } = req.body;
+
+  const waktuKeluar = new Date().toTimeString().slice(0, 5);
+
+  db.run(`
+    INSERT OR REPLACE INTO laporan (
+      tanggal, nomor_kamar, waktu_masuk, waktu_keluar,
+      sheet_twin, sheet_king, duvet_twin, duvet_king,
+      bath_towel, hand_towel, bath_mat, pillow_case,
+      shampoo, soap, shower_gel, shower_cap, dental_kit,
+      laundry_bag, laundry_list, dnd_sign,
+      magic, shoe, sugar, tea, coffee, creamer, mineral, petugas
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `, [
+    tanggal, kamar, waktu_masuk, waktuKeluar,
+    sheet_twin || 0, sheet_king || 0, duvet_twin || 0, duvet_king || 0,
+    bath_towel || 0, hand_towel || 0, bath_mat || 0, pillow_case || 0,
+    shampoo || 0, soap || 0, shower_gel || 0, shower_cap || 0, dental_kit || 0,
+    laundry_bag || 0, laundry_list || 0, dnd_sign || 0,
+    magic || 0, shoe || 0, sugar || 0, tea || 0, coffee || 0, creamer || 0, mineral || 0,
+    req.session.user.nama
+  ], (err) => {
+    if (err) return console.error("Error simpan laporan:", err);
+    db.run(`UPDATE tugas SET selesai = 1 WHERE tanggal = ? AND kamar = ?`, [tanggal, kamar], () => {
+      res.redirect('/ra?pesan=berhasil');
+    });
+  });
+});
+
+// =======================
+// Halaman Order Taker (OT)
+// =======================
 app.get('/ot', (req, res) => {
   if (!req.session.user || req.session.user.peran !== 'OT') return res.redirect('/');
   const hariIni = new Date().toISOString().split('T')[0];
+
   db.all(`SELECT * FROM kamar ORDER BY nomor_kamar`, [], (err, daftarKamar) => {
-    db.all(`SELECT * FROM permintaan_tamu WHERE tanggal = ? ORDER BY waktu_masuk DESC`, [hariIni], (err, daftar) => {
-      res.render('ot', { user: req.session.user, tanggal: hariIni, daftarKamar, daftarPermintaan: daftar, pesan: res.locals.pesan });
+    db.all(`SELECT * FROM permintaan_tamu WHERE tanggal = ? ORDER BY waktu_masuk DESC`, [hariIni], (err, daftarPermintaan) => {
+      res.render('ot', {
+        user: req.session.user,
+        tanggal: hariIni,
+        daftarKamar,
+        daftarPermintaan,
+        pesan: res.locals.pesan
+      });
     });
   });
 });
 
 app.post('/tambah-permintaan', (req, res) => {
-  db.run(`INSERT INTO permintaan_tamu (nomor_kamar, jenis_permintaan, keterangan, dibuat_oleh) VALUES (?, ?, ?, ?)`,
-    [req.body.nomor_kamar, req.body.jenis_permintaan, req.body.keterangan || '', req.session.user.nama], () => res.redirect('/ot?pesan=berhasil'));
+  db.run(`INSERT INTO permintaan_tamu (nomor_kamar, jenis_permintaan, keterangan, dibuat_oleh)
+    VALUES (?, ?, ?, ?)`,
+    [req.body.nomor_kamar, req.body.jenis_permintaan, req.body.keterangan || '', req.session.user.nama],
+    () => res.redirect('/ot?pesan=berhasil')
+  );
 });
 
 app.post('/selesai-permintaan', (req, res) => {
-  db.run(`UPDATE permintaan_tamu SET status = 'Selesai', waktu_selesai = TIME('now') WHERE id = ?`, [req.body.id], () => res.redirect('/ot?pesan=berhasil'));
+  db.run(`UPDATE permintaan_tamu SET status = 'Selesai', waktu_selesai = TIME('now') WHERE id = ?`,
+    [req.body.id], () => res.redirect('/ot?pesan=berhasil')
+  );
 });
 
-app.get('/logout', (req, res) => req.session.destroy(() => res.redirect('/')));
+// =======================
+// Logout
+// =======================
+app.get('/logout', (req, res) => {
+  req.session.destroy(() => res.redirect('/'));
+});
 
-app.listen(PORT, () => console.log(`✅ Server berjalan di port ${PORT}`));
+// =======================
+// Jalankan Server
+// =======================
+app.listen(PORT, () => {
+  console.log(`✅ Server berjalan di port ${PORT}`);
+});
