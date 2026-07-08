@@ -4,9 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Panel Room Attendant - Horison Hotel</title>
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#0F2B48">
-  <link rel="icon" href="https://i.imgur.com/xQDZfY0.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
   <script>
@@ -18,12 +15,10 @@
               dark: '#0F2B48',
               primary: '#2D5B7C',
               light: '#E8F0F5',
-              accent: '#F2994A',
-              success: '#27AE60',
+              in: '#FBBF24',
+              out: '#22C55E',
               danger: '#E74C3C',
-              neutral: '#F8FAFC',
-              in: '#FBBF24', // Kuning
-              out: '#22C55E'  // Hijau
+              success: '#27AE60'
             }
           }
         }
@@ -42,7 +37,7 @@
     .input-waktu { @apply w-24 border border-gray-300 rounded p-2 text-sm bg-gray-50; }
   </style>
 </head>
-<body class="bg-hotel-neutral min-h-screen">
+<body class="bg-gray-50 min-h-screen">
   <div class="container mx-auto px-3 py-4 max-w-7xl">
     <!-- Header -->
     <div class="bg-white rounded-lg shadow-md mb-5 overflow-hidden">
@@ -54,13 +49,13 @@
             <p class="text-sm">Halo, <%= user.nama %></p>
           </div>
         </div>
-        <a href="/logout" class="bg-red-500 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1">
+        <a href="/logout" class="bg-hotel-danger text-white px-3 py-1.5 rounded text-sm flex items-center gap-1">
           <i class="fa fa-sign-out"></i> Keluar
         </a>
       </div>
     </div>
 
-    <!-- Pesan Notifikasi -->
+    <!-- Notifikasi -->
     <% if (pesan) { %>
     <div class="mb-4 p-3 rounded text-sm <%= pesan.tipe === 'sukses' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200' %>">
       <%= pesan.teks %>
@@ -77,17 +72,15 @@
     <form method="POST" action="/simpan-laporan" class="space-y-6">
       <% tugas.forEach(item => { %>
       <div class="bg-white rounded-lg shadow p-5 border-l-4 border-hotel-primary" id="kamar_<%= item.kamar %>">
-        <!-- Header Kamar -->
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-lg font-semibold text-hotel-dark">Kamar <%= item.kamar %></h3>
           <span class="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600">Status: <%= item.status_awal %></span>
         </div>
 
-        <input type="hidden" name="tanggal" value="<%= item.tanggal %>">
+        <input type="hidden" name="tanggal" value="<%= new Date().toISOString().split('T')[0] %>">
         <input type="hidden" name="kamar" value="<%= item.kamar %>">
         <input type="hidden" name="shift" value="Morning">
 
-        <!-- Waktu Masuk & Keluar -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Shift</label>
@@ -391,47 +384,4 @@
           </div>
         </div>
 
-        <!-- Keterangan & Simpan -->
-        <div class="mt-5 flex flex-col md:flex-row gap-4 items-end">
-          <div class="flex-1">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Keterangan Tambahan</label>
-            <textarea name="keterangan" rows="2" class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-hotel-primary" placeholder="Tambahkan catatan jika diperlukan..."><%= item.keterangan || '' %></textarea>
-          </div>
-          <button type="submit" class="w-full md:w-auto bg-hotel-primary hover:bg-hotel-dark text-white font-medium px-6 py-2 rounded">
-            Simpan Laporan
-          </button>
-        </div>
-      </div>
-      <% }) %>
-    </form>
-    <% } %>
-  </div>
-
-  <!-- Script Tombol IN/OUT -->
-  <script>
-    function catatMasuk(kamar) {
-      const sekarang = new Date();
-      const jam = sekarang.toTimeString().slice(0, 5);
-      document.getElementById(`masuk_${kamar}`).value = jam;
-      const btnIn = document.getElementById(`btn_in_${kamar}`);
-      btnIn.classList.remove('btn-in');
-      btnIn.classList.add('btn-disabled');
-      btnIn.disabled = true;
-      const btnOut = document.getElementById(`btn_out_${kamar}`);
-      btnOut.classList.remove('btn-disabled');
-      btnOut.classList.add('btn-out');
-      btnOut.disabled = false;
-    }
-
-    function catatKeluar(kamar) {
-      const sekarang = new Date();
-      const jam = sekarang.toTimeString().slice(0, 5);
-      document.getElementById(`keluar_${kamar}`).value = jam;
-      const btnOut = document.getElementById(`btn_out_${kamar}`);
-      btnOut.classList.remove('btn-out');
-      btnOut.classList.add('btn-disabled');
-      btnOut.disabled = true;
-    }
-  </script>
-</body>
-</html>
+        <!-- Keterangan & Tombol Simpan
