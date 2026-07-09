@@ -10,7 +10,8 @@
     "express": "^4.21.1",
     "express-session": "^1.18.1",
     "sqlite3": "^5.1.7",
-    "json2csv": "^5.0.7"
+    "json2csv": "^5.0.7",
+    "pdfkit": "^0.15.0"
   },
   "engines": {
     "node": ">=18.0.0"
