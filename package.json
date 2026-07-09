@@ -1,18 +1,17 @@
 {
-  "name": "sistem-laporan-hotel",
+  "name": "sistem-laporan-kamar",
   "version": "1.0.0",
-  "description": "Sistem Manajemen Kamar dan Permintaan Tamu",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "express": "^4.19.2",
+    "ejs": "^3.1.10",
+    "express": "^4.21.1",
     "express-session": "^1.18.1",
     "sqlite3": "^5.1.7",
-    "ejs": "^3.1.10",
+    "json2csv": "^5.0.7",
     "pdfkit": "^0.15.0",
-    "@json2csv/plainjs": "^7.0.6",
     "node-cron": "^3.0.3"
   },
   "engines": {
