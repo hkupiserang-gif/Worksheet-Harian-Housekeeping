@@ -413,88 +413,148 @@ app.get('/unduh-pdf-petugas', (req, res) => {
   `, [tanggal, petugas], (err, data) => {
     if (!data || data.length === 0) return res.send('❌ Tidak ada data untuk dibuat laporan!');
 
-    const doc = new PDFDocument({ margin: 30, size: 'A4' });
+    // ✅ SET HALAMAN MENYAMPING (LANDSCAPE)
+    const doc = new PDFDocument({ margin: 15, size: 'A4', layout: 'landscape' });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="ROOMBOY_CONTROL_${petugas.replace(/\s+/g, '_')}_${tanggal}.pdf"`);
     doc.pipe(res);
 
-    // Header
+    // --- Header Laporan ---
     doc.fontSize(14).font('Helvetica-Bold').text('HORISON HOTEL & CONVENTION', { align: 'center' });
-    doc.fontSize(12).text('ROOMBOY CONTROL SHEET', { align: 'center' }).moveDown(1);
-    doc.fontSize(10).font('Helvetica')
-      .text(`Nama Petugas: ${petugas}`)
-      .text(`Tanggal: ${tanggal}`)
-      .text(`Jumlah Kamar: ${data.length}`).moveDown(1);
+    doc.fontSize(12).text('ROOMBOY CONTROL SHEET', { align: 'center' }).moveDown(0.8);
+    doc.fontSize(9).font('Helvetica')
+      .text(`Nama Petugas: ${petugas}`, 20)
+      .text(`Tanggal: ${tanggal}`, 20, doc.y + 12)
+      .text(`Jumlah Kamar: ${data.length}`, 20, doc.y + 12)
+      .text(`Dibuat Jam: ${getWaktuWIB()} WIB`, doc.page.width - 220, doc.y - 24);
+    doc.moveDown(1);
 
-    // Tabel Header
-    const startY = doc.y;
-    doc.font('Helvetica-Bold').fontSize(8);
-    doc.text('No', 30, startY);
-    doc.text('Kamar', 55, startY);
-    doc.text('Lantai', 90, startY);
-    doc.text('Status', 125, startY);
-    doc.text('Jam Masuk', 160, startY);
-    doc.text('Jam Keluar', 205, startY);
-    doc.text('LINEN\nIN / OUT', 250, startY);
-    doc.text('GUEST SUPPLIES & AMENITIES', 420, startY);
-    doc.text('Status', 620, startY);
-    doc.moveTo(30, startY + 22).lineTo(680, startY + 22).stroke();
-    let y = startY + 30;
+    // --- Ukuran Kolom & Posisi ---
+    const col = {
+      no: 20, kamar: 55, lantai: 95, status: 130, masuk: 170, keluar: 210,
+      sdi: 250, sdo: 275, ssi: 300, sso: 325, dci: 350, dco: 375, dsi: 400, dso: 425,
+      bti: 450, bto: 475, hti: 500, hto: 525, bmi: 550, bmo: 575, pci: 600, pco: 625,
+      hs: 650, sh: 675, sg: 700, tb: 725, st: 750, sc: 775, sl: 800,
+      lb: 825, ll: 850, mp: 875, pc: 900, pb: 925, ti: 950, cf: 975, su: 1000, te: 1025, cr: 1050, mw: 1075, sts: 1110
+    };
+    const rowHeight = 22;
+    let y = doc.y;
 
-    // Isi Data per Kamar
+    // --- Header Tabel (Hanya tampil di baris paling atas) ---
+    doc.font('Helvetica-Bold').fontSize(7);
+    doc.text('No', col.no + 2, y);
+    doc.text('Kamar', col.kamar + 2, y);
+    doc.text('Lantai', col.lantai + 2, y);
+    doc.text('Status', col.status + 2, y);
+    doc.text('Jam Masuk', col.masuk + 2, y);
+    doc.text('Jam Keluar', col.keluar + 2, y);
+    doc.text('SD IN', col.sdi + 2, y);
+    doc.text('SD OUT', col.sdo + 2, y);
+    doc.text('SS IN', col.ssi + 2, y);
+    doc.text('SS OUT', col.sso + 2, y);
+    doc.text('DC IN', col.dci + 2, y);
+    doc.text('DC OUT', col.dco + 2, y);
+    doc.text('DS IN', col.dsi + 2, y);
+    doc.text('DS OUT', col.dso + 2, y);
+    doc.text('BT IN', col.bti + 2, y);
+    doc.text('BT OUT', col.bto + 2, y);
+    doc.text('HT IN', col.hti + 2, y);
+    doc.text('HT OUT', col.hto + 2, y);
+    doc.text('BM IN', col.bmi + 2, y);
+    doc.text('BM OUT', col.bmo + 2, y);
+    doc.text('PC IN', col.pci + 2, y);
+    doc.text('PC OUT', col.pco + 2, y);
+    doc.text('Soap', col.hs + 2, y);
+    doc.text('Shampoo', col.sh + 2, y);
+    doc.text('Sh Gel', col.sg + 2, y);
+    doc.text('Tooth', col.tb + 2, y);
+    doc.text('Steril', col.st + 2, y);
+    doc.text('Sh Cap', col.sc + 2, y);
+    doc.text('Slipper', col.sl + 2, y);
+    doc.text('Laun Bag', col.lb + 2, y);
+    doc.text('Laun List', col.ll + 2, y);
+    doc.text('Memo', col.mp + 2, y);
+    doc.text('Pencil', col.pc + 2, y);
+    doc.text('Plas Bin', col.pb + 2, y);
+    doc.text('Tissue', col.ti + 2, y);
+    doc.text('Coffee', col.cf + 2, y);
+    doc.text('Sugar', col.su + 2, y);
+    doc.text('Tea', col.te + 2, y);
+    doc.text('Creamer', col.cr + 2, y);
+    doc.text('Mineral', col.mw + 2, y);
+    doc.text('Status', col.sts + 2, y);
+
+    // Garis kotak header
+    doc.lineWidth(0.8);
+    doc.rect(col.no, y - 2, col.sts - col.no + 40, rowHeight).stroke();
+    y += rowHeight;
+
+    // --- Isi Data per Kamar ---
+    doc.font('Helvetica').fontSize(8);
     data.forEach((row, idx) => {
       const sts = row.waktu_keluar !== '-' ? 'Selesai' : 'Belum';
-      doc.font('Helvetica').fontSize(8);
-      doc.text(idx + 1, 30, y);
-      doc.text(row.kamar, 55, y);
-      doc.text(row.lantai.replace('Lantai ', ''), 90, y);
-      doc.text(row.status_awal, 125, y);
-      doc.text(row.waktu_masuk, 160, y);
-      doc.text(row.waktu_keluar, 205, y);
 
-      // LINEN
-      doc.text(`Sheet Double: ${row.sdi} / ${row.sdo}`, 250, y);
-      doc.text(`Sheet Single: ${row.ssi} / ${row.sso}`, 250, y + 11);
-      doc.text(`Duvet Cover: ${row.dci} / ${row.dco}`, 250, y + 22);
-      doc.text(`Duvet Single: ${row.dsi} / ${row.dso}`, 250, y + 33);
-      doc.text(`Bath Towel: ${row.bti} / ${row.bto}`, 250, y + 44);
-      doc.text(`Hand Towel: ${row.hti} / ${row.hto}`, 250, y + 55);
-      doc.text(`Bath Mat: ${row.bmi} / ${row.bmo}`, 250, y + 66);
-      doc.text(`Pillow Case: ${row.pci} / ${row.pco}`, 250, y + 77);
+      // Tulis angka/data
+      doc.text(idx + 1, col.no + 5, y);
+      doc.text(row.kamar, col.kamar + 3, y);
+      doc.text(row.lantai.replace('Lantai ', ''), col.lantai + 3, y);
+      doc.text(row.status_awal, col.status + 3, y);
+      doc.text(row.waktu_masuk, col.masuk + 3, y);
+      doc.text(row.waktu_keluar, col.keluar + 3, y);
+      doc.text(row.sdi, col.sdi + 8, y);
+      doc.text(row.sdo, col.sdo + 8, y);
+      doc.text(row.ssi, col.ssi + 8, y);
+      doc.text(row.sso, col.sso + 8, y);
+      doc.text(row.dci, col.dci + 8, y);
+      doc.text(row.dco, col.dco + 8, y);
+      doc.text(row.dsi, col.dsi + 8, y);
+      doc.text(row.dso, col.dso + 8, y);
+      doc.text(row.bti, col.bti + 8, y);
+      doc.text(row.bto, col.bto + 8, y);
+      doc.text(row.hti, col.hti + 8, y);
+      doc.text(row.hto, col.hto + 8, y);
+      doc.text(row.bmi, col.bmi + 8, y);
+      doc.text(row.bmo, col.bmo + 8, y);
+      doc.text(row.pci, col.pci + 8, y);
+      doc.text(row.pco, col.pco + 8, y);
+      doc.text(row.hs, col.hs + 8, y);
+      doc.text(row.sh, col.sh + 8, y);
+      doc.text(row.sg, col.sg + 8, y);
+      doc.text(row.tb, col.tb + 8, y);
+      doc.text(row.st, col.st + 8, y);
+      doc.text(row.sc, col.sc + 8, y);
+      doc.text(row.sl, col.sl + 8, y);
+      doc.text(row.lb, col.lb + 8, y);
+      doc.text(row.ll, col.ll + 8, y);
+      doc.text(row.mp, col.mp + 8, y);
+      doc.text(row.pc, col.pc + 8, y);
+      doc.text(row.pb, col.pb + 8, y);
+      doc.text(row.ti, col.ti + 8, y);
+      doc.text(row.cf, col.cf + 8, y);
+      doc.text(row.su, col.su + 8, y);
+      doc.text(row.te, col.te + 8, y);
+      doc.text(row.cr, col.cr + 8, y);
+      doc.text(row.mw, col.mw + 8, y);
+      doc.text(sts, col.sts + 5, y);
 
-      // AMENITIES
-      doc.text(`Hand Soap: ${row.hs}`, 420, y);
-      doc.text(`Shampoo: ${row.sh}`, 420, y + 11);
-      doc.text(`Shower Gel: ${row.sg}`, 420, y + 22);
-      doc.text(`Tooth Brush: ${row.tb}`, 420, y + 33);
-      doc.text(`Sterer: ${row.st}`, 420, y + 44);
-      doc.text(`Shower Cap: ${row.sc}`, 420, y + 55);
-      doc.text(`Slipper: ${row.sl}`, 420, y + 66);
-      doc.text(`Laundry Bag: ${row.lb}`, 420, y + 77);
-      doc.text(`Laundry List: ${row.ll}`, 420, y + 88);
-      doc.text(`Memo Pad: ${row.mp}`, 420, y + 99);
-      doc.text(`Pencil: ${row.pc}`, 420, y + 110);
-      doc.text(`Plastic Bin: ${row.pb}`, 420, y + 121);
-      doc.text(`Tissue: ${row.ti}`, 420, y + 132);
-      doc.text(`Coffee: ${row.cf}`, 420, y + 143);
-      doc.text(`Sugar: ${row.su}`, 420, y + 154);
-      doc.text(`Tea: ${row.te}`, 420, y + 165);
-      doc.text(`Creamer: ${row.cr}`, 420, y + 176);
-      doc.text(`Mineral Water: ${row.mw}`, 420, y + 187);
+      // Garis kotak setiap baris
+      doc.lineWidth(0.5);
+      doc.rect(col.no, y - 2, col.sts - col.no + 40, rowHeight).stroke();
+      y += rowHeight;
 
-      doc.text(sts, 620, y + 90);
-      y += 210;
-      doc.moveTo(30, y).lineTo(680, y).stroke();
-      y += 10;
-      if (y > 750) { doc.addPage(); y = 50; }
+      // Buat halaman baru jika melebihi batas
+      if (y > doc.page.height - 30) {
+        doc.addPage({ layout: 'landscape' });
+        y = 20;
+      }
     });
 
-    // Tanda Tangan
+    // --- Tanda Tangan ---
     doc.moveDown(2);
     doc.fontSize(9)
-      .text(`Prepared by: ${petugas}`, 30, y)
-      .text(`Dibuat pada: ${getWaktuWIB()} WIB`, 30, y + 15)
-      .text('Checked by: ________________________', 450, y);
+      .text(`Dibuat oleh: ${petugas}`, 20, y)
+      .text(`Dicek oleh: ________________________`, doc.page.width - 250, y);
+
     doc.end();
   });
 });
