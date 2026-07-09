@@ -10,7 +10,7 @@
     .header {background-color: #004b97; color: white; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);}
     .header h2 {font-size: 18px; font-weight: 600;}
     .header a {color: white; text-decoration: none; margin-left: 8px;}
-    .header a:hover {text-decoration: underline;}
+    .waktu-live {font-size: 14px; background: #003a7a; padding: 4px 10px; border-radius: 4px;}
     .logo-container {text-align: center; margin: 20px 0;}
     .logo {font-size: 32px; font-weight: bold; color: #002b5c; letter-spacing: 1px;}
     .sub-logo {font-size: 14px; color: #555; margin-top: 4px;}
@@ -27,11 +27,7 @@
     input[disabled] {background: #f3f4f6; color: #666;}
     .btn {padding: 6px 10px; border: none; border-radius: 3px; cursor: pointer; font-size: 12px; font-weight: 500; width: 100%;}
     .btn-mulai {background: #0066cc; color: white;}
-    .btn-mulai:hover {background: #0055aa;}
     .btn-selesai {background: #28a745; color: white;}
-    .btn-selesai:hover {background: #218838;}
-    .text-left {text-align: left;}
-    .text-center {padding: 30px; color: #777; font-size: 14px;}
     .status-badge {padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: bold;}
     .status-belum {background: #fff3cd; color: #856404;}
     .status-proses {background: #cce5ff; color: #004085;}
@@ -41,7 +37,10 @@
 <body>
   <div class="header">
     <h2>Panel Room Attendant</h2>
-    <div>Halo, <%= user.nama %> | <a href="/logout">Keluar</a></div>
+    <div style="display:flex; gap:15px; align-items:center;">
+      <div class="waktu-live">🕒 <span id="jamSekarang"><%= waktuSekarang %></span> WIB</div>
+      <div>Halo, <%= user.nama %> | <a href="/logout">Keluar</a></div>
+    </div>
   </div>
 
   <div class="container">
@@ -55,7 +54,7 @@
     <div class="card">
       <h3>Daftar Kamar Hari Ini - <%= tanggal %></h3>
       <% if (tugas.length === 0) { %>
-        <div class="text-center">Belum ada tugas kebersihan yang diberikan hari ini</div>
+        <div class="text-center">Belum ada tugas kebersihan</div>
       <% } else { %>
       <table>
         <thead>
@@ -63,16 +62,16 @@
             <th rowspan="2">No Kamar</th>
             <th rowspan="2">Status</th>
             <th colspan="2">Waktu</th>
-            <th rowspan="2">Status Pengerjaan</th>
+            <th rowspan="2">Status</th>
             <th rowspan="2">Aksi</th>
             <th colspan="2">SHEET</th>
             <th colspan="2">DUVET</th>
             <th colspan="3">TOWEL</th>
-            <th rowspan="2">Pillow Case</th>
+            <th rowspan="2">Pillow</th>
             <th colspan="5">BATHROOM</th>
-            <th colspan="3">LAUNDRY & SIGN</th>
-            <th colspan="2">PERALATAN</th>
-            <th colspan="5">KONDIMEN</th>
+            <th colspan="3">LAUNDRY</th>
+            <th colspan="2">ALAT</th>
+            <th colspan="5">MINUMAN</th>
           </tr>
           <tr>
             <th>In</th>
@@ -84,21 +83,21 @@
             <th>Bath</th>
             <th>Hand</th>
             <th>Mat</th>
-            <th>Shampoo</th>
+            <th>Shmp</th>
             <th>Soap</th>
-            <th>Shower Gel</th>
+            <th>Gel</th>
             <th>Cap</th>
-            <th>Dental Kit</th>
+            <th>Dental</th>
             <th>Bag</th>
             <th>List</th>
-            <th>DND Sign</th>
+            <th>DND</th>
             <th>Magic</th>
             <th>Shoe</th>
             <th>Sugar</th>
             <th>Tea</th>
             <th>Coffee</th>
             <th>Creamer</th>
-            <th>Mineral</th>
+            <th>Air</th>
           </tr>
         </thead>
         <tbody>
@@ -106,96 +105,80 @@
           <tr>
             <td class="text-left"><strong><%= t.kamar %></strong></td>
             <td><%= t.status_awal %></td>
-            <td><%= t.waktu_masuk || '-' %></td>
-            <td><%= t.waktu_keluar || '-' %></td>
+            <td><%= t.waktu_masuk %></td>
+            <td><%= t.waktu_keluar %></td>
             <td>
-              <% if (!t.waktu_masuk && !t.selesai) { %>
-                <span class="status-badge status-belum">Belum Dimulai</span>
-              <% } else if (t.waktu_masuk && !t.selesai) { %>
-                <span class="status-badge status-proses">Sedang Dikerjakan</span>
+              <% if (t.waktu_masuk === '-' && !t.selesai) { %>
+                <span class="status-badge status-belum">Belum</span>
+              <% } else if (t.waktu_masuk !== '-' && !t.selesai) { %>
+                <span class="status-badge status-proses">Proses</span>
               <% } else { %>
                 <span class="status-badge status-selesai">Selesai</span>
               <% } %>
             </td>
             <td>
-              <% if (!t.waktu_masuk && !t.selesai) { %>
+              <% if (t.waktu_masuk === '-' && !t.selesai) { %>
                 <form action="/mulai-kamar" method="POST">
                   <input type="hidden" name="tanggal" value="<%= t.tanggal %>">
                   <input type="hidden" name="kamar" value="<%= t.kamar %>">
-                  <button type="submit" class="btn btn-mulai">Mulai Kerja</button>
+                  <button type="submit" class="btn btn-mulai">Mulai</button>
                 </form>
-              <% } else if (t.waktu_masuk && !t.selesai) { %>
+              <% } else if (t.waktu_masuk !== '-' && !t.selesai) { %>
                 <form action="/selesai-kamar" method="POST">
                   <input type="hidden" name="tanggal" value="<%= t.tanggal %>">
                   <input type="hidden" name="kamar" value="<%= t.kamar %>">
                   <input type="hidden" name="waktu_masuk" value="<%= t.waktu_masuk %>">
-                  <button type="submit" class="btn btn-selesai">Selesai & Simpan</button>
+                  <button type="submit" class="btn btn-selesai">Simpan</button>
               </td>
-                  <!-- SHEET -->
-                  <td><input type="number" name="sheet_twin" min="0" max="20" value="<%= t.sheet_twin || 0 %>"></td>
-                  <td><input type="number" name="sheet_king" min="0" max="20" value="<%= t.sheet_king || 0 %>"></td>
-                  <!-- DUVET -->
-                  <td><input type="number" name="duvet_twin" min="0" max="20" value="<%= t.duvet_twin || 0 %>"></td>
-                  <td><input type="number" name="duvet_king" min="0" max="20" value="<%= t.duvet_king || 0 %>"></td>
-                  <!-- TOWEL -->
-                  <td><input type="number" name="bath_towel" min="0" max="20" value="<%= t.bath_towel || 0 %>"></td>
-                  <td><input type="number" name="hand_towel" min="0" max="20" value="<%= t.hand_towel || 0 %>"></td>
-                  <td><input type="number" name="bath_mat" min="0" max="20" value="<%= t.bath_mat || 0 %>"></td>
-                  <!-- PILLOW -->
-                  <td><input type="number" name="pillow_case" min="0" max="20" value="<%= t.pillow_case || 0 %>"></td>
-                  <!-- BATHROOM -->
-                  <td><input type="number" name="shampoo" min="0" max="20" value="<%= t.shampoo || 0 %>"></td>
-                  <td><input type="number" name="soap" min="0" max="20" value="<%= t.soap || 0 %>"></td>
-                  <td><input type="number" name="shower_gel" min="0" max="20" value="<%= t.shower_gel || 0 %>"></td>
-                  <td><input type="number" name="shower_cap" min="0" max="20" value="<%= t.shower_cap || 0 %>"></td>
-                  <td><input type="number" name="dental_kit" min="0" max="20" value="<%= t.dental_kit || 0 %>"></td>
-                  <!-- LAUNDRY & SIGN -->
-                  <td><input type="number" name="laundry_bag" min="0" max="20" value="<%= t.laundry_bag || 0 %>"></td>
-                  <td><input type="number" name="laundry_list" min="0" max="20" value="<%= t.laundry_list || 0 %>"></td>
-                  <td><input type="number" name="dnd_sign" min="0" max="20" value="<%= t.dnd_sign || 0 %>"></td>
-                  <!-- PERALATAN -->
-                  <td><input type="number" name="magic" min="0" max="20" value="<%= t.magic || 0 %>"></td>
-                  <td><input type="number" name="shoe" min="0" max="20" value="<%= t.shoe || 0 %>"></td>
-                  <!-- KONDIMEN -->
-                  <td><input type="number" name="sugar" min="0" max="20" value="<%= t.sugar || 0 %>"></td>
-                  <td><input type="number" name="tea" min="0" max="20" value="<%= t.tea || 0 %>"></td>
-                  <td><input type="number" name="coffee" min="0" max="20" value="<%= t.coffee || 0 %>"></td>
-                  <td><input type="number" name="creamer" min="0" max="20" value="<%= t.creamer || 0 %>"></td>
-                  <td><input type="number" name="mineral" min="0" max="20" value="<%= t.mineral || 0 %>"></td>
+              <td><input type="number" name="sheet_twin" min="0" max="20" value="<%= t.sheet_twin %>"></td>
+              <td><input type="number" name="sheet_king" min="0" max="20" value="<%= t.sheet_king %>"></td>
+              <td><input type="number" name="duvet_twin" min="0" max="20" value="<%= t.duvet_twin %>"></td>
+              <td><input type="number" name="duvet_king" min="0" max="20" value="<%= t.duvet_king %>"></td>
+              <td><input type="number" name="bath_towel" min="0" max="20" value="<%= t.bath_towel %>"></td>
+              <td><input type="number" name="hand_towel" min="0" max="20" value="<%= t.hand_towel %>"></td>
+              <td><input type="number" name="bath_mat" min="0" max="20" value="<%= t.bath_mat %>"></td>
+              <td><input type="number" name="pillow_case" min="0" max="20" value="<%= t.pillow_case %>"></td>
+              <td><input type="number" name="shampoo" min="0" max="20" value="<%= t.shampoo %>"></td>
+              <td><input type="number" name="soap" min="0" max="20" value="<%= t.soap %>"></td>
+              <td><input type="number" name="shower_gel" min="0" max="20" value="<%= t.shower_gel %>"></td>
+              <td><input type="number" name="shower_cap" min="0" max="20" value="<%= t.shower_cap %>"></td>
+              <td><input type="number" name="dental_kit" min="0" max="20" value="<%= t.dental_kit %>"></td>
+              <td><input type="number" name="laundry_bag" min="0" max="20" value="<%= t.laundry_bag %>"></td>
+              <td><input type="number" name="laundry_list" min="0" max="20" value="<%= t.laundry_list %>"></td>
+              <td><input type="number" name="dnd_sign" min="0" max="20" value="<%= t.dnd_sign %>"></td>
+              <td><input type="number" name="magic" min="0" max="20" value="<%= t.magic %>"></td>
+              <td><input type="number" name="shoe" min="0" max="20" value="<%= t.shoe %>"></td>
+              <td><input type="number" name="sugar" min="0" max="20" value="<%= t.sugar %>"></td>
+              <td><input type="number" name="tea" min="0" max="20" value="<%= t.tea %>"></td>
+              <td><input type="number" name="coffee" min="0" max="20" value="<%= t.coffee %>"></td>
+              <td><input type="number" name="creamer" min="0" max="20" value="<%= t.creamer %>"></td>
+              <td><input type="number" name="mineral" min="0" max="20" value="<%= t.mineral %>"></td>
                 </form>
               <% } else { %>
-                <td>✅ Selesai</td>
-                <!-- SHEET -->
-                <td><input type="number" disabled value="<%= t.sheet_twin || 0 %>"></td>
-                <td><input type="number" disabled value="<%= t.sheet_king || 0 %>"></td>
-                <!-- DUVET -->
-                <td><input type="number" disabled value="<%= t.duvet_twin || 0 %>"></td>
-                <td><input type="number" disabled value="<%= t.duvet_king || 0 %>"></td>
-                <!-- TOWEL -->
-                <td><input type="number" disabled value="<%= t.bath_towel || 0 %>"></td>
-                <td><input type="number" disabled value="<%= t.hand_towel || 0 %>"></td>
-                <td><input type="number" disabled value="<%= t.bath_mat || 0 %>"></td>
-                <!-- PILLOW -->
-                <td><input type="number" disabled value="<%= t.pillow_case || 0 %>"></td>
-                <!-- BATHROOM -->
-                <td><input type="number" disabled value="<%= t.shampoo || 0 %>"></td>
-                <td><input type="number" disabled value="<%= t.soap || 0 %>"></td>
-                <td><input type="number" disabled value="<%= t.shower_gel || 0 %>"></td>
-                <td><input type="number" disabled value="<%= t.shower_cap || 0 %>"></td>
-                <td><input type="number" disabled value="<%= t.dental_kit || 0 %>"></td>
-                <!-- LAUNDRY & SIGN -->
-                <td><input type="number" disabled value="<%= t.laundry_bag || 0 %>"></td>
-                <td><input type="number" disabled value="<%= t.laundry_list || 0 %>"></td>
-                <td><input type="number" disabled value="<%= t.dnd_sign || 0 %>"></td>
-                <!-- PERALATAN -->
-                <td><input type="number" disabled value="<%= t.magic || 0 %>"></td>
-                <td><input type="number" disabled value="<%= t.shoe || 0 %>"></td>
-                <!-- KONDIMEN -->
-                <td><input type="number" disabled value="<%= t.sugar || 0 %>"></td>
-                <td><input type="number" disabled value="<%= t.tea || 0 %>"></td>
-                <td><input type="number" disabled value="<%= t.coffee || 0 %>"></td>
-                <td><input type="number" disabled value="<%= t.creamer || 0 %>"></td>
-                <td><input type="number" disabled value="<%= t.mineral || 0 %>"></td>
+                <td>✅</td>
+                <td><input disabled value="<%= t.sheet_twin %>"></td>
+                <td><input disabled value="<%= t.sheet_king %>"></td>
+                <td><input disabled value="<%= t.duvet_twin %>"></td>
+                <td><input disabled value="<%= t.duvet_king %>"></td>
+                <td><input disabled value="<%= t.bath_towel %>"></td>
+                <td><input disabled value="<%= t.hand_towel %>"></td>
+                <td><input disabled value="<%= t.bath_mat %>"></td>
+                <td><input disabled value="<%= t.pillow_case %>"></td>
+                <td><input disabled value="<%= t.shampoo %>"></td>
+                <td><input disabled value="<%= t.soap %>"></td>
+                <td><input disabled value="<%= t.shower_gel %>"></td>
+                <td><input disabled value="<%= t.shower_cap %>"></td>
+                <td><input disabled value="<%= t.dental_kit %>"></td>
+                <td><input disabled value="<%= t.laundry_bag %>"></td>
+                <td><input disabled value="<%= t.laundry_list %>"></td>
+                <td><input disabled value="<%= t.dnd_sign %>"></td>
+                <td><input disabled value="<%= t.magic %>"></td>
+                <td><input disabled value="<%= t.shoe %>"></td>
+                <td><input disabled value="<%= t.sugar %>"></td>
+                <td><input disabled value="<%= t.tea %>"></td>
+                <td><input disabled value="<%= t.coffee %>"></td>
+                <td><input disabled value="<%= t.creamer %>"></td>
+                <td><input disabled value="<%= t.mineral %>"></td>
               <% } %>
           </tr>
           <% }) %>
@@ -204,5 +187,12 @@
       <% } %>
     </div>
   </div>
+  <script>
+    setInterval(() => {
+      const now = new Date();
+      const wib = new Date(now.getTime() + 7*60*60*1000);
+      document.getElementById('jamSekarang').textContent = wib.toTimeString().slice(0,5);
+    }, 1000);
+  </script>
 </body>
 </html>
