@@ -63,7 +63,6 @@ db.serialize(() => {
     aktif BOOLEAN DEFAULT 1
   )`);
 
-  // Isi data awal pengguna jika belum ada
   db.get(`SELECT 1 FROM pengguna WHERE username = 'nizar'`, (err, row) => {
     if (!row) {
       db.run(`INSERT INTO pengguna (nama, username, password, peran) VALUES
@@ -90,7 +89,6 @@ db.serialize(() => {
     aktif BOOLEAN DEFAULT 1
   )`);
 
-  // Isi data awal kamar jika belum ada
   db.get(`SELECT 1 FROM kamar WHERE nomor_kamar = '201'`, (err, row) => {
     if (!row) {
       const daftarKamar = [
@@ -165,7 +163,7 @@ db.serialize(() => {
     PRIMARY KEY (tanggal, nomor_kamar)
   )`);
 
-  // Tabel Permintaan Tamu (untuk OT)
+  // Tabel Permintaan Tamu
   db.run(`CREATE TABLE IF NOT EXISTS permintaan_tamu (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     tanggal TEXT,
@@ -295,7 +293,7 @@ app.post('/tambah-tugas', (req, res) => {
 });
 
 // ======================================
-// ✅ HALAMAN RA
+// ✅ HALAMAN RA + PERUBAHAN STATUS OTOMATIS
 // ======================================
 app.get('/ra', (req, res) => {
   if (!req.session.user || req.session.user.peran !== 'RA') return res.redirect('/');
@@ -359,6 +357,7 @@ app.post('/selesai-kamar', (req, res) => {
     magic, shoe, sugar, tea, coffee, creamer, mineral } = req.body;
   const waktuKeluar = getWaktuWIBJamMenit();
 
+  // Simpan data laporan
   db.run(`
     INSERT OR REPLACE INTO laporan (
       tanggal, nomor_kamar, waktu_masuk, waktu_keluar,
@@ -378,14 +377,30 @@ app.post('/selesai-kamar', (req, res) => {
     req.session.user.nama
   ], err => {
     if (err) return console.error(err);
-    db.run(`UPDATE tugas SET selesai = 1 WHERE tanggal = ? AND kamar = ?`, [tanggal, kamar], () => {
-      res.redirect('/ra?pesan=berhasil');
+
+    // ✅ Proses ubah status otomatis sesuai aturan
+    db.get(`SELECT status_awal FROM tugas WHERE tanggal = ? AND kamar = ?`, [tanggal, kamar], (err, data) => {
+      if (err) return console.error(err);
+      let statusBaru = data.status_awal;
+
+      if (data.status_awal === 'VD' || data.status_awal === 'VCU') {
+        statusBaru = 'VC';
+      } else if (data.status_awal === 'OD') {
+        statusBaru = 'OC';
+      }
+      // OM dan OOO tetap seperti semula
+
+      // Update tugas dengan status baru dan tanda selesai
+      db.run(`UPDATE tugas SET status_awal = ?, selesai = 1 WHERE tanggal = ? AND kamar = ?`,
+        [statusBaru, tanggal, kamar], () => {
+          res.redirect('/ra?pesan=berhasil');
+        });
     });
   });
 });
 
 // ======================================
-// ✅ HALAMAN OT - LENGKAP & BEBAS ERROR
+// ✅ HALAMAN OT
 // ======================================
 app.get('/ot', (req, res) => {
   if (!req.session.user || req.session.user.peran !== 'OT') return res.redirect('/');
@@ -536,12 +551,11 @@ app.get('/unduh-pdf-ot', (req, res) => {
 });
 
 // ======================================
-// ✅ PERBAIKAN: UNDUH PDF SPV + NAMA PETUGAS + DAFTAR PERMINTAAN
+// ✅ LAPORAN PDF SPV - RAPI & SESUAI STATUS
 // ======================================
 app.get('/unduh-pdf', (req, res) => {
   const tanggal = req.query.tanggal || getTanggalWIB();
 
-  // Ambil data tugas + nama petugas + info kamar
   db.all(`
     SELECT 
       t.kamar, 
@@ -550,11 +564,7 @@ app.get('/unduh-pdf', (req, res) => {
       k.lantai, 
       k.tipe_kamar,
       IFNULL(l.waktu_masuk, '-') AS waktu_masuk,
-      IFNULL(l.waktu_keluar, '-') AS waktu_keluar,
-      l.sheet_twin, l.sheet_king, l.duvet_twin, l.duvet_king,
-      l.bath_towel, l.hand_towel, l.bath_mat, l.pillow_case,
-      l.shampoo, l.soap, l.shower_gel, l.shower_cap, l.dental_kit,
-      l.sugar, l.tea, l.coffee, l.creamer, l.mineral
+      IFNULL(l.waktu_keluar, '-') AS waktu_keluar
     FROM tugas t
     JOIN kamar k ON t.kamar = k.nomor_kamar
     LEFT JOIN laporan l ON t.tanggal = l.tanggal AND t.kamar = l.nomor_kamar
@@ -564,117 +574,107 @@ app.get('/unduh-pdf', (req, res) => {
     if (err) return res.send('❌ Gagal membuat PDF: ' + err.message);
     if (!dataKamar || dataKamar.length === 0) return res.send('❌ Tidak ada data untuk tanggal ini');
 
-    // Ambil juga daftar permintaan tamu hari itu
     db.all(`
-      SELECT nomor_kamar, jenis_permintaan, keterangan, status, waktu_masuk, dibuat_oleh
+      SELECT nomor_kamar, jenis_permintaan, keterangan, status, waktu_masuk, waktu_selesai, dibuat_oleh
       FROM permintaan_tamu 
       WHERE tanggal = ? 
       ORDER BY nomor_kamar, waktu_masuk
     `, [tanggal], (err, dataPermintaan) => {
       if (err) console.warn('Tidak ada data permintaan:', err);
 
-      const PDFDocument = require('pdfkit');
-      const doc = new PDFDocument({ margin: 15, size: 'A4', layout: 'landscape' });
+      const doc = new PDFDocument({ margin: 20, size: 'A4', layout: 'landscape' });
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="LAPORAN_HARIAN_${tanggal}.pdf"`);
+      res.setHeader('Content-Disposition', `attachment; filename=LAPORAN_HARIAN_${tanggal}.pdf`);
       doc.pipe(res);
 
-      // --------------------------
-      // BAGIAN HEADER
-      // --------------------------
-      doc.fontSize(18).font('Helvetica-Bold').text('HORISON HOTEL & CONVENTION', { align: 'center' });
-      doc.fontSize(14).text('LAPORAN KONTROL KEBERSIHAN & PERMINTAAN TAMU', { align: 'center', underline: true });
+      // Header
+      doc.font('Helvetica-Bold').fontSize(18).text('HORISON HOTEL & CONVENTION', { align: 'center' });
+      doc.font('Helvetica-Bold').fontSize(14).text('LAPORAN KONTROL KEBERSIHAN & PERMINTAAN TAMU', { align: 'center', underline: true });
       doc.moveDown(1);
-      doc.fontSize(11).font('Helvetica').text(`Tanggal: ${tanggal}`, { align: 'left' });
-      doc.text(`Jumlah kamar dikerjakan: ${dataKamar.length}`, { align: 'left' });
+      doc.font('Helvetica').fontSize(11);
+      doc.text(`Tanggal: ${tanggal}`);
+      doc.text(`Jumlah kamar dikerjakan: ${dataKamar.length}`);
       doc.moveDown(1);
 
-      // --------------------------
-      // BAGIAN TABEL KAMAR + NAMA PETUGAS
-      // --------------------------
-      doc.fontSize(12).font('Helvetica-Bold').text('📋 DAFTAR KAMAR & PETUGAS', { underline: true });
-      doc.moveDown(0.8);
+      // Tabel Kamar
+      doc.font('Helvetica-Bold').fontSize(12).text('DAFTAR KAMAR & PETUGAS', { underline: true });
+      doc.moveDown(0.5);
 
-      doc.fontSize(8.5).font('Helvetica-Bold');
+      doc.fontSize(9);
       let y = doc.y;
-      doc.text('No', 15, y, { width: 20, align: 'center' });
-      doc.text('Kamar', 38, y, { width: 35, align: 'center' });
-      doc.text('Lantai', 75, y, { width: 40, align: 'center' });
-      doc.text('Status', 118, y, { width: 35, align: 'center' });
-      doc.text('Nama Petugas', 155, y, { width: 70, align: 'center' });
-      doc.text('Jam Masuk', 228, y, { width: 40, align: 'center' });
-      doc.text('Jam Keluar', 270, y, { width: 40, align: 'center' });
-      doc.text('Status Kerja', 312, y, { width: 50, align: 'center' });
+      doc.text('No', 20, y, { width: 25, align: 'center' });
+      doc.text('Kamar', 45, y, { width: 40, align: 'center' });
+      doc.text('Lantai', 85, y, { width: 55, align: 'center' });
+      doc.text('Status', 140, y, { width: 40, align: 'center' });
+      doc.text('Nama Petugas', 180, y, { width: 80, align: 'center' });
+      doc.text('Jam Masuk', 260, y, { width: 50, align: 'center' });
+      doc.text('Jam Keluar', 310, y, { width: 55, align: 'center' });
+      doc.text('Status Kerja', 365, y, { width: 70, align: 'center' });
 
       y += 18;
-      doc.moveTo(15, y).lineTo(560, y).stroke();
-      y += 6;
+      doc.moveTo(20, y).lineTo(570, y).stroke();
+      y += 8;
 
-      doc.fontSize(8.5).font('Helvetica');
+      doc.font('Helvetica').fontSize(9);
       dataKamar.forEach((row, idx) => {
         if (y > 520) { doc.addPage(); y = 30; }
-        const statusKerja = row.waktu_keluar !== '-' ? '✅ Selesai' : '⏳ Belum Selesai';
-        doc.text(String(idx + 1), 15, y, { width: 20, align: 'center' });
-        doc.text(row.kamar, 38, y, { width: 35, align: 'center' });
-        doc.text(row.lantai, 75, y, { width: 40, align: 'center' });
-        doc.text(row.status_awal, 118, y, { width: 35, align: 'center' });
-        doc.text(row.petugas || '-', 155, y, { width: 70, align: 'left' });
-        doc.text(row.waktu_masuk, 228, y, { width: 40, align: 'center' });
-        doc.text(row.waktu_keluar, 270, y, { width: 40, align: 'center' });
-        doc.text(statusKerja, 312, y, { width: 50, align: 'center' });
-        y += 12;
+        const statusKerja = row.waktu_keluar !== '-' ? 'Selesai' : 'Belum Selesai';
+        doc.text(String(idx + 1), 20, y, { width: 25, align: 'center' });
+        doc.text(row.kamar, 45, y, { width: 40, align: 'center' });
+        doc.text(row.lantai, 85, y, { width: 55, align: 'center' });
+        doc.text(row.status_awal, 140, y, { width: 40, align: 'center' });
+        doc.text(row.petugas || '-', 180, y, { width: 80, align: 'left' });
+        doc.text(row.waktu_masuk, 260, y, { width: 50, align: 'center' });
+        doc.text(row.waktu_keluar, 310, y, { width: 55, align: 'center' });
+        doc.text(statusKerja, 365, y, { width: 70, align: 'center' });
+        y += 14;
       });
 
-      // --------------------------
-      // BAGIAN DAFTAR PERMINTAAN TAMU
-      // --------------------------
+      // Tabel Permintaan Tamu
       y += 20;
       if (y > 550) { doc.addPage(); y = 30; }
-
-      doc.fontSize(12).font('Helvetica-Bold').text('📝 DAFTAR PERMINTAAN TAMU HARI INI', { underline: true });
-      doc.moveDown(0.8);
+      doc.font('Helvetica-Bold').fontSize(12).text('DAFTAR PERMINTAAN TAMU HARI INI', { underline: true });
+      doc.moveDown(0.5);
 
       if (!dataPermintaan || dataPermintaan.length === 0) {
-        doc.fontSize(10).text('Tidak ada permintaan tamu pada hari ini.', { align: 'center', color: '#666' });
+        doc.font('Helvetica').fontSize(10).text('Tidak ada permintaan tamu pada hari ini.', { align: 'center', color: '#666666' });
       } else {
-        doc.fontSize(9).font('Helvetica-Bold');
+        doc.fontSize(9);
         y = doc.y;
-        doc.text('No', 15, y, { width: 20, align: 'center' });
-        doc.text('Kamar', 38, y, { width: 35, align: 'center' });
-        doc.text('Permintaan', 75, y, { width: 120, align: 'left' });
-        doc.text('Keterangan', 200, y, { width: 130, align: 'left' });
-        doc.text('Waktu', 335, y, { width: 50, align: 'center' });
-        doc.text('Status', 390, y, { width: 60, align: 'center' });
-        doc.text('Dibuat Oleh', 455, y, { width: 70, align: 'left' });
+        doc.text('No', 20, y, { width: 25, align: 'center' });
+        doc.text('Kamar', 45, y, { width: 40, align: 'center' });
+        doc.text('Permintaan', 85, y, { width: 130, align: 'left' });
+        doc.text('Keterangan', 215, y, { width: 120, align: 'left' });
+        doc.text('Waktu', 335, y, { width: 55, align: 'center' });
+        doc.text('Status', 390, y, { width: 70, align: 'center' });
+        doc.text('Dibuat Oleh', 460, y, { width: 80, align: 'left' });
 
         y += 18;
-        doc.moveTo(15, y).lineTo(560, y).stroke();
-        y += 6;
+        doc.moveTo(20, y).lineTo(570, y).stroke();
+        y += 8;
 
-        doc.fontSize(9).font('Helvetica');
+        doc.font('Helvetica').fontSize(9);
         dataPermintaan.forEach((req, idx) => {
           if (y > 520) { doc.addPage(); y = 30; }
-          doc.text(String(idx + 1), 15, y, { width: 20, align: 'center' });
-          doc.text(req.nomor_kamar, 38, y, { width: 35, align: 'center' });
-          doc.text(req.jenis_permintaan, 75, y, { width: 120, align: 'left' });
-          doc.text(req.keterangan || '-', 200, y, { width: 130, align: 'left' });
-          doc.text(req.waktu_masuk, 335, y, { width: 50, align: 'center' });
-          doc.text(req.status, 390, y, { width: 60, align: 'center' });
-          doc.text(req.dibuat_oleh || '-', 455, y, { width: 70, align: 'left' });
+          doc.text(String(idx + 1), 20, y, { width: 25, align: 'center' });
+          doc.text(req.nomor_kamar, 45, y, { width: 40, align: 'center' });
+          doc.text(req.jenis_permintaan, 85, y, { width: 130, align: 'left' });
+          doc.text(req.keterangan || '-', 215, y, { width: 120, align: 'left' });
+          doc.text(req.waktu_masuk, 335, y, { width: 55, align: 'center' });
+          doc.text(req.status, 390, y, { width: 70, align: 'center' });
+          doc.text(req.dibuat_oleh || '-', 460, y, { width: 80, align: 'left' });
           y += 14;
         });
       }
 
-      // --------------------------
-      // TANDA TANGAN
-      // --------------------------
+      // Tanda Tangan
       y += 30;
-      doc.text('Dibuat pada: ' + getWaktuWIB() + ' WIB', { align: 'right' });
+      doc.font('Helvetica').fontSize(10).text(`Dibuat pada: ${getWaktuWIB()} WIB`, { align: 'right' });
       doc.moveDown(4);
-      doc.text('Mengetahui,', 400, y);
+      doc.text('Mengetahui,', 450, y);
       doc.moveDown(3);
-      doc.text('( _________________________ )', 400, y);
-      doc.text('Supervisor', 415, y + 20);
+      doc.text('( _________________________ )', 450, y);
+      doc.text('Supervisor', 465, y + 20);
 
       doc.end();
     });
@@ -693,24 +693,6 @@ app.get('/unduh-excel', (req, res) => {
       t.status_awal AS "Status Kamar",
       IFNULL(l.waktu_masuk, '-') AS "Jam Masuk",
       IFNULL(l.waktu_keluar, '-') AS "Jam Keluar",
-      IFNULL(l.sheet_twin, 0) AS "Sheet Twin",
-      IFNULL(l.sheet_king, 0) AS "Sheet King",
-      IFNULL(l.duvet_twin, 0) AS "Duvet Twin",
-      IFNULL(l.duvet_king, 0) AS "Duvet King",
-      IFNULL(l.bath_towel, 0) AS "Bath Towel",
-      IFNULL(l.hand_towel, 0) AS "Hand Towel",
-      IFNULL(l.bath_mat, 0) AS "Bath Mat",
-      IFNULL(l.pillow_case, 0) AS "Pillow Case",
-      IFNULL(l.shampoo, 0) AS "Shampoo",
-      IFNULL(l.soap, 0) AS "Soap",
-      IFNULL(l.shower_gel, 0) AS "Shower Gel",
-      IFNULL(l.shower_cap, 0) AS "Shower Cap",
-      IFNULL(l.dental_kit, 0) AS "Dental Kit",
-      IFNULL(l.sugar, 0) AS "Sugar",
-      IFNULL(l.tea, 0) AS "Tea",
-      IFNULL(l.coffee, 0) AS "Coffee",
-      IFNULL(l.creamer, 0) AS "Creamer",
-      IFNULL(l.mineral, 0) AS "Air Mineral",
       CASE WHEN t.selesai = 1 THEN 'Selesai' ELSE 'Belum Selesai' END AS "Status Pekerjaan"
     FROM tugas t
     JOIN kamar k ON t.kamar = k.nomor_kamar
