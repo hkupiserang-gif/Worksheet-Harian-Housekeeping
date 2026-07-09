@@ -25,6 +25,7 @@
     .btn {padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500;}
     .btn-biru {background: #004b97; color: white;}
     .btn-hijau {background: #28a745; color: white;}
+    .btn-kuning {background: #ffc107; color: #212529;}
     table {width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px;}
     th, td {padding: 10px 8px; text-align: center; border: 1px solid #e2e8f0; vertical-align: middle;}
     th {background-color: #f1f5f9; font-weight: 600; color: #333;}
@@ -32,6 +33,11 @@
     .status-belum {background: #fff3cd; color: #856404;}
     .status-proses {background: #cce5ff; color: #004085;}
     .status-selesai {background: #d4edda; color: #155724;}
+    .lantai-group {margin-bottom: 15px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px;}
+    .lantai-judul {font-weight: bold; margin-bottom: 8px; color: #002b5c;}
+    .kamar-grid {display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px;}
+    .kamar-item {padding: 6px; border: 1px solid #ddd; border-radius: 4px; text-align: center; cursor: pointer;}
+    .kamar-item input {margin-right: 4px;}
   </style>
 </head>
 <body>
@@ -50,6 +56,46 @@
     </div>
 
     <% if (pesan) { %><div class="pesan <%= pesan.tipe %>"><%= pesan.teks %></div><% } %>
+
+    <!-- ✅ FORM PEMBAGIAN KAMAR -->
+    <div class="card">
+      <h3>📝 Pembagian Tugas Kamar</h3>
+      <form action="/tambah-tugas" method="POST">
+        <input type="hidden" name="tanggal" value="<%= cariTanggal %>">
+        
+        <div style="display:flex; gap:12px; align-items:center; margin-bottom:15px; flex-wrap:wrap;">
+          <label>Petugas:</label>
+          <select name="petugas" required>
+            <option value="">-- Pilih RA --</option>
+            <% daftarRA.forEach(ra => { %>
+              <option value="<%= ra.nama %>"><%= ra.nama %></option>
+            <% }) %>
+          </select>
+          <button type="submit" class="btn btn-biru">Simpan Pembagian</button>
+        </div>
+
+        <% for (const lantai in kamarPerLantai) { %>
+          <div class="lantai-group">
+            <div class="lantai-judul">Lantai: <%= lantai %></div>
+            <div class="kamar-grid">
+              <% kamarPerLantai[lantai].forEach(k => { %>
+                <div class="kamar-item">
+                  <input type="checkbox" name="kamar" value="<%= k.nomor_kamar %>" id="kamar_<%= k.nomor_kamar %>">
+                  <label for="kamar_<%= k.nomor_kamar %>"><strong><%= k.nomor_kamar %></strong></label>
+                  <select name="status_awal" style="width:100%; margin-top:4px; font-size:11px;">
+                    <option value="VD">VD</option>
+                    <option value="OD">OD</option>
+                    <option value="OOO">OOO</option>
+                    <option value="DND">DND</option>
+                    <option value="Clean">Clean</option>
+                  </select>
+                </div>
+              <% }) %>
+            </div>
+          </div>
+        <% } %>
+      </form>
+    </div>
 
     <!-- Filter & Unduhan -->
     <div class="card">
@@ -114,7 +160,7 @@
   </div>
 
   <script>
-    // Update waktu berjalan setiap detik
+    // ✅ Update waktu WIB secara otomatis
     setInterval(() => {
       const now = new Date();
       const wib = new Date(now.getTime() + 7 * 60 * 60 * 1000);
