@@ -2,31 +2,29 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - Horison Hotel</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif; }
-    body { background: #004b97; display:flex; align-items:center; justify-content:center; min-height:100vh; }
-    .login-box { background:white; padding:30px; border-radius:8px; width:100%; max-width:380px; box-shadow:0 4px 12px rgba(0,0,0,0.2); text-align:center; }
-    .logo { font-size:36px; font-weight:bold; color:#004b97; margin-bottom:8px; }
-    .sub-logo { font-size:14px; color:#666; margin-bottom:24px; }
-    input { width:100%; padding:12px; margin:8px 0; border:1px solid #ddd; border-radius:4px; font-size:14px; }
-    button { width:100%; padding:12px; background:#004b97; color:white; border:none; border-radius:4px; font-size:16px; font-weight:500; cursor:pointer; margin-top:12px; }
-    button:hover { background:#003a7a; }
-    .pesan { padding:10px; border-radius:4px; margin-bottom:16px; font-size:14px; }
-    .error { background:#ffe9e9; color:#b02020; }
-    .sukses { background:#e6f9ed; color:#157c38; }
+    body { background: #0054A6; height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .login-box { background: white; padding: 30px; border-radius: 8px; width: 100%; max-width: 380px; box-shadow: 0 0 15px rgba(0,0,0,0.2); }
   </style>
 </head>
 <body>
   <div class="login-box">
-    <div class="logo">HORISON</div>
-    <div class="sub-logo">TC-UPI SERANG • HOTEL & CONVENTION</div>
-    <% if (pesan) { %><div class="pesan <%= pesan.tipe %>"><%= pesan.teks %></div><% } %>
-    <form action="/login" method="POST">
-      <input type="text" name="username" placeholder="Username" required>
-      <input type="password" name="password" placeholder="Password" required>
-      <button type="submit">Masuk</button>
+    <h4 class="text-center mb-4">HORISON HOTEL</h4>
+    <% if (pesan) { %>
+      <div class="alert alert-danger"><%= pesan.teks %></div>
+    <% } %>
+    <form method="POST" action="/login">
+      <div class="mb-3">
+        <label class="form-label">Username</label>
+        <input type="text" name="username" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Password</label>
+        <input type="password" name="password" class="form-control" required>
+      </div>
+      <button type="submit" class="btn btn-primary w-100">Masuk</button>
     </form>
   </div>
 </body>
