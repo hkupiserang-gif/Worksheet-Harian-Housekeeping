@@ -9,10 +9,11 @@ const app = express();
 const PORT = process.env.PORT || 8888;
 
 // ======================================
-// Fungsi Waktu WIB Akurat
+// ✅ PERBAIKAN WAKTU WIB UTC+7
 // ======================================
 const getWaktuWIB = () => {
   const now = new Date();
+  // Tambah offset 7 jam untuk WIB
   const wib = new Date(now.getTime() + (7 * 60 * 60 * 1000));
   return wib.toISOString().slice(11, 16);
 };
@@ -32,7 +33,7 @@ const db = new sqlite3.Database('./database.db', (err) => {
 });
 
 // ======================================
-// Buat Tabel
+// Buat & Isi Tabel
 // ======================================
 db.serialize(() => {
   db.run(`CREATE TABLE IF NOT EXISTS pengguna (
@@ -202,7 +203,7 @@ app.post('/login', (req, res) => {
 });
 
 // ======================================
-// Halaman Supervisor
+// ✅ HALAMAN SUPERVISOR (DENGAN PEMBAGIAN KAMAR)
 // ======================================
 app.get('/spv', (req, res) => {
   if (!req.session.user || req.session.user.peran !== 'SPV') return res.redirect('/');
@@ -239,6 +240,7 @@ app.get('/spv', (req, res) => {
             cariKamar,
             kamarPerLantai,
             daftarRA,
+            daftarKamar,
             daftarTugas,
             daftarPermintaan,
             pesan: res.locals.pesan
@@ -249,15 +251,25 @@ app.get('/spv', (req, res) => {
   });
 });
 
+// ✅ Proses Simpan Pembagian Tugas
 app.post('/tambah-tugas', (req, res) => {
-  const { tanggal, petugas, kamar } = req.body;
+  const { tanggal, petugas, kamar, status_awal } = req.body;
   const daftarKamar = Array.isArray(kamar) ? kamar : [kamar];
+  const daftarStatus = Array.isArray(status_awal) ? status_awal : [status_awal];
+  
   let selesai = 0;
-  daftarKamar.forEach(k => {
-    const status = req.body[`status_${k}`] || 'VD';
-    db.run(`INSERT OR REPLACE INTO tugas VALUES (?, ?, ?, ?, 0)`, [tanggal, k, petugas, status], () => {
-      if (++selesai === daftarKamar.length) res.redirect('/spv?pesan=berhasil');
-    });
+  const total = daftarKamar.length;
+
+  if (total === 0) return res.redirect('/spv?pesan=gagal');
+
+  daftarKamar.forEach((k, idx) => {
+    const status = daftarStatus[idx] || 'VD';
+    db.run(`INSERT OR REPLACE INTO tugas VALUES (?, ?, ?, ?, 0)`, 
+      [tanggal, k, petugas, status], 
+      () => {
+        if (++selesai === total) res.redirect('/spv?pesan=berhasil');
+      }
+    );
   });
 });
 
@@ -364,7 +376,8 @@ app.post('/tambah-permintaan', (req, res) => {
 });
 
 app.post('/selesai-permintaan', (req, res) => {
-  db.run(`UPDATE permintaan_tamu SET status = 'Selesai', waktu_selesai = TIME('now') WHERE id = ?`, [req.body.id], () => res.redirect('/ot?pesan=berhasil'));
+  db.run(`UPDATE permintaan_tamu SET status = 'Selesai', waktu_selesai = ? WHERE id = ?`, 
+    [getWaktuWIB(), req.body.id], () => res.redirect('/ot?pesan=berhasil'));
 });
 
 // ======================================
@@ -412,7 +425,8 @@ app.get('/unduh-excel', (req, res) => {
     WHERE t.tanggal = ? ORDER BY t.kamar
   `, [tanggal], (err, data) => {
     if (err) return res.send('❌ Gagal memuat data');
-    const fields = Object.keys(data[0] || {});
+    if (data.length === 0) return res.send('❌ Tidak ada data untuk diunduh');
+    const fields = Object.keys(data[0]);
     try {
       const csv = parse(data, { fields, delimiter: ';', quote: '"' });
       res.setHeader('Content-Disposition', `attachment; filename="Laporan_Kebersihan_${tanggal}.csv"`);
@@ -436,6 +450,8 @@ app.get('/unduh-pdf', (req, res) => {
     WHERE t.tanggal = ? ORDER BY t.kamar
   `, [tanggal], (err, data) => {
     if (err) return res.send('❌ Gagal membuat PDF');
+    if (data.length === 0) return res.send('❌ Tidak ada data untuk diunduh');
+    
     const doc = new PDFDocument({ margin: 20, size: 'A4' });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="Laporan_Kebersihan_${tanggal}.pdf"`);
