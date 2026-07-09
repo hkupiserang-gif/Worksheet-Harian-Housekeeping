@@ -4,239 +4,104 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Panel Room Attendant - Horison Hotel</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <style>
-    body { background-color: #f8f9fa; font-size: 0.9rem; }
-    .header { background-color: #0054A6; color: white; padding: 15px 20px; border-radius: 0 0 8px 8px; margin-bottom: 20px; }
-    .card { border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); margin-bottom: 20px; }
-    .section-title { font-weight: bold; color: #0054A6; border-bottom: 1px solid #eee; padding-bottom: 5px; margin: 15px 0 10px; }
-    .form-control-sm { text-align: center; }
+    * {margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif;}
+    body {background-color: #f8fafc;}
+    .header {background-color: #004b97; color: white; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);}
+    .header h2 {font-size: 18px; font-weight: 600;}
+    .header a {color: white; text-decoration: none; margin-left: 12px;}
+    .waktu-live {font-size: 14px; background: #003a7a; padding: 4px 10px; border-radius: 4px; font-variant-numeric: tabular-nums;}
+    .container {max-width: 1200px; margin: 0 auto; padding: 20px 16px;}
+    .pesan {padding: 10px; border-radius: 4px; margin-bottom: 16px; font-size: 14px; text-align: center;}
+    .pesan.error {background:#ffe9e9; color:#b02020; border:1px solid #f8cccc;}
+    .pesan.sukses {background:#e6f9ed; color:#157c38; border:1px solid #c8f0d6;}
+    .card {background: white; border-radius: 6px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 24px;}
+    .card h3 {font-size: 16px; color: #222; margin-bottom: 16px; font-weight: 600; padding-bottom: 8px; border-bottom: 1px solid #eee;}
+    .kamar {border:1px solid #e2e8f0; border-radius:6px; padding:15px; margin-bottom:15px;}
+    .kamar h4 {color:#002b5c; margin-bottom:12px;}
+    .form-grid {display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-bottom:12px;}
+    input {padding:6px 8px; border:1px solid #ddd; border-radius:4px; width:100%;}
+    label {font-size:13px; color:#444;}
+    .btn {padding:7px 14px; border:none; border-radius:4px; cursor:pointer; font-size:14px; font-weight:500;}
+    .btn-biru {background:#004b97; color:white;}
+    .btn-hijau {background:#28a745; color:white;}
   </style>
 </head>
 <body>
-<div class="container-fluid px-3 py-2">
-  <!-- Header -->
-  <div class="header d-flex justify-content-between align-items-center">
-    <div>
-      <h4 class="mb-0">HORISON HOTEL</h4>
-      <small>Panel Room Attendant</small>
-    </div>
-    <div class="text-end">
-      <p class="mb-0">Petugas: <strong><%= user.nama %></strong></p>
-      <p class="mb-0">Tanggal: <%= tanggal %> | Jam: <%= waktuSekarang %></p>
-      <a href="/logout" class="btn btn-sm btn-light mt-1"><i class="bi bi-box-arrow-right me-1"></i>Keluar</a>
+  <div class="header">
+    <h2>Panel Room Attendant</h2>
+    <div style="display:flex; gap:15px; align-items:center;">
+      <div class="waktu-live">🕒 <span id="jamSekarang"><%= waktuSekarang %></span> WIB</div>
+      <div>Halo, <%= user.nama %> | <a href="/logout">Keluar</a></div>
     </div>
   </div>
 
-  <!-- Daftar Tugas -->
-  <h5 class="mb-3">Daftar Kamar yang Harus Dibersihkan</h5>
+  <div class="container">
+    <% if (pesan) { %><div class="pesan <%= pesan.tipe %>"><%= pesan.teks %></div><% } %>
 
-  <% if (tugas.length === 0) { %>
-    <div class="alert alert-info text-center py-5">
-      <i class="bi bi-inbox fs-2 d-block mb-2"></i>
-      Belum ada tugas yang diberikan hari ini.
-    </div>
-  <% } else { %>
-    <% tugas.forEach((kamar, idx) => { %>
     <div class="card">
-      <div class="card-header bg-light d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Kamar <%= kamar.kamar %> | Status: <%= kamar.status_awal %></h5>
-        <% if (kamar.waktu_keluar !== '-') { %>
-          <span class="badge bg-success">Selesai</span>
-        <% } else if (kamar.waktu_masuk !== '-') { %>
-          <span class="badge bg-warning text-dark">Sedang Dikerjakan</span>
-        <% } else { %>
-          <form action="/mulai-kamar" method="POST" class="d-inline">
-            <input type="hidden" name="tanggal" value="<%= tanggal %>">
-            <input type="hidden" name="kamar" value="<%= kamar.kamar %>">
-            <button type="submit" class="btn btn-sm btn-primary">Mulai Kerjakan</button>
-          </form>
-        <% } %>
-      </div>
+      <h3>Daftar Tugas Kamar - <%= tanggal %></h3>
+      <% if (tugas.length === 0) { %>
+  <p style="text-align:center; padding:30px; color:#777;">
+    📭 Belum ada tugas yang dibagikan ke Anda hari ini<br>
+    <small>Tugas akan muncul setelah Supervisor membagikannya</small>
+  </p>
+      <% } else { %>
+        <% tugas.forEach(k => { %>
+          <div class="kamar">
+            <h4>Kamar <%= k.kamar %> | Status Awal: <%= k.status_awal %></h4>
+            <% if (k.waktu_masuk === '-') { %>
+              <form action="/mulai-kamar" method="POST">
+                <input type="hidden" name="tanggal" value="<%= tanggal %>">
+                <input type="hidden" name="kamar" value="<%= k.kamar %>">
+                <button type="submit" class="btn btn-biru">Mulai Kerjakan</button>
+              </form>
+            <% } else if (!k.selesai) { %>
+              <form action="/selesai-kamar" method="POST">
+                <input type="hidden" name="tanggal" value="<%= tanggal %>">
+                <input type="hidden" name="kamar" value="<%= k.kamar %>">
+                <input type="hidden" name="waktu_masuk" value="<%= k.waktu_masuk %>">
 
-      <% if (kamar.waktu_masuk !== '-' && kamar.waktu_keluar === '-') { %>
-      <div class="card-body">
-        <form action="/selesai-kamar" method="POST">
-          <input type="hidden" name="tanggal" value="<%= tanggal %>">
-          <input type="hidden" name="kamar" value="<%= kamar.kamar %>">
-          <input type="hidden" name="waktu_masuk" value="<%= kamar.waktu_masuk %>">
-
-          <!-- LINEN -->
-          <h6 class="section-title">LINEN</h6>
-          <div class="row g-3">
-            <div class="col-md-3">
-              <label class="form-label">Sheet Double IN</label>
-              <input type="number" name="sheet_double_in" class="form-control form-control-sm" min="0" value="<%= kamar.sheet_double_in %>">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Sheet Double OUT</label>
-              <input type="number" name="sheet_double_out" class="form-control form-control-sm" min="0" value="<%= kamar.sheet_double_out %>">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Sheet Single IN</label>
-              <input type="number" name="sheet_single_in" class="form-control form-control-sm" min="0" value="<%= kamar.sheet_single_in %>">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Sheet Single OUT</label>
-              <input type="number" name="sheet_single_out" class="form-control form-control-sm" min="0" value="<%= kamar.sheet_single_out %>">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Duvet Cover IN</label>
-              <input type="number" name="duvet_cover_in" class="form-control form-control-sm" min="0" value="<%= kamar.duvet_cover_in %>">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Duvet Cover OUT</label>
-              <input type="number" name="duvet_cover_out" class="form-control form-control-sm" min="0" value="<%= kamar.duvet_cover_out %>">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Duvet Single IN</label>
-              <input type="number" name="duvet_single_in" class="form-control form-control-sm" min="0" value="<%= kamar.duvet_single_in %>">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Duvet Single OUT</label>
-              <input type="number" name="duvet_single_out" class="form-control form-control-sm" min="0" value="<%= kamar.duvet_single_out %>">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Bath Towel IN</label>
-              <input type="number" name="bath_towel_in" class="form-control form-control-sm" min="0" value="<%= kamar.bath_towel_in %>">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Bath Towel OUT</label>
-              <input type="number" name="bath_towel_out" class="form-control form-control-sm" min="0" value="<%= kamar.bath_towel_out %>">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Hand Towel IN</label>
-              <input type="number" name="hand_towel_in" class="form-control form-control-sm" min="0" value="<%= kamar.hand_towel_in %>">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Hand Towel OUT</label>
-              <input type="number" name="hand_towel_out" class="form-control form-control-sm" min="0" value="<%= kamar.hand_towel_out %>">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Bath Mat IN</label>
-              <input type="number" name="bath_mat_in" class="form-control form-control-sm" min="0" value="<%= kamar.bath_mat_in %>">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Bath Mat OUT</label>
-              <input type="number" name="bath_mat_out" class="form-control form-control-sm" min="0" value="<%= kamar.bath_mat_out %>">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Pillow Case IN</label>
-              <input type="number" name="pillow_case_in" class="form-control form-control-sm" min="0" value="<%= kamar.pillow_case_in %>">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Pillow Case OUT</label>
-              <input type="number" name="pillow_case_out" class="form-control form-control-sm" min="0" value="<%= kamar.pillow_case_out %>">
-            </div>
+                <div class="form-grid">
+                  <div><label>Sheet Twin</label><input type="number" name="sheet_twin" value="<%= k.sheet_twin %>" min="0"></div>
+                  <div><label>Sheet King</label><input type="number" name="sheet_king" value="<%= k.sheet_king %>" min="0"></div>
+                  <div><label>Duvet Twin</label><input type="number" name="duvet_twin" value="<%= k.duvet_twin %>" min="0"></div>
+                  <div><label>Duvet King</label><input type="number" name="duvet_king" value="<%= k.duvet_king %>" min="0"></div>
+                  <div><label>Bath Towel</label><input type="number" name="bath_towel" value="<%= k.bath_towel %>" min="0"></div>
+                  <div><label>Hand Towel</label><input type="number" name="hand_towel" value="<%= k.hand_towel %>" min="0"></div>
+                  <div><label>Bath Mat</label><input type="number" name="bath_mat" value="<%= k.bath_mat %>" min="0"></div>
+                  <div><label>Pillow Case</label><input type="number" name="pillow_case" value="<%= k.pillow_case %>" min="0"></div>
+                  <div><label>Shampoo</label><input type="number" name="shampoo" value="<%= k.shampoo %>" min="0"></div>
+                  <div><label>Soap</label><input type="number" name="soap" value="<%= k.soap %>" min="0"></div>
+                  <div><label>Shower Gel</label><input type="number" name="shower_gel" value="<%= k.shower_gel %>" min="0"></div>
+                  <div><label>Shower Cap</label><input type="number" name="shower_cap" value="<%= k.shower_cap %>" min="0"></div>
+                  <div><label>Dental Kit</label><input type="number" name="dental_kit" value="<%= k.dental_kit %>" min="0"></div>
+                  <div><label>Sugar</label><input type="number" name="sugar" value="<%= k.sugar %>" min="0"></div>
+                  <div><label>Tea</label><input type="number" name="tea" value="<%= k.tea %>" min="0"></div>
+                  <div><label>Coffee</label><input type="number" name="coffee" value="<%= k.coffee %>" min="0"></div>
+                  <div><label>Creamer</label><input type="number" name="creamer" value="<%= k.creamer %>" min="0"></div>
+                  <div><label>Mineral</label><input type="number" name="mineral" value="<%= k.mineral %>" min="0"></div>
+                </div>
+                <button type="submit" class="btn btn-hijau">Simpan & Selesai</button>
+              </form>
+            <% } else { %>
+              <p style="color:#157c38; font-weight:500;">✅ Selesai dikerjakan | Masuk: <%= k.waktu_masuk %> | Keluar: <%= k.waktu_keluar %></p>
+            <% } %>
           </div>
-
-          <!-- BATH ROOM -->
-          <h6 class="section-title mt-4">BATH ROOM</h6>
-          <div class="row g-3">
-            <div class="col-md-2">
-              <label class="form-label">Hand Soap</label>
-              <input type="number" name="hand_soap" class="form-control form-control-sm" min="0" value="<%= kamar.hand_soap %>">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Shampoo</label>
-              <input type="number" name="shampoo" class="form-control form-control-sm" min="0" value="<%= kamar.shampoo %>">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Shower Gel</label>
-              <input type="number" name="shower_gel" class="form-control form-control-sm" min="0" value="<%= kamar.shower_gel %>">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Tooth Brush</label>
-              <input type="number" name="tooth_brush" class="form-control form-control-sm" min="0" value="<%= kamar.tooth_brush %>">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Sterer</label>
-              <input type="number" name="sterer" class="form-control form-control-sm" min="0" value="<%= kamar.sterer %>">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Shower Cap</label>
-              <input type="number" name="shower_cap" class="form-control form-control-sm" min="0" value="<%= kamar.shower_cap %>">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Slipper</label>
-              <input type="number" name="slipper" class="form-control form-control-sm" min="0" value="<%= kamar.slipper %>">
-            </div>
-          </div>
-
-          <!-- BED ROOM -->
-          <h6 class="section-title mt-4">BED ROOM</h6>
-          <div class="row g-3">
-            <div class="col-md-2">
-              <label class="form-label">Laundry Bag</label>
-              <input type="number" name="laundry_bag" class="form-control form-control-sm" min="0" value="<%= kamar.laundry_bag %>">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Laundry List</label>
-              <input type="number" name="laundry_list" class="form-control form-control-sm" min="0" value="<%= kamar.laundry_list %>">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Memo Pad</label>
-              <input type="number" name="memo_pad" class="form-control form-control-sm" min="0" value="<%= kamar.memo_pad %>">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Pencil</label>
-              <input type="number" name="pencil" class="form-control form-control-sm" min="0" value="<%= kamar.pencil %>">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Plastic Bin</label>
-              <input type="number" name="plastic_bin" class="form-control form-control-sm" min="0" value="<%= kamar.plastic_bin %>">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Tissue</label>
-              <input type="number" name="tissue" class="form-control form-control-sm" min="0" value="<%= kamar.tissue %>">
-            </div>
-          </div>
-
-          <!-- CONDIMEN -->
-          <h6 class="section-title mt-4">CONDIMEN</h6>
-          <div class="row g-3">
-            <div class="col-md-2">
-              <label class="form-label">Coffee</label>
-              <input type="number" name="coffee" class="form-control form-control-sm" min="0" value="<%= kamar.coffee %>">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Sugar</label>
-              <input type="number" name="sugar" class="form-control form-control-sm" min="0" value="<%= kamar.sugar %>">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Tea</label>
-              <input type="number" name="tea" class="form-control form-control-sm" min="0" value="<%= kamar.tea %>">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Creamer</label>
-              <input type="number" name="creamer" class="form-control form-control-sm" min="0" value="<%= kamar.creamer %>">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Mineral Water</label>
-              <input type="number" name="mineral" class="form-control form-control-sm" min="0" value="<%= kamar.mineral %>">
-            </div>
-          </div>
-
-          <div class="mt-4 text-end">
-            <button type="submit" class="btn btn-success">
-              <i class="bi bi-check-circle me-1"></i>Selesai & Simpan Laporan
-            </button>
-          </div>
-        </form>
-      </div>
-      <% } else if (kamar.waktu_keluar !== '-') { %>
-      <div class="card-body text-center text-success py-3">
-        <i class="bi bi-check-circle-fill fs-1 mb-2"></i>
-        <p class="mb-0">Laporan kebersihan sudah disimpan.</p>
-        <small>Jam selesai: <%= kamar.waktu_keluar %></small>
-      </div>
+        <% }) %>
       <% } %>
     </div>
-    <% }) %>
-  <% } %>
-</div>
+  </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Jam berjalan otomatis WIB
+    setInterval(() => {
+      const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+      const jam = String(now.getHours()).padStart(2, '0');
+      const menit = String(now.getMinutes()).padStart(2, '0');
+      const detik = String(now.getSeconds()).padStart(2, '0');
+      document.getElementById('jamSekarang').textContent = `${jam}:${menit}:${detik}`;
+    }, 1000);
+  </script>
 </body>
 </html>
