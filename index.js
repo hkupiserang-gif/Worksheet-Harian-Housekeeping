@@ -2,7 +2,7 @@ const express = require('express');
 const session = require('express-session');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
-const { parse } = require('json2csv');
+const { parse } = require('@json2csv/plainjs');
 const PDFDocument = require('pdfkit');
 const cron = require('node-cron'); // ✅ Tambahan untuk jadwal otomatis
 
