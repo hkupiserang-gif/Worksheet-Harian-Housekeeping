@@ -7,39 +7,17 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <style>
-        body {
-            background-color: #f8f9fa;
-        }
-        .sidebar {
-            min-height: 100vh;
-            background-color: #2c3e50;
-            color: white;
-        }
-        .sidebar a {
-            color: #ecf0f1;
-            text-decoration: none;
-            padding: 12px 15px;
-            display: block;
-            transition: 0.3s;
-        }
-        .sidebar a:hover, .sidebar a.active {
-            background-color: #34495e;
-            border-left: 4px solid #f39c12;
-            padding-left: 11px;
-        }
-        .content {
-            padding: 20px;
-        }
-        .status-badge {
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
+        body { background-color: #f8f9fa; }
+        .sidebar { min-height: 100vh; background-color: #2c3e50; color: white; }
+        .sidebar a { color: #ecf0f1; text-decoration: none; padding: 12px 15px; display: block; }
+        .sidebar a:hover, .sidebar a.active { background-color: #34495e; border-left: 4px solid #f39c12; }
+        .content { padding: 20px; }
+        .badge { font-size: 0.85rem; }
     </style>
 </head>
 <body>
     <div class="container-fluid">
         <div class="row">
-            <!-- Sidebar -->
             <div class="col-md-2 sidebar p-0">
                 <div class="p-3 text-center border-bottom border-secondary">
                     <h5>HORISON HOTEL</h5>
@@ -56,13 +34,11 @@
                 </div>
             </div>
 
-            <!-- Konten Utama -->
             <div class="col-md-10 content">
-                <!-- Notifikasi Pesan -->
                 <% if (pesan) { %>
                 <div class="alert <%= pesan.tipe === 'sukses' ? 'alert-success' : 'alert-danger' %> alert-dismissible fade show" role="alert">
                     <%= pesan.teks %>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
                 <% } %>
 
@@ -73,39 +49,48 @@
                     </div>
                 </div>
 
-                <!-- Filter Tanggal & Unduh Laporan -->
+                <!-- Filter & Unduh -->
                 <div class="card mb-4 shadow-sm">
                     <div class="card-body">
                         <form action="/spv" method="GET" class="row g-3 align-items-center">
-                            <div class="col-md-3">
-                                <label class="form-label">Pilih Tanggal</label>
+                            <div class="col-md-2">
+                                <label class="form-label">Tanggal</label>
                                 <input type="date" name="tanggal" class="form-control" value="<%= cariTanggal %>" required>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
+                                <label class="form-label">Nama Petugas</label>
+                                <select name="petugas" class="form-select">
+                                    <option value="">Semua Petugas</option>
+                                    <% daftarRA.forEach(ra => { %>
+                                    <option value="<%= ra.nama %>" <%= filterPetugas === ra.nama ? 'selected' : '' %>><%= ra.nama %></option>
+                                    <% }) %>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
                                 <label class="form-label">Cari Kamar</label>
                                 <input type="text" name="kamar" class="form-control" placeholder="Contoh: 201" value="<%= cariKamar %>">
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label d-block">&nbsp;</label>
-                                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-1"></i> Tampilkan</button>
+                                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i> Tampilkan</button>
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label d-block">&nbsp;</label>
-                                <a href="/unduh-pdf?tanggal=<%= cariTanggal %>" class="btn btn-danger w-100" target="_blank">
-                                    <i class="bi bi-file-pdf me-1"></i> Unduh PDF
+                                <a href="/unduh-pdf-petugas?tanggal=<%= cariTanggal %>&petugas=<%= filterPetugas %>" class="btn btn-danger w-100" target="_blank">
+                                    <i class="bi bi-file-pdf"></i> Laporan Petugas
                                 </a>
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label d-block">&nbsp;</label>
-                                <a href="/unduh-excel?tanggal=<%= cariTanggal %>" class="btn btn-success w-100">
-                                    <i class="bi bi-file-excel me-1"></i> Unduh Excel
+                                <a href="/unduh-pdf-permintaan?tanggal=<%= cariTanggal %>" class="btn btn-warning w-100" target="_blank">
+                                    <i class="bi bi-file-pdf"></i> Laporan Permintaan
                                 </a>
                             </div>
                         </form>
                     </div>
                 </div>
 
-                <!-- Bagian Daftar Tugas -->
+                <!-- Daftar Tugas -->
                 <div id="tugas" class="card shadow-sm mb-5">
                     <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Daftar Tugas Kamar</h5>
@@ -115,9 +100,7 @@
                     </div>
                     <div class="card-body p-0">
                         <% if (daftarTugas.length === 0) { %>
-                            <div class="p-4 text-center text-muted">
-                                Belum ada tugas yang dibagikan untuk tanggal ini.
-                            </div>
+                            <div class="p-4 text-center text-muted">Belum ada tugas dibagikan.</div>
                         <% } else { %>
                         <div class="table-responsive">
                             <table class="table table-striped table-bordered table-hover mb-0">
@@ -126,10 +109,10 @@
                                         <th>No</th>
                                         <th>Kamar</th>
                                         <th>Lantai</th>
-                                        <th>Status Awal</th>
+                                        <th>Status</th>
                                         <th>Petugas</th>
                                         <th>Jam Masuk</th>
-                                        <th>Jam Selesai</th>
+                                        <th>Jam Keluar</th>
                                         <th>Status Pekerjaan</th>
                                         <th>Aksi</th>
                                     </tr>
@@ -141,87 +124,25 @@
                                         <td><strong><%= tugas.kamar %></strong></td>
                                         <td><%= tugas.lantai %></td>
                                         <td>
-                                            <% if (tugas.status_awal === 'VD') { %>
-                                                <span class="badge bg-secondary status-badge">VD - Kotor Kosong</span>
-                                            <% } else if (tugas.status_awal === 'VC') { %>
-                                                <span class="badge bg-success status-badge">VC - Bersih Kosong</span>
-                                            <% } else if (tugas.status_awal === 'VCU') { %>
-                                                <span class="badge bg-info text-dark status-badge">VCU - Belum Cek</span>
-                                            <% } else if (tugas.status_awal === 'OD') { %>
-                                                <span class="badge bg-warning text-dark status-badge">OD - Kotor Terisi</span>
-                                            <% } else if (tugas.status_awal === 'OC') { %>
-                                                <span class="badge bg-primary status-badge">OC - Bersih Terisi</span>
-                                            <% } else if (tugas.status_awal === 'OM') { %>
-                                                <span class="badge bg-dark status-badge">OM - Perawatan</span>
-                                            <% } else if (tugas.status_awal === 'OOO') { %>
-                                                <span class="badge bg-danger status-badge">OOO - Tidak Terpakai</span>
+                                            <% if (tugas.status_awal === 'VD') { %><span class="badge bg-secondary">VD - Kotor Kosong</span>
+                                            <% } else if (tugas.status_awal === 'VC') { %><span class="badge bg-success">VC - Bersih Kosong</span>
+                                            <% } else if (tugas.status_awal === 'VCU') { %><span class="badge bg-info text-dark">VCU - Belum Cek</span>
+                                            <% } else if (tugas.status_awal === 'OD') { %><span class="badge bg-warning text-dark">OD - Kotor Terisi</span>
+                                            <% } else if (tugas.status_awal === 'OC') { %><span class="badge bg-primary">OC - Bersih Terisi</span>
+                                            <% } else if (tugas.status_awal === 'OM') { %><span class="badge bg-dark">OM - Perbaikan</span>
+                                            <% } else if (tugas.status_awal === 'OOO') { %><span class="badge bg-danger">OOO - Tutup</span>
                                             <% } %>
                                         </td>
                                         <td><%= tugas.petugas %></td>
                                         <td><%= tugas.waktu_masuk %></td>
                                         <td><%= tugas.waktu_keluar %></td>
+                                        <td><%= tugas.selesai ? '<span class="badge bg-success">Selesai</span>' : '<span class="badge bg-secondary">Belum</span>' %></td>
                                         <td>
-                                            <% if (tugas.selesai === 1) { %>
-                                                <span class="badge bg-success">Selesai</span>
-                                            <% } else { %>
-                                                <span class="badge bg-secondary">Belum Selesai</span>
-                                            <% } %>
-                                        </td>
-                                        <td>
-                                            <!-- Hanya tombol Revisi yang muncul setelah dibagikan -->
                                             <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modalRevisi<%= idx %>">
-                                                <i class="bi bi-pencil-square me-1"></i> Revisi
+                                                <i class="bi bi-pencil-square"></i> Revisi
                                             </button>
                                         </td>
                                     </tr>
-
-                                    <!-- Modal Revisi Tugas -->
-                                    <div class="modal fade" id="modalRevisi<%= idx %>" tabindex="-1" aria-labelledby="modalRevisiLabel<%= idx %>" aria-hidden="true">
-                                        <div class="modal-dialog">
-                                            <div class="modal-content">
-                                                <form action="/tambah-tugas" method="POST">
-                                                    <div class="modal-header bg-warning">
-                                                        <h5 class="modal-title" id="modalRevisiLabel<%= idx %>">
-                                                            <i class="bi bi-pencil-square me-2"></i>Revisi Tugas Kamar <%= tugas.kamar %>
-                                                        </h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        <input type="hidden" name="tanggal" value="<%= cariTanggal %>">
-                                                        <input type="hidden" name="kamar" value="<%= tugas.kamar %>">
-
-                                                        <div class="mb-3">
-                                                            <label class="form-label">Nama Petugas</label>
-                                                            <select name="petugas" class="form-select" required>
-                                                                <% daftarRA.forEach(ra => { %>
-                                                                    <option value="<%= ra.nama %>" <%= ra.nama === tugas.petugas ? 'selected' : '' %>>
-                                                                        <%= ra.nama %>
-                                                                    </option>
-                                                                <% }) %>
-                                                            </select>
-                                                        </div>
-
-                                                        <div class="mb-3">
-                                                            <label class="form-label">Status Awal Kamar</label>
-                                                            <select name="status_awal" class="form-select" required>
-                                                                <option value="VD" <%= tugas.status_awal === 'VD' ? 'selected' : '' %>>VD - Vacant Dirty</option>
-                                                                <option value="VC" <%= tugas.status_awal === 'VC' ? 'selected' : '' %>>VC - Vacant Clean</option>
-                                                                <option value="VCU" <%= tugas.status_awal === 'VCU' ? 'selected' : '' %>>VCU - Vacant Clean Unchecked</option>
-                                                                <option value="OD" <%= tugas.status_awal === 'OD' ? 'selected' : '' %>>OD - Occupied Dirty</option>
-                                                                <option value="OC" <%= tugas.status_awal === 'OC' ? 'selected' : '' %>>OC - Occupied Clean</option>
-                                                                <option value="OM" <%= tugas.status_awal === 'OM' ? 'selected' : '' %>>OM - Occupied Maintenance</option>
-                                                                <option value="OOO" <%= tugas.status_awal === 'OOO' ? 'selected' : '' %>>OOO - Out of Order</option>
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                                                        <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
-                                                    </div>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
                                     <% }) %>
                                 </tbody>
                             </table>
@@ -230,88 +151,77 @@
                     </div>
                 </div>
 
-                <!-- Modal Bagikan Tugas Baru -->
+                <!-- Modal Bagikan Tugas -->
                 <div class="modal fade" id="modalBagikan" tabindex="-1" aria-labelledby="modalBagikanLabel" aria-hidden="true">
                     <div class="modal-dialog modal-lg">
                         <div class="modal-content">
                             <form action="/tambah-tugas" method="POST">
                                 <div class="modal-header bg-primary text-white">
-                                    <h5 class="modal-title" id="modalBagikanLabel">
-                                        <i class="bi bi-plus-circle me-2"></i>Bagikan Tugas Kebersihan
-                                    </h5>
-                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                                    <h5 class="modal-title">Bagikan Tugas Kebersihan</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                 </div>
                                 <div class="modal-body">
                                     <input type="hidden" name="tanggal" value="<%= cariTanggal %>">
-
                                     <div class="mb-3">
-                                        <label class="form-label">Pilih Petugas</label>
+                                        <label class="form-label">Nama Petugas</label>
                                         <select name="petugas" class="form-select" required>
-                                            <option value="">-- Pilih Nama Petugas --</option>
-                                            <% daftarRA.forEach(ra => { %>
-                                                <option value="<%= ra.nama %>"><%= ra.nama %></option>
-                                            <% }) %>
+                                            <option value="">-- Pilih --</option>
+                                            <% daftarRA.forEach(ra => { %><option value="<%= ra.nama %>"><%= ra.nama %></option><% }) %>
                                         </select>
                                     </div>
-
                                     <div class="mb-3">
                                         <label class="form-label">Status Awal Kamar</label>
                                         <select name="status_awal" class="form-select" required>
-                                            <option value="VD">VD - Vacant Dirty</option>
-                                            <option value="VC">VC - Vacant Clean</option>
-                                            <option value="VCU">VCU - Vacant Clean Unchecked</option>
-                                            <option value="OD">OD - Occupied Dirty</option>
-                                            <option value="OC">OC - Occupied Clean</option>
-                                            <option value="OM">OM - Occupied Maintenance</option>
-                                            <option value="OOO">OOO - Out of Order</option>
+                                            <option value="VD">VD - Vacant Dirty (Kosong Kotor)</option>
+                                            <option value="VC">VC - Vacant Clean (Kosong Bersih)</option>
+                                            <option value="VCU">VCU - Vacant Clean Unchecked (Kosong Bersih Belum Cek)</option>
+                                            <option value="OD">OD - Occupied Dirty (Terisi Kotor)</option>
+                                            <option value="OC">OC - Occupied Clean (Terisi Bersih)</option>
+                                            <option value="OM">OM - Out of Maintenance (Perbaikan)</option>
+                                            <option value="OOO">OOO - Out of Order (Tidak Bisa Dipakai)</option>
                                         </select>
                                     </div>
-
                                     <div class="mb-3">
-                                        <label class="form-label">Pilih Kamar yang Akan Dibagikan</label>
+                                        <label class="form-label">Pilih Kamar (bisa pilih banyak)</label>
                                         <div class="border p-3 rounded" style="max-height: 300px; overflow-y: auto;">
                                             <% Object.keys(kamarPerLantai).forEach(lantai => { %>
-                                                <div class="mb-2">
-                                                    <h6 class="text-primary"><%= lantai %></h6>
-                                                    <div class="row">
-                                                        <% kamarPerLantai[lantai].forEach(kamar => { %>
-                                                            <!-- Cek apakah kamar sudah ada di daftar tugas, jika ada nonaktifkan pilihan -->
-                                                            <% const sudahAda = daftarTugas.some(t => t.kamar === kamar.nomor_kamar); %>
-                                                            <div class="col-md-3 mb-2">
-                                                                <div class="form-check">
-                                                                    <input class="form-check-input" type="checkbox" name="kamar" value="<%= kamar.nomor_kamar %>" id="kamar_<%= kamar.nomor_kamar %>" <%= sudahAda ? 'disabled' : '' %>>
-                                                                    <label class="form-check-label <%= sudahAda ? 'text-muted' : '' %>" for="kamar_<%= kamar.nomor_kamar %>">
-                                                                        <%= kamar.nomor_kamar %> <%= sudahAda ? '(sudah dibagikan)' : '' %>
-                                                                    </label>
-                                                                </div>
-                                                            </div>
-                                                        <% }) %>
+                                                <h6 class="text-muted mt-2"><%= lantai %></h6>
+                                                <div class="row g-2">
+                                                    <% kamarPerLantai[lantai].forEach(k => { %>
+                                                    <div class="col-md-3">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" name="kamar" value="<%= k.nomor_kamar %>" id="kamar<%= k.nomor_kamar %>">
+                                                            <label class="form-check-label" for="kamar<%= k.nomor_kamar %>">
+                                                                <%= k.nomor_kamar %>
+                                                            </label>
+                                                        </div>
                                                     </div>
+                                                    <% }) %>
                                                 </div>
                                             <% }) %>
                                         </div>
-                                        <small class="text-muted">* Kamar yang sudah dibagikan tidak dapat dipilih lagi</small>
                                     </div>
                                 </div>
                                 <div class="modal-footer">
                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                                    <button type="submit" class="btn btn-primary">Bagikan Tugas</button>
+                                    <button type="submit" class="btn btn-primary">Simpan Tugas</button>
                                 </div>
                             </form>
                         </div>
                     </div>
                 </div>
 
-                <!-- Bagian Daftar Permintaan Tamu -->
+                <!-- Laporan Permintaan Tamu -->
                 <div id="permintaan" class="card shadow-sm">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0"><i class="bi bi-clipboard-data me-2"></i>Daftar Permintaan Tamu</h5>
+                    <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Daftar Permintaan Tamu</h5>
+                        <a href="/unduh-pdf-permintaan?tanggal=<%= cariTanggal %>" class="btn btn-sm btn-dark" target="_blank">
+                            <i class="bi bi-file-pdf"></i> Unduh Laporan
+                        </a>
                     </div>
                     <div class="card-body p-0">
                         <% if (daftarPermintaan.length === 0) { %>
-                            <div class="p-4 text-center text-muted">
-                                Belum ada permintaan tamu untuk hari ini.
-                            </div>
+                            <div class="p-4 text-center text-muted">Belum ada permintaan tamu hari ini.</div>
                         <% } else { %>
                         <div class="table-responsive">
                             <table class="table table-striped table-hover mb-0">
@@ -319,29 +229,25 @@
                                     <tr>
                                         <th>No</th>
                                         <th>Kamar</th>
-                                        <th>Jenis Permintaan</th>
-                                        <th>Keterangan</th>
+                                        <th>Permintaan</th>
                                         <th>Waktu</th>
                                         <th>Status</th>
                                         <th>Dibuat Oleh</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <% daftarPermintaan.forEach((p, i) => { %>
+                                    <% daftarPermintaan.forEach((req, idx) => { %>
                                     <tr>
-                                        <td><%= i + 1 %></td>
-                                        <td><%= p.nomor_kamar %></td>
-                                        <td><%= p.jenis_permintaan %></td>
-                                        <td><%= p.keterangan || '-' %></td>
-                                        <td><%= p.waktu_masuk %></td>
+                                        <td><%= idx + 1 %></td>
+                                        <td><%= req.nomor_kamar %></td>
+                                        <td><%= req.jenis_permintaan %> <%= req.keterangan ? `(${req.keterangan})` : '' %></td>
+                                        <td><%= req.waktu_masuk %></td>
                                         <td>
-                                            <% if (p.status === 'Dipinjam Tamu') { %>
-                                                <span class="badge bg-warning text-dark">Dipinjam</span>
-                                            <% } else if (p.status === 'Dikembalikan') { %>
-                                                <span class="badge bg-success">Dikembalikan</span>
+                                            <% if (req.status === 'Dipinjam Tamu') { %><span class="badge bg-warning text-dark">Dipakai</span>
+                                            <% } else if (req.status === 'Dikembalikan') { %><span class="badge bg-success">Selesai</span>
                                             <% } %>
                                         </td>
-                                        <td><%= p.dibuat_oleh %></td>
+                                        <td><%= req.dibuat_oleh || '-' %></td>
                                     </tr>
                                     <% }) %>
                                 </tbody>
