@@ -46,6 +46,44 @@ const getTanggalWIB = () => {
 };
 
 // ======================================
+// ✅ DAFTAR HARGA BARANG
+// ======================================
+const HARGA_BARANG = {
+  sheet_twin: 2750,
+  sheet_king: 2950,
+  duvet_twin: 4750,
+  duvet_king: 6250,
+  bath_towel: 2850,
+  hand_towel: 1750,
+  bath_mat: 2250,
+  pillow_case: 1750,
+  shower_cap: 600,
+  dental_kit: 1450,
+  laundry_bag: 1150,
+  laundry_list: 150,
+  dnd_sign: 0,
+  magic: 0,
+  shoe: 0,
+  sugar: 155,
+  tea: 471,
+  coffee: 665,
+  creamer: 212,
+  mineral: 2146,
+  tissue_facial: 9400,
+  tissue_roll: 1443,
+  cotton_bud: 460,
+  slipper: 2500,
+  comb: 750,
+  shaving_kit: 2620,
+  stirer: 1400,
+  coster: 350,
+  poly_bag_kecil: 19500,
+  poly_bag_besar: 19500,
+  pensil: 1200,
+  note_pad: 500
+};
+
+// ======================================
 // ✅ KONEKSI DATABASE (AMAN UNTUK RAILWAY)
 // ======================================
 const dbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH 
@@ -174,6 +212,18 @@ db.serialize(() => {
     coffee INTEGER DEFAULT 0,
     creamer INTEGER DEFAULT 0,
     mineral INTEGER DEFAULT 0,
+    tissue_facial INTEGER DEFAULT 0,
+    tissue_roll INTEGER DEFAULT 0,
+    cotton_bud INTEGER DEFAULT 0,
+    slipper INTEGER DEFAULT 0,
+    comb INTEGER DEFAULT 0,
+    shaving_kit INTEGER DEFAULT 0,
+    stirer INTEGER DEFAULT 0,
+    coster INTEGER DEFAULT 0,
+    poly_bag_kecil INTEGER DEFAULT 0,
+    poly_bag_besar INTEGER DEFAULT 0,
+    pensil INTEGER DEFAULT 0,
+    note_pad INTEGER DEFAULT 0,
     petugas TEXT,
     PRIMARY KEY (tanggal, nomor_kamar)
   )`);
@@ -278,36 +328,61 @@ app.get('/spv', (req, res) => {
 
   db.all(`SELECT nomor_kamar, lantai, tipe_kamar FROM kamar WHERE aktif = 1 ORDER BY nomor_kamar`, [], (err, daftarKamar) => {
     db.all(`SELECT nama FROM pengguna WHERE peran = 'RA' AND aktif = 1 ORDER BY nama`, [], (err, daftarRA) => {
-      let query = `
+      // Ambil kamar yang BELUM dibagikan
+      let queryBelum = `
         SELECT t.*, k.lantai, k.tipe_kamar,
                IFNULL(l.waktu_masuk, '-') AS waktu_masuk,
                IFNULL(l.waktu_keluar, '-') AS waktu_keluar
         FROM tugas t
         JOIN kamar k ON t.kamar = k.nomor_kamar
         LEFT JOIN laporan l ON t.tanggal = l.tanggal AND t.kamar = l.nomor_kamar
-        WHERE t.tanggal = ?
+        WHERE t.tanggal = ? AND t.sudah_dibagikan = 0
       `;
-      const param = [cariTanggal];
-      if (cariKamar) { query += ` AND t.kamar = ?`; param.push(cariKamar); }
-      query += ` ORDER BY t.kamar`;
+      const paramBelum = [cariTanggal];
+      if (cariKamar) { queryBelum += ` AND t.kamar = ?`; paramBelum.push(cariKamar); }
+      queryBelum += ` ORDER BY t.kamar`;
 
-      db.all(query, param, (err, daftarTugas) => {
-        db.all(`SELECT * FROM permintaan_tamu WHERE tanggal = ? ORDER BY waktu_masuk DESC`, [cariTanggal], (err, daftarPermintaan) => {
-          const kamarPerLantai = {};
-          daftarKamar.forEach(k => {
-            if (!kamarPerLantai[k.lantai]) kamarPerLantai[k.lantai] = [];
-            kamarPerLantai[k.lantai].push(k);
+      // Ambil kamar yang SUDAH dibagikan, dikelompokkan per RA
+      let querySudah = `
+        SELECT t.*, k.lantai, k.tipe_kamar,
+               IFNULL(l.waktu_masuk, '-') AS waktu_masuk,
+               IFNULL(l.waktu_keluar, '-') AS waktu_keluar
+        FROM tugas t
+        JOIN kamar k ON t.kamar = k.nomor_kamar
+        LEFT JOIN laporan l ON t.tanggal = l.tanggal AND t.kamar = l.nomor_kamar
+        WHERE t.tanggal = ? AND t.sudah_dibagikan = 1
+      `;
+      const paramSudah = [cariTanggal];
+      if (cariKamar) { querySudah += ` AND t.kamar = ?`; paramSudah.push(cariKamar); }
+      querySudah += ` ORDER BY t.petugas, t.kamar`;
+
+      db.all(queryBelum, paramBelum, (err, daftarBelumDibagikan) => {
+        db.all(querySudah, paramSudah, (err, daftarSudahDibagikan) => {
+          // Kelompokkan per RA
+          const perRA = {};
+          daftarSudahDibagikan.forEach(tugas => {
+            if (!perRA[tugas.petugas]) perRA[tugas.petugas] = [];
+            perRA[tugas.petugas].push(tugas);
           });
-          res.render('spv', {
-            user: req.session.user,
-            tanggal: hariIni,
-            cariTanggal,
-            cariKamar,
-            kamarPerLantai,
-            daftarRA,
-            daftarTugas,
-            daftarPermintaan,
-            pesan: res.locals.pesan
+
+          db.all(`SELECT * FROM permintaan_tamu WHERE tanggal = ? ORDER BY waktu_masuk DESC`, [cariTanggal], (err, daftarPermintaan) => {
+            const kamarPerLantai = {};
+            daftarKamar.forEach(k => {
+              if (!kamarPerLantai[k.lantai]) kamarPerLantai[k.lantai] = [];
+              kamarPerLantai[k.lantai].push(k);
+            });
+            res.render('spv', {
+              user: req.session.user,
+              tanggal: hariIni,
+              cariTanggal,
+              cariKamar,
+              kamarPerLantai,
+              daftarRA,
+              daftarBelumDibagikan,
+              daftarSudahDibagikan: perRA,
+              daftarPermintaan,
+              pesan: res.locals.pesan
+            });
           });
         });
       });
@@ -368,7 +443,19 @@ app.get('/ra', (req, res) => {
            IFNULL(l.tea, 0) AS tea,
            IFNULL(l.coffee, 0) AS coffee,
            IFNULL(l.creamer, 0) AS creamer,
-           IFNULL(l.mineral, 0) AS mineral
+           IFNULL(l.mineral, 0) AS mineral,
+           IFNULL(l.tissue_facial, 0) AS tissue_facial,
+           IFNULL(l.tissue_roll, 0) AS tissue_roll,
+           IFNULL(l.cotton_bud, 0) AS cotton_bud,
+           IFNULL(l.slipper, 0) AS slipper,
+           IFNULL(l.comb, 0) AS comb,
+           IFNULL(l.shaving_kit, 0) AS shaving_kit,
+           IFNULL(l.stirer, 0) AS stirer,
+           IFNULL(l.coster, 0) AS coster,
+           IFNULL(l.poly_bag_kecil, 0) AS poly_bag_kecil,
+           IFNULL(l.poly_bag_besar, 0) AS poly_bag_besar,
+           IFNULL(l.pensil, 0) AS pensil,
+           IFNULL(l.note_pad, 0) AS note_pad
     FROM tugas t
     LEFT JOIN laporan l ON t.tanggal = l.tanggal AND t.kamar = l.nomor_kamar
     WHERE t.tanggal = ? AND t.petugas = ? AND t.sudah_dibagikan = 1 ORDER BY t.kamar
@@ -398,7 +485,10 @@ app.post('/selesai-kamar', (req, res) => {
     bath_towel, hand_towel, bath_mat, pillow_case,
     shampoo, soap, shower_gel, shower_cap, dental_kit,
     laundry_bag, laundry_list, dnd_sign,
-    magic, shoe, sugar, tea, coffee, creamer, mineral } = req.body;
+    magic, shoe, sugar, tea, coffee, creamer, mineral,
+    tissue_facial, tissue_roll, cotton_bud, slipper, comb,
+    shaving_kit, stirer, coster, poly_bag_kecil, poly_bag_besar,
+    pensil, note_pad } = req.body;
   const waktuKeluar = getWaktuWIBJamMenit();
 
   db.run(`
@@ -408,8 +498,11 @@ app.post('/selesai-kamar', (req, res) => {
       bath_towel, hand_towel, bath_mat, pillow_case,
       shampoo, soap, shower_gel, shower_cap, dental_kit,
       laundry_bag, laundry_list, dnd_sign,
-      magic, shoe, sugar, tea, coffee, creamer, mineral, petugas
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      magic, shoe, sugar, tea, coffee, creamer, mineral,
+      tissue_facial, tissue_roll, cotton_bud, slipper, comb,
+      shaving_kit, stirer, coster, poly_bag_kecil, poly_bag_besar,
+      pensil, note_pad, petugas
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
     tanggal, kamar, waktu_masuk, waktuKeluar,
     sheet_twin||0, sheet_king||0, duvet_twin||0, duvet_king||0,
@@ -417,6 +510,9 @@ app.post('/selesai-kamar', (req, res) => {
     shampoo||0, soap||0, shower_gel||0, shower_cap||0, dental_kit||0,
     laundry_bag||0, laundry_list||0, dnd_sign||0,
     magic||0, shoe||0, sugar||0, tea||0, coffee||0, creamer||0, mineral||0,
+    tissue_facial||0, tissue_roll||0, cotton_bud||0, slipper||0, comb||0,
+    shaving_kit||0, stirer||0, coster||0, poly_bag_kecil||0, poly_bag_besar||0,
+    pensil||0, note_pad||0,
     req.session.user.nama
   ], err => {
     if (err) return console.error(err);
@@ -483,7 +579,7 @@ app.post('/ubah-status-permintaan', (req, res) => {
 });
 
 app.post('/hapus-permintaan', (req, res) => {
-  db.run(`DELETE FROM permintaan WHERE id = ?`, [req.body.id], err => 
+  db.run(`DELETE FROM permintaan_tamu WHERE id = ?`, [req.body.id], err => 
     err ? res.redirect('/ot?pesan=gagal') : res.redirect('/ot?pesan=berhasil')
   );
 });
@@ -496,11 +592,11 @@ app.get('/unduh-pdf-ot', (req, res) => {
       if (err || !data || data.length === 0) return res.send('❌ Tidak ada data');
       const doc = new PDFDocument({ margin: 25, size: 'A4' });
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename=LAPORAN_PERMINTAAN_TAMU_${tanggal}.pdf`);
+      res.setHeader('Content-Disposition', `attachment; filename=Loan_Item_Today_${tanggal}.pdf`);
       doc.pipe(res);
 
       doc.fontSize(18).font('Helvetica-Bold').text('HORISON HOTEL & CONVENTION', { align: 'center' });
-      doc.fontSize(14).text('LAPORAN PERMINTAAN TAMU', { align: 'center', underline: true });
+      doc.fontSize(14).text('Loan Item Today', { align: 'center', underline: true });
       doc.moveDown(1);
       doc.fontSize(11).text(`Tanggal: ${tanggal} | Dibuat: ${getWaktuWIB()} WIB`);
       doc.moveDown(1);
@@ -532,90 +628,116 @@ app.get('/unduh-pdf-ot', (req, res) => {
 });
 
 // ======================================
-// ✅ LAPORAN PDF SPV (DIPERBAIKI)
+// ✅ LAPORAN PDF SPV (DIPERBAIKI + RINCIAN + HARGA)
 // ======================================
 app.get('/unduh-pdf', (req, res) => {
   const tanggal = req.query.tanggal || getTanggalWIB();
-  db.all(`
+  const ra = req.query.ra || null;
+
+  let query = `
     SELECT t.*, k.lantai, k.tipe_kamar,
            IFNULL(l.waktu_masuk, '-') AS waktu_masuk,
-           IFNULL(l.waktu_keluar, '-') AS waktu_keluar
+           IFNULL(l.waktu_keluar, '-') AS waktu_keluar,
+           l.*
     FROM tugas t
     JOIN kamar k ON t.kamar = k.nomor_kamar
     LEFT JOIN laporan l ON t.tanggal = l.tanggal AND t.kamar = l.nomor_kamar
-    WHERE t.tanggal = ? ORDER BY t.kamar
-  `, [tanggal], (err, dataKamar) => {
+    WHERE t.tanggal = ?
+  `;
+  const param = [tanggal];
+  if (ra) { query += ` AND t.petugas = ?`; param.push(ra); }
+  query += ` ORDER BY t.petugas, t.kamar`;
+
+  db.all(query, param, (err, dataKamar) => {
     if (err || !dataKamar || dataKamar.length === 0) return res.send('❌ Tidak ada data');
 
-    db.all(`SELECT * FROM permintaan_tamu WHERE tanggal = ?`, [tanggal], (err, dataPermintaan) => {
-      const doc = new PDFDocument({ margin: 20, size: 'A4', layout: 'landscape' });
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename=LAPORAN_HARIAN_${tanggal}.pdf`);
-      doc.pipe(res);
+    const doc = new PDFDocument({ margin: 20, size: 'A4', layout: 'landscape' });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=LAPORAN_${ra ? 'RA_' + ra : 'KEBERSIHAN'}_${tanggal}.pdf`);
+    doc.pipe(res);
 
-      doc.font('Helvetica-Bold').fontSize(18).text('HORISON HOTEL & CONVENTION', { align: 'center' });
-      doc.fontSize(14).text('LAPORAN KONTROL KEBERSIHAN', { align: 'center', underline: true });
-      doc.moveDown(1);
-      doc.font('Helvetica').fontSize(11);
-      doc.text(`Tanggal: ${tanggal} | Dibuat: ${getWaktuWIB()} WIB`);
-      doc.moveDown(1);
+    const judul = ra ? `Worksheet Room Attendant: ${ra}` : 'LAPORAN KONTROL KEBERSIHAN';
+    doc.font('Helvetica-Bold').fontSize(18).text('HORISON HOTEL & CONVENTION', { align: 'center' });
+    doc.fontSize(14).text(judul, { align: 'center', underline: true });
+    doc.moveDown(1);
+    doc.font('Helvetica').fontSize(11);
+    doc.text(`Tanggal: ${tanggal} | Dibuat: ${getWaktuWIB()} WIB`);
+    doc.moveDown(1);
 
-      doc.font('Helvetica-Bold').fontSize(9);
-      let y = doc.y;
-      doc.text('No', 20, y, { width: 25, align: 'center' });
-      doc.text('Kamar', 45, y, { width: 40, align: 'center' });
-      doc.text('Lantai', 85, y, { width: 60, align: 'center' });
-      doc.text('Status', 150, y, { width: 50, align: 'center' });
-      doc.text('Petugas', 210, y, { width: 90, align: 'center' });
-      doc.text('Masuk', 305, y, { width: 50, align: 'center' });
-      doc.text('Keluar', 360, y, { width: 50, align: 'center' });
-      doc.text('Keterangan', 420, y, { width: 90, align: 'center' });
+    let totalBiaya = 0;
+    let y = doc.y;
 
-      y += 18; doc.moveTo(20, y).lineTo(570, y).stroke(); y += 8;
+    dataKamar.forEach((row, idx) => {
+      doc.font('Helvetica-Bold').fontSize(10);
+      doc.text(`Kamar: ${row.kamar} | Lantai: ${row.lantai} | Petugas: ${row.petugas || '-'}`, 20, y);
+      y += 15;
       doc.font('Helvetica').fontSize(9);
-      dataKamar.forEach((row, idx) => {
-        if (y > 520) { doc.addPage(); y = 30; }
-        let ket = 'Belum Dikerjakan';
-        if (row.waktu_masuk !== '-' && row.waktu_keluar === '-') ket = 'Sedang Dikerjakan';
-        if (row.waktu_keluar !== '-') ket = row.siap_dicek ? '✅ SIAP CEK' : 'Selesai';
 
-        doc.text(String(idx+1), 20, y);
-        doc.text(row.kamar, 45, y);
-        doc.text(row.lantai, 85, y);
-        doc.text(row.status_awal, 150, y);
-        doc.text(row.petugas || '-', 210, y);
-        doc.text(row.waktu_masuk, 305, y);
-        doc.text(row.waktu_keluar, 360, y);
-        doc.text(ket, 420, y);
-        y += 14;
+      let biayaKamar = 0;
+      const barangTerpakai = [];
+      Object.keys(HARGA_BARANG).forEach(nama => {
+        const jumlah = row[nama] || 0;
+        if (jumlah > 0) {
+          const sub = jumlah * HARGA_BARANG[nama];
+          biayaKamar += sub;
+          barangTerpakai.push(`${nama.replace('_', ' ')}: ${jumlah} x Rp ${HARGA_BARANG[nama].toLocaleString('id-ID')} = Rp ${sub.toLocaleString('id-ID')}`);
+        }
       });
 
-      doc.end();
+      if (barangTerpakai.length > 0) {
+        barangTerpakai.forEach(item => {
+          doc.text(item, 25, y);
+          y += 12;
+        });
+      } else {
+        doc.text('Tidak ada barang yang diambil', 25, y);
+        y += 12;
+      }
+
+      doc.text(`Total Biaya Kamar: Rp ${biayaKamar.toLocaleString('id-ID')}`, 25, y, { bold: true });
+      totalBiaya += biayaKamar;
+      y += 20;
+
+      if (y > 520) { doc.addPage(); y = 30; }
     });
+
+    doc.font('Helvetica-Bold').fontSize(11);
+    doc.text(`TOTAL KESELURUHAN: Rp ${totalBiaya.toLocaleString('id-ID')}`, 20, y);
+    doc.end();
   });
 });
 
 app.get('/unduh-excel', (req, res) => {
   const tanggal = req.query.tanggal || getTanggalWIB();
-  db.all(`
+  const ra = req.query.ra || null;
+
+  let query = `
     SELECT
       t.tanggal AS "Tanggal",
       t.kamar AS "No Kamar",
       k.lantai AS "Lantai",
-      k.tipe_kamar AS "Tipe Kamar",
       t.petugas AS "Nama Petugas",
       t.status_awal AS "Status Kamar",
       IFNULL(l.waktu_masuk, '-') AS "Jam Masuk",
-      IFNULL(l.waktu_keluar, '-') AS "Jam Keluar",
-      CASE WHEN t.selesai = 1 THEN 'Selesai' ELSE 'Belum Selesai' END AS "Status Pekerjaan"
+      IFNULL(l.waktu_keluar, '-') AS "Jam Keluar"
+  `;
+  Object.keys(HARGA_BARANG).forEach(nama => {
+    query += `, IFNULL(l.${nama}, 0) AS "${nama.replace('_', ' ')}"`;
+  });
+  query += `
     FROM tugas t
     JOIN kamar k ON t.kamar = k.nomor_kamar
     LEFT JOIN laporan l ON t.tanggal = l.tanggal AND t.kamar = l.nomor_kamar
-    WHERE t.tanggal = ? ORDER BY t.kamar
-  `, [tanggal], (err, data) => {
+    WHERE t.tanggal = ?
+  `;
+  const param = [tanggal];
+  if (ra) { query += ` AND t.petugas = ?`; param.push(ra); }
+  query += ` ORDER BY t.petugas, t.kamar`;
+
+  db.all(query, param, (err, data) => {
     if (err || !data.length) return res.send('❌ Tidak ada data');
     const csv = parse(data, { delimiter: ';', quote: '"' });
-    res.setHeader('Content-Disposition', `attachment; filename="Laporan_Kebersihan_${tanggal}.csv"`);
+    res.setHeader('Content-Disposition', `attachment; filename="Laporan_${ra ? 'RA_' + ra + '_' : ''}${tanggal}.csv"`);
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.send('\uFEFF' + csv);
   });
