@@ -9,19 +9,24 @@ const app = express();
 const PORT = process.env.PORT || 8888;
 
 // ======================================
-// ✅ PERBAIKAN WAKTU WIB UTC+7
+// ✅ WAKTU WIB LENGKAP + DETIK
 // ======================================
 const getWaktuWIB = () => {
   const now = new Date();
-  // Tambah offset 7 jam untuk WIB
   const wib = new Date(now.getTime() + (7 * 60 * 60 * 1000));
-  return wib.toISOString().slice(11, 16);
+  return wib.toISOString().slice(11, 19); // Format HH:MM:SS
+};
+
+const getWaktuWIBJamMenit = () => {
+  const now = new Date();
+  const wib = new Date(now.getTime() + (7 * 60 * 60 * 1000));
+  return wib.toISOString().slice(11, 16); // Format HH:MM
 };
 
 const getTanggalWIB = () => {
   const now = new Date();
   const wib = new Date(now.getTime() + (7 * 60 * 60 * 1000));
-  return wib.toISOString().slice(0, 10);
+  return wib.toISOString().slice(0, 10); // Format YYYY-MM-DD
 };
 
 // ======================================
@@ -172,6 +177,7 @@ app.use(session({
 
 app.use((req, res, next) => {
   res.locals.waktuSekarang = getWaktuWIB();
+  res.locals.waktuSekarangSingkat = getWaktuWIBJamMenit();
   res.locals.tanggalSekarang = getTanggalWIB();
   res.locals.pesan = null;
   if (req.query.pesan === 'berhasil') res.locals.pesan = { tipe: 'sukses', teks: '✅ Berhasil disimpan' };
@@ -203,7 +209,7 @@ app.post('/login', (req, res) => {
 });
 
 // ======================================
-// ✅ HALAMAN SUPERVISOR (DENGAN PEMBAGIAN KAMAR)
+// Halaman Supervisor
 // ======================================
 app.get('/spv', (req, res) => {
   if (!req.session.user || req.session.user.peran !== 'SPV') return res.redirect('/');
@@ -240,7 +246,6 @@ app.get('/spv', (req, res) => {
             cariKamar,
             kamarPerLantai,
             daftarRA,
-            daftarKamar,
             daftarTugas,
             daftarPermintaan,
             pesan: res.locals.pesan
@@ -251,7 +256,6 @@ app.get('/spv', (req, res) => {
   });
 });
 
-// ✅ Proses Simpan Pembagian Tugas
 app.post('/tambah-tugas', (req, res) => {
   const { tanggal, petugas, kamar, status_awal } = req.body;
   const daftarKamar = Array.isArray(kamar) ? kamar : [kamar];
@@ -315,7 +319,7 @@ app.get('/ra', (req, res) => {
 });
 
 app.post('/mulai-kamar', (req, res) => {
-  const waktuMasuk = getWaktuWIB();
+  const waktuMasuk = getWaktuWIBJamMenit();
   db.run(`INSERT OR REPLACE INTO laporan (tanggal, nomor_kamar, waktu_masuk, petugas) VALUES (?, ?, ?, ?)`,
     [req.body.tanggal, req.body.kamar, waktuMasuk, req.session.user.nama], err => {
       if (err) console.error(err);
@@ -330,7 +334,7 @@ app.post('/selesai-kamar', (req, res) => {
     shampoo, soap, shower_gel, shower_cap, dental_kit,
     laundry_bag, laundry_list, dnd_sign,
     magic, shoe, sugar, tea, coffee, creamer, mineral } = req.body;
-  const waktuKeluar = getWaktuWIB();
+  const waktuKeluar = getWaktuWIBJamMenit();
 
   db.run(`
     INSERT OR REPLACE INTO laporan (
@@ -377,7 +381,7 @@ app.post('/tambah-permintaan', (req, res) => {
 
 app.post('/selesai-permintaan', (req, res) => {
   db.run(`UPDATE permintaan_tamu SET status = 'Selesai', waktu_selesai = ? WHERE id = ?`, 
-    [getWaktuWIB(), req.body.id], () => res.redirect('/ot?pesan=berhasil'));
+    [getWaktuWIBJamMenit(), req.body.id], () => res.redirect('/ot?pesan=berhasil'));
 });
 
 // ======================================
@@ -438,51 +442,93 @@ app.get('/unduh-excel', (req, res) => {
   });
 });
 
+// ✅ PDF MENGIKUTI FORMAT ROOMBOY CONTROL SHEET
 app.get('/unduh-pdf', (req, res) => {
   const tanggal = req.query.tanggal || getTanggalWIB();
   db.all(`
-    SELECT t.kamar, t.petugas, t.status_awal,
+    SELECT t.kamar, t.petugas, t.status_awal, k.lantai,
            IFNULL(l.waktu_masuk, '-') AS waktu_masuk,
            IFNULL(l.waktu_keluar, '-') AS waktu_keluar,
-           l.*
+           l.sheet_twin, l.sheet_king, l.duvet_twin, l.duvet_king,
+           l.bath_towel, l.hand_towel, l.bath_mat, l.pillow_case,
+           l.shampoo, l.soap, l.shower_gel, l.shower_cap, l.dental_kit,
+           l.sugar, l.tea, l.coffee, l.creamer, l.mineral
     FROM tugas t
+    JOIN kamar k ON t.kamar = k.nomor_kamar
     LEFT JOIN laporan l ON t.tanggal = l.tanggal AND t.kamar = l.nomor_kamar
     WHERE t.tanggal = ? ORDER BY t.kamar
   `, [tanggal], (err, data) => {
     if (err) return res.send('❌ Gagal membuat PDF');
     if (data.length === 0) return res.send('❌ Tidak ada data untuk diunduh');
     
-    const doc = new PDFDocument({ margin: 20, size: 'A4' });
+    const doc = new PDFDocument({ margin: 20, size: 'A4', layout: 'landscape' });
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="Laporan_Kebersihan_${tanggal}.pdf"`);
+    res.setHeader('Content-Disposition', `attachment; filename="ROOMBOY_CONTROL_SHEET_${tanggal}.pdf"`);
     doc.pipe(res);
 
-    doc.fontSize(18).font('Helvetica-Bold').text('HORISON HOTEL', { align: 'center' });
-    doc.fontSize(12).font('Helvetica').text('TC-UPI SERANG • HOTEL & CONVENTION', { align: 'center' });
+    // Header
+    doc.fontSize(16).font('Helvetica-Bold').text('HORISON HOTEL & CONVENTION', { align: 'center' });
+    doc.fontSize(14).font('Helvetica-Bold').text('ROOMBOY CONTROL SHEET', { align: 'center', underline: true });
     doc.moveDown(1);
-    doc.fontSize(14).text('LAPORAN ROOMBOY CONTROL SHEET', { align: 'center' });
-    doc.fontSize(12).text(`Tanggal: ${tanggal}`, { align: 'center' });
+    doc.fontSize(10).font('Helvetica').text(`Tanggal: ${tanggal} | Shift: Morning`, { align: 'left' });
+    doc.fontSize(10).text(`Floor/Section: ${data[0]?.lantai || 'Semua Lantai'}`, { align: 'left' });
     doc.moveDown(1);
+
+    // Judul Kolom
+    doc.fontSize(8).font('Helvetica-Bold');
+    const colX = [20, 55, 90, 125, 160, 195, 230, 265, 300, 335, 370, 405, 440, 475, 510, 545, 580, 615, 650, 685, 720];
+    const headers = [
+      'NO', 'ROOM', 'STATUS', 'TIME IN', 'TIME OUT',
+      'SHEET T', 'SHEET K', 'DUVET T', 'DUVET K',
+      'BATH TOWEL', 'HAND TOWEL', 'BATH MAT', 'PILLOW',
+      'SHAMPOO', 'SOAP', 'GEL', 'CAP', 'DENTAL',
+      'SUGAR', 'TEA', 'COFFEE', 'CREAMER', 'MINERAL'
+    ];
 
     let y = doc.y;
-    const colW = [35, 45, 60, 40, 40, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35];
-    const hd = ['No', 'Kamar', 'Petugas', 'Masuk', 'Keluar', 'ST', 'SK', 'DT', 'DK', 'BT', 'HT', 'BM', 'PC', 'SH', 'SG', 'DKt', 'Air'];
-    hd.forEach((h, i) => doc.fontSize(7).text(h, 20 + colW.slice(0, i).reduce((a, b) => a + b, 0), y, { width: colW[i], align: 'center' }));
+    headers.forEach((h, i) => doc.text(h, colX[i], y, { width: 32, align: 'center' }));
     y += 15;
-    doc.moveTo(20, y).lineTo(580, y).stroke();
+    doc.moveTo(20, y).lineTo(750, y).stroke();
     y += 5;
 
-    data.forEach((r, idx) => {
-      if (y > 760) { doc.addPage(); y = 40; }
-      const val = [
-        idx + 1, r.kamar, r.petugas, r.waktu_masuk, r.waktu_keluar,
-        r.sheet_twin || 0, r.sheet_king || 0, r.duvet_twin || 0, r.duvet_king || 0,
-        r.bath_towel || 0, r.hand_towel || 0, r.bath_mat || 0, r.pillow_case || 0,
-        r.shampoo || 0, r.soap || 0, r.dental_kit || 0, r.mineral || 0
+    // Isi Data
+    doc.fontSize(8).font('Helvetica');
+    data.forEach((row, idx) => {
+      if (y > 520) { doc.addPage(); y = 40; }
+      const values = [
+        idx + 1,
+        row.kamar,
+        row.status_awal,
+        row.waktu_masuk,
+        row.waktu_keluar,
+        row.sheet_twin || 0,
+        row.sheet_king || 0,
+        row.duvet_twin || 0,
+        row.duvet_king || 0,
+        row.bath_towel || 0,
+        row.hand_towel || 0,
+        row.bath_mat || 0,
+        row.pillow_case || 0,
+        row.shampoo || 0,
+        row.soap || 0,
+        row.shower_gel || 0,
+        row.shower_cap || 0,
+        row.dental_kit || 0,
+        row.sugar || 0,
+        row.tea || 0,
+        row.coffee || 0,
+        row.creamer || 0,
+        row.mineral || 0
       ];
-      val.forEach((v, i) => doc.fontSize(7).text(v.toString(), 20 + colW.slice(0, i).reduce((a, b) => a + b, 0), y, { width: colW[i], align: 'center' }));
+      values.forEach((val, i) => doc.text(val.toString(), colX[i], y, { width: 32, align: 'center' }));
       y += 12;
     });
+
+    // Keterangan Status
+    y += 15;
+    doc.fontSize(8).text('Keterangan Status: VD = Vacant Dirty | VC = Vacant Clean | OD = Occupied Dirty | OC = Occupied Clean | VCU = Vacant Clean Unchecked | OOO = Out of Order | OM = House Use', 20, y);
+    y += 12;
+    doc.text('Prepared by: ............................    Checked by: ............................', 20, y);
 
     doc.end();
   });
