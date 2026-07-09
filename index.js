@@ -378,7 +378,7 @@ app.post('/selesai-kamar', (req, res) => {
   });
 });
 
-// ==================== LAPORAN PDF ====================
+// ==================== LAPORAN PDF - DIPERBAIKI RAPI ====================
 app.get('/unduh-pdf-petugas', (req, res) => {
   const tanggal = req.query.tanggal || getTanggalWIB();
   const petugas = req.query.petugas || '';
@@ -413,136 +413,114 @@ app.get('/unduh-pdf-petugas', (req, res) => {
   `, [tanggal, petugas], (err, data) => {
     if (!data || data.length === 0) return res.send('❌ Tidak ada data untuk dibuat laporan!');
 
-    // ✅ SET HALAMAN MENYAMPING (LANDSCAPE)
-    const doc = new PDFDocument({ margin: 15, size: 'A4', layout: 'landscape' });
+    // ✅ Halaman A4 Menyamping
+    const doc = new PDFDocument({ margin: 12, size: 'A4', layout: 'landscape' });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="ROOMBOY_CONTROL_${petugas.replace(/\s+/g, '_')}_${tanggal}.pdf"`);
     doc.pipe(res);
 
-    // --- Header Laporan ---
+    // --- Header Utama ---
     doc.fontSize(14).font('Helvetica-Bold').text('HORISON HOTEL & CONVENTION', { align: 'center' });
-    doc.fontSize(12).text('ROOMBOY CONTROL SHEET', { align: 'center' }).moveDown(0.8);
+    doc.fontSize(12).text('ROOMBOY CONTROL SHEET', { align: 'center' }).moveDown(0.6);
     doc.fontSize(9).font('Helvetica')
-      .text(`Nama Petugas: ${petugas}`, 20)
-      .text(`Tanggal: ${tanggal}`, 20, doc.y + 12)
-      .text(`Jumlah Kamar: ${data.length}`, 20, doc.y + 12)
-      .text(`Dibuat Jam: ${getWaktuWIB()} WIB`, doc.page.width - 220, doc.y - 24);
+      .text(`Nama Petugas : ${petugas}`, 20)
+      .text(`Tanggal      : ${tanggal}`, 20, doc.y + 12)
+      .text(`Jumlah Kamar : ${data.length}`, 20, doc.y + 12)
+      .text(`Dibuat Pada  : ${getWaktuWIB()} WIB`, doc.page.width - 220, doc.y - 24);
     doc.moveDown(1);
 
-    // --- Ukuran Kolom & Posisi ---
-    const col = {
-      no: 20, kamar: 55, lantai: 95, status: 130, masuk: 170, keluar: 210,
-      sdi: 250, sdo: 275, ssi: 300, sso: 325, dci: 350, dco: 375, dsi: 400, dso: 425,
-      bti: 450, bto: 475, hti: 500, hto: 525, bmi: 550, bmo: 575, pci: 600, pco: 625,
-      hs: 650, sh: 675, sg: 700, tb: 725, st: 750, sc: 775, sl: 800,
-      lb: 825, ll: 850, mp: 875, pc: 900, pb: 925, ti: 950, cf: 975, su: 1000, te: 1025, cr: 1050, mw: 1075, sts: 1110
-    };
-    const rowHeight = 22;
+    // --- Definisi Kolom & Lebar (Tetap & Rapi) ---
+    const colDef = [
+      { w: 22, label: 'No' },
+      { w: 35, label: 'Kamar' },
+      { w: 45, label: 'Lantai' },
+      { w: 38, label: 'Status' },
+      { w: 38, label: 'Jam Masuk' },
+      { w: 38, label: 'Jam Keluar' },
+      { w: 25, label: 'SD IN' },
+      { w: 25, label: 'SD OUT' },
+      { w: 25, label: 'SS IN' },
+      { w: 25, label: 'SS OUT' },
+      { w: 25, label: 'DC IN' },
+      { w: 25, label: 'DC OUT' },
+      { w: 25, label: 'DS IN' },
+      { w: 25, label: 'DS OUT' },
+      { w: 25, label: 'BT IN' },
+      { w: 25, label: 'BT OUT' },
+      { w: 25, label: 'HT IN' },
+      { w: 25, label: 'HT OUT' },
+      { w: 25, label: 'BM IN' },
+      { w: 25, label: 'BM OUT' },
+      { w: 25, label: 'PC IN' },
+      { w: 25, label: 'PC OUT' },
+      { w: 25, label: 'Soap' },
+      { w: 25, label: 'Shampoo' },
+      { w: 25, label: 'Sh Gel' },
+      { w: 25, label: 'Tooth' },
+      { w: 25, label: 'Steril' },
+      { w: 25, label: 'Sh Cap' },
+      { w: 25, label: 'Slipper' },
+      { w: 28, label: 'Laun Bag' },
+      { w: 28, label: 'Laun List' },
+      { w: 28, label: 'Memo' },
+      { w: 28, label: 'Pencil' },
+      { w: 28, label: 'Plas Bin' },
+      { w: 28, label: 'Tissue' },
+      { w: 28, label: 'Coffee' },
+      { w: 28, label: 'Sugar' },
+      { w: 28, label: 'Tea' },
+      { w: 28, label: 'Creamer' },
+      { w: 32, label: 'Mineral' },
+      { w: 40, label: 'Status' }
+    ];
+
+    const startX = 12;
+    let currentX = startX;
     let y = doc.y;
+    const rowHeight = 20;
 
-    // --- Header Tabel (Hanya tampil di baris paling atas) ---
+    // --- Gambar Header Tabel ---
     doc.font('Helvetica-Bold').fontSize(7);
-    doc.text('No', col.no + 2, y);
-    doc.text('Kamar', col.kamar + 2, y);
-    doc.text('Lantai', col.lantai + 2, y);
-    doc.text('Status', col.status + 2, y);
-    doc.text('Jam Masuk', col.masuk + 2, y);
-    doc.text('Jam Keluar', col.keluar + 2, y);
-    doc.text('SD IN', col.sdi + 2, y);
-    doc.text('SD OUT', col.sdo + 2, y);
-    doc.text('SS IN', col.ssi + 2, y);
-    doc.text('SS OUT', col.sso + 2, y);
-    doc.text('DC IN', col.dci + 2, y);
-    doc.text('DC OUT', col.dco + 2, y);
-    doc.text('DS IN', col.dsi + 2, y);
-    doc.text('DS OUT', col.dso + 2, y);
-    doc.text('BT IN', col.bti + 2, y);
-    doc.text('BT OUT', col.bto + 2, y);
-    doc.text('HT IN', col.hti + 2, y);
-    doc.text('HT OUT', col.hto + 2, y);
-    doc.text('BM IN', col.bmi + 2, y);
-    doc.text('BM OUT', col.bmo + 2, y);
-    doc.text('PC IN', col.pci + 2, y);
-    doc.text('PC OUT', col.pco + 2, y);
-    doc.text('Soap', col.hs + 2, y);
-    doc.text('Shampoo', col.sh + 2, y);
-    doc.text('Sh Gel', col.sg + 2, y);
-    doc.text('Tooth', col.tb + 2, y);
-    doc.text('Steril', col.st + 2, y);
-    doc.text('Sh Cap', col.sc + 2, y);
-    doc.text('Slipper', col.sl + 2, y);
-    doc.text('Laun Bag', col.lb + 2, y);
-    doc.text('Laun List', col.ll + 2, y);
-    doc.text('Memo', col.mp + 2, y);
-    doc.text('Pencil', col.pc + 2, y);
-    doc.text('Plas Bin', col.pb + 2, y);
-    doc.text('Tissue', col.ti + 2, y);
-    doc.text('Coffee', col.cf + 2, y);
-    doc.text('Sugar', col.su + 2, y);
-    doc.text('Tea', col.te + 2, y);
-    doc.text('Creamer', col.cr + 2, y);
-    doc.text('Mineral', col.mw + 2, y);
-    doc.text('Status', col.sts + 2, y);
-
-    // Garis kotak header
-    doc.lineWidth(0.8);
-    doc.rect(col.no, y - 2, col.sts - col.no + 40, rowHeight).stroke();
+    colDef.forEach(col => {
+      doc.rect(currentX, y, col.w, rowHeight).stroke();
+      doc.text(col.label, currentX + 2, y + 6, { width: col.w - 4, align: 'center' });
+      currentX += col.w;
+    });
     y += rowHeight;
 
-    // --- Isi Data per Kamar ---
+    // --- Gambar Isi Data ---
     doc.font('Helvetica').fontSize(8);
     data.forEach((row, idx) => {
-      const sts = row.waktu_keluar !== '-' ? 'Selesai' : 'Belum';
+      currentX = startX;
 
-      // Tulis angka/data
-      doc.text(idx + 1, col.no + 5, y);
-      doc.text(row.kamar, col.kamar + 3, y);
-      doc.text(row.lantai.replace('Lantai ', ''), col.lantai + 3, y);
-      doc.text(row.status_awal, col.status + 3, y);
-      doc.text(row.waktu_masuk, col.masuk + 3, y);
-      doc.text(row.waktu_keluar, col.keluar + 3, y);
-      doc.text(row.sdi, col.sdi + 8, y);
-      doc.text(row.sdo, col.sdo + 8, y);
-      doc.text(row.ssi, col.ssi + 8, y);
-      doc.text(row.sso, col.sso + 8, y);
-      doc.text(row.dci, col.dci + 8, y);
-      doc.text(row.dco, col.dco + 8, y);
-      doc.text(row.dsi, col.dsi + 8, y);
-      doc.text(row.dso, col.dso + 8, y);
-      doc.text(row.bti, col.bti + 8, y);
-      doc.text(row.bto, col.bto + 8, y);
-      doc.text(row.hti, col.hti + 8, y);
-      doc.text(row.hto, col.hto + 8, y);
-      doc.text(row.bmi, col.bmi + 8, y);
-      doc.text(row.bmo, col.bmo + 8, y);
-      doc.text(row.pci, col.pci + 8, y);
-      doc.text(row.pco, col.pco + 8, y);
-      doc.text(row.hs, col.hs + 8, y);
-      doc.text(row.sh, col.sh + 8, y);
-      doc.text(row.sg, col.sg + 8, y);
-      doc.text(row.tb, col.tb + 8, y);
-      doc.text(row.st, col.st + 8, y);
-      doc.text(row.sc, col.sc + 8, y);
-      doc.text(row.sl, col.sl + 8, y);
-      doc.text(row.lb, col.lb + 8, y);
-      doc.text(row.ll, col.ll + 8, y);
-      doc.text(row.mp, col.mp + 8, y);
-      doc.text(row.pc, col.pc + 8, y);
-      doc.text(row.pb, col.pb + 8, y);
-      doc.text(row.ti, col.ti + 8, y);
-      doc.text(row.cf, col.cf + 8, y);
-      doc.text(row.su, col.su + 8, y);
-      doc.text(row.te, col.te + 8, y);
-      doc.text(row.cr, col.cr + 8, y);
-      doc.text(row.mw, col.mw + 8, y);
-      doc.text(sts, col.sts + 5, y);
+      // Data per kolom
+      const values = [
+        idx + 1,
+        row.kamar,
+        row.lantai.replace('Lantai ', ''),
+        row.status_awal,
+        row.waktu_masuk,
+        row.waktu_keluar,
+        row.sdi, row.sdo, row.ssi, row.sso,
+        row.dci, row.dco, row.dsi, row.dso,
+        row.bti, row.bto, row.hti, row.hto,
+        row.bmi, row.bmo, row.pci, row.pco,
+        row.hs, row.sh, row.sg, row.tb, row.st, row.sc, row.sl,
+        row.lb, row.ll, row.mp, row.pc, row.pb, row.ti,
+        row.cf, row.su, row.te, row.cr, row.mw,
+        row.waktu_keluar !== '-' ? 'Selesai' : 'Belum'
+      ];
 
-      // Garis kotak setiap baris
-      doc.lineWidth(0.5);
-      doc.rect(col.no, y - 2, col.sts - col.no + 40, rowHeight).stroke();
+      // Gambar kotak & isi angka
+      colDef.forEach((col, i) => {
+        doc.rect(currentX, y, col.w, rowHeight).stroke();
+        doc.text(values[i]?.toString() || '0', currentX + 2, y + 6, { width: col.w - 4, align: 'center' });
+        currentX += col.w;
+      });
+
       y += rowHeight;
 
-      // Buat halaman baru jika melebihi batas
+      // Halaman baru jika penuh
       if (y > doc.page.height - 30) {
         doc.addPage({ layout: 'landscape' });
         y = 20;
@@ -552,8 +530,8 @@ app.get('/unduh-pdf-petugas', (req, res) => {
     // --- Tanda Tangan ---
     doc.moveDown(2);
     doc.fontSize(9)
-      .text(`Dibuat oleh: ${petugas}`, 20, y)
-      .text(`Dicek oleh: ________________________`, doc.page.width - 250, y);
+      .text(`Prepared by: ${petugas}`, 20, y)
+      .text(`Checked by: ________________________`, doc.page.width - 260, y);
 
     doc.end();
   });
