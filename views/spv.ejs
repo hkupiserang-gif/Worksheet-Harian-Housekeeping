@@ -60,7 +60,7 @@
                 </div>
                 <nav>
                     <a href="/spv" class="active"><i class="bi bi-house-door me-2"></i>Beranda</a>
-                    <% if (daftarBelumDibagikan && Array.isArray(daftarBelumDibagikan) && daftarBelumDibagikan.length > 0) { %>
+                    <% if (Array.isArray(daftarBelumDibagikan) && daftarBelumDibagikan.length > 0) { %>
                     <a href="#belum"><i class="bi bi-list-check me-2"></i>Belum Dibagikan</a>
                     <% } %>
                     <a href="#sudah"><i class="bi bi-person-check me-2"></i>Sudah Dibagikan</a>
@@ -68,14 +68,14 @@
                     <a href="/logout" class="text-danger mt-3"><i class="bi bi-box-arrow-right me-2"></i>Keluar</a>
                 </nav>
                 <div class="position-absolute bottom-0 p-3 w-100 border-top border-secondary">
-                    <small>Login sebagai: <strong><%= user.nama %></strong></small>
+                    <small>Login sebagai: <strong><%= user && user.nama ? user.nama : '-' %></strong></small>
                 </div>
             </div>
 
             <!-- Konten Utama -->
             <div class="col-md-10 content">
                 <!-- Notifikasi Pesan -->
-                <% if (pesan) { %>
+                <% if (pesan && pesan.teks) { %>
                 <div class="alert <%= pesan.tipe === 'sukses' ? 'alert-success' : 'alert-danger' %> alert-dismissible fade show" role="alert">
                     <%= pesan.teks %>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
@@ -121,8 +121,8 @@
                     </div>
                 </div>
 
-                <!-- ✅ BAGIAN BELUM DIBAGIKAN (HANYA MUNCUL JIKA ADA) -->
-                <% if (daftarBelumDibagikan && Array.isArray(daftarBelumDibagikan) && daftarBelumDibagikan.length > 0) { %>
+                <!-- ✅ BAGIAN BELUM DIBAGIKAN -->
+                <% if (Array.isArray(daftarBelumDibagikan) && daftarBelumDibagikan.length > 0) { %>
                 <div id="belum" class="card shadow-sm mb-5">
                     <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Daftar Kamar Belum Dibagikan</h5>
@@ -185,7 +185,7 @@
                 </div>
                 <% } %>
 
-                <!-- ✅ BAGIAN SUDAH DIBAGIKAN (PER PETUGAS) -->
+                <!-- ✅ BAGIAN SUDAH DIBAGIKAN -->
                 <div id="sudah" class="card shadow-sm mb-5">
                     <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="bi bi-person-check me-2"></i>Daftar Tugas Sudah Dibagikan</h5>
@@ -289,7 +289,7 @@
                                                                 <div class="mb-3">
                                                                     <label class="form-label">Nama Petugas</label>
                                                                     <select name="petugas" class="form-select" required>
-                                                                        <% if (daftarRA && Array.isArray(daftarRA)) { daftarRA.forEach(ra => { %>
+                                                                        <% if (Array.isArray(daftarRA)) { daftarRA.forEach(ra => { %>
                                                                             <option value="<%= ra.nama %>" <%= ra.nama === tugas.petugas ? 'selected' : '' %>>
                                                                                 <%= ra.nama %>
                                                                             </option>
@@ -345,7 +345,7 @@
                                         <label class="form-label">Pilih Petugas</label>
                                         <select name="petugas" class="form-select" required>
                                             <option value="">-- Pilih Nama Petugas --</option>
-                                            <% if (daftarRA && Array.isArray(daftarRA)) { daftarRA.forEach(ra => { %>
+                                            <% if (Array.isArray(daftarRA)) { daftarRA.forEach(ra => { %>
                                                 <option value="<%= ra.nama %>"><%= ra.nama %></option>
                                             <% }); } %>
                                         </select>
@@ -416,7 +416,7 @@
                         <h5 class="mb-0"><i class="bi bi-clipboard-data me-2"></i>Daftar Permintaan Tamu</h5>
                     </div>
                     <div class="card-body p-0">
-                        <% if (!daftarPermintaan || !Array.isArray(daftarPermintaan) || daftarPermintaan.length === 0) { %>
+                        <% if (!Array.isArray(daftarPermintaan) || daftarPermintaan.length === 0) { %>
                             <div class="p-4 text-center text-muted">
                                 Belum ada permintaan tamu untuk hari ini.
                             </div>
