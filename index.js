@@ -9,24 +9,37 @@ const app = express();
 const PORT = process.env.PORT || 8888;
 
 // ======================================
-// ✅ WAKTU WIB LENGKAP + DETIK
+// ✅ FUNGSI WAKTU WIB 100% AKURAT (Asia/Jakarta)
 // ======================================
 const getWaktuWIB = () => {
   const now = new Date();
-  const wib = new Date(now.getTime() + (7 * 60 * 60 * 1000));
-  return wib.toISOString().slice(11, 19); // Format HH:MM:SS
+  return new Intl.DateTimeFormat('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  }).format(now);
 };
 
 const getWaktuWIBJamMenit = () => {
   const now = new Date();
-  const wib = new Date(now.getTime() + (7 * 60 * 60 * 1000));
-  return wib.toISOString().slice(11, 16); // Format HH:MM
+  return new Intl.DateTimeFormat('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).format(now);
 };
 
 const getTanggalWIB = () => {
   const now = new Date();
-  const wib = new Date(now.getTime() + (7 * 60 * 60 * 1000));
-  return wib.toISOString().slice(0, 10); // Format YYYY-MM-DD
+  return new Intl.DateTimeFormat('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(now).split('/').reverse().join('-');
 };
 
 // ======================================
@@ -385,7 +398,7 @@ app.post('/selesai-permintaan', (req, res) => {
 });
 
 // ======================================
-// Unduh Excel + PDF
+// Unduh Excel
 // ======================================
 app.get('/unduh-excel', (req, res) => {
   const tanggal = req.query.tanggal || getTanggalWIB();
@@ -442,7 +455,9 @@ app.get('/unduh-excel', (req, res) => {
   });
 });
 
-// ✅ PDF MENGIKUTI FORMAT ROOMBOY CONTROL SHEET
+// ======================================
+// ✅ UNDUH PDF SESUAI FORMAT ROOMBOY CONTROL SHEET
+// ======================================
 app.get('/unduh-pdf', (req, res) => {
   const tanggal = req.query.tanggal || getTanggalWIB();
   db.all(`
@@ -466,69 +481,87 @@ app.get('/unduh-pdf', (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="ROOMBOY_CONTROL_SHEET_${tanggal}.pdf"`);
     doc.pipe(res);
 
-    // Header
-    doc.fontSize(16).font('Helvetica-Bold').text('HORISON HOTEL & CONVENTION', { align: 'center' });
-    doc.fontSize(14).font('Helvetica-Bold').text('ROOMBOY CONTROL SHEET', { align: 'center', underline: true });
+    // Header Utama
+    doc.fontSize(18).font('Helvetica-Bold').text('HORISON', { align: 'center' });
+    doc.fontSize(14).text('HOTEL & CONVENTION', { align: 'center' });
+    doc.fontSize(16).font('Helvetica-Bold').text('ROOMBOY CONTROL SHEET', { align: 'center', underline: true });
     doc.moveDown(1);
-    doc.fontSize(10).font('Helvetica').text(`Tanggal: ${tanggal} | Shift: Morning`, { align: 'left' });
-    doc.fontSize(10).text(`Floor/Section: ${data[0]?.lantai || 'Semua Lantai'}`, { align: 'left' });
+
+    // Info Lembar
+    doc.fontSize(10).font('Helvetica').text(`SHIFT: Morning    |    FLOOR/SECTION: ${data[0]?.lantai || 'All Floors'}    |    DATE: ${tanggal}`, { align: 'left' });
     doc.moveDown(1);
 
     // Judul Kolom
-    doc.fontSize(8).font('Helvetica-Bold');
-    const colX = [20, 55, 90, 125, 160, 195, 230, 265, 300, 335, 370, 405, 440, 475, 510, 545, 580, 615, 650, 685, 720];
-    const headers = [
-      'NO', 'ROOM', 'STATUS', 'TIME IN', 'TIME OUT',
-      'SHEET T', 'SHEET K', 'DUVET T', 'DUVET K',
-      'BATH TOWEL', 'HAND TOWEL', 'BATH MAT', 'PILLOW',
-      'SHAMPOO', 'SOAP', 'GEL', 'CAP', 'DENTAL',
-      'SUGAR', 'TEA', 'COFFEE', 'CREAMER', 'MINERAL'
-    ];
-
+    doc.fontSize(9).font('Helvetica-Bold');
     let y = doc.y;
-    headers.forEach((h, i) => doc.text(h, colX[i], y, { width: 32, align: 'center' }));
-    y += 15;
-    doc.moveTo(20, y).lineTo(750, y).stroke();
-    y += 5;
+    doc.text('NO', 20, y, { width: 25, align: 'center' });
+    doc.text('ROOM', 45, y, { width: 35, align: 'center' });
+    doc.text('STATUS', 80, y, { width: 40, align: 'center' });
+    doc.text('TIME IN', 120, y, { width: 35, align: 'center' });
+    doc.text('TIME OUT', 155, y, { width: 35, align: 'center' });
+    doc.text('SHEET\nTWIN', 190, y, { width: 30, align: 'center' });
+    doc.text('SHEET\nKING', 220, y, { width: 30, align: 'center' });
+    doc.text('DUVET\nTWIN', 250, y, { width: 30, align: 'center' });
+    doc.text('DUVET\nKING', 280, y, { width: 30, align: 'center' });
+    doc.text('BATH\nTOWEL', 310, y, { width: 30, align: 'center' });
+    doc.text('HAND\nTOWEL', 340, y, { width: 30, align: 'center' });
+    doc.text('BATH\nMAT', 370, y, { width: 30, align: 'center' });
+    doc.text('PILLOW\nCASE', 400, y, { width: 30, align: 'center' });
+    doc.text('SHAMPOO', 430, y, { width: 35, align: 'center' });
+    doc.text('SOAP', 465, y, { width: 25, align: 'center' });
+    doc.text('SHOWER\nGEL', 490, y, { width: 25, align: 'center' });
+    doc.text('SHOWER\nCAP', 515, y, { width: 25, align: 'center' });
+    doc.text('DENTAL\nKIT', 540, y, { width: 30, align: 'center' });
+    doc.text('SUGAR', 570, y, { width: 30, align: 'center' });
+    doc.text('TEA', 600, y, { width: 25, align: 'center' });
+    doc.text('COFFEE', 625, y, { width: 35, align: 'center' });
+    doc.text('CREAMER', 660, y, { width: 35, align: 'center' });
+    doc.text('MINERAL\nWATER', 695, y, { width: 35, align: 'center' });
+
+    y += 25;
+    doc.moveTo(20, y).lineTo(730, y).stroke();
+    y += 8;
 
     // Isi Data
-    doc.fontSize(8).font('Helvetica');
+    doc.fontSize(9).font('Helvetica');
     data.forEach((row, idx) => {
       if (y > 520) { doc.addPage(); y = 40; }
-      const values = [
-        idx + 1,
-        row.kamar,
-        row.status_awal,
-        row.waktu_masuk,
-        row.waktu_keluar,
-        row.sheet_twin || 0,
-        row.sheet_king || 0,
-        row.duvet_twin || 0,
-        row.duvet_king || 0,
-        row.bath_towel || 0,
-        row.hand_towel || 0,
-        row.bath_mat || 0,
-        row.pillow_case || 0,
-        row.shampoo || 0,
-        row.soap || 0,
-        row.shower_gel || 0,
-        row.shower_cap || 0,
-        row.dental_kit || 0,
-        row.sugar || 0,
-        row.tea || 0,
-        row.coffee || 0,
-        row.creamer || 0,
-        row.mineral || 0
-      ];
-      values.forEach((val, i) => doc.text(val.toString(), colX[i], y, { width: 32, align: 'center' }));
-      y += 12;
+      doc.text(String(idx + 1), 20, y, { width: 25, align: 'center' });
+      doc.text(row.kamar, 45, y, { width: 35, align: 'center' });
+      doc.text(row.status_awal, 80, y, { width: 40, align: 'center' });
+      doc.text(row.waktu_masuk, 120, y, { width: 35, align: 'center' });
+      doc.text(row.waktu_keluar, 155, y, { width: 35, align: 'center' });
+      doc.text(String(row.sheet_twin || 0), 190, y, { width: 30, align: 'center' });
+      doc.text(String(row.sheet_king || 0), 220, y, { width: 30, align: 'center' });
+      doc.text(String(row.duvet_twin || 0), 250, y, { width: 30, align: 'center' });
+      doc.text(String(row.duvet_king || 0), 280, y, { width: 30, align: 'center' });
+      doc.text(String(row.bath_towel || 0), 310, y, { width: 30, align: 'center' });
+      doc.text(String(row.hand_towel || 0), 340, y, { width: 30, align: 'center' });
+      doc.text(String(row.bath_mat || 0), 370, y, { width: 30, align: 'center' });
+      doc.text(String(row.pillow_case || 0), 400, y, { width: 30, align: 'center' });
+      doc.text(String(row.shampoo || 0), 430, y, { width: 35, align: 'center' });
+      doc.text(String(row.soap || 0), 465, y, { width: 25, align: 'center' });
+      doc.text(String(row.shower_gel || 0), 490, y, { width: 25, align: 'center' });
+      doc.text(String(row.shower_cap || 0), 515, y, { width: 25, align: 'center' });
+      doc.text(String(row.dental_kit || 0), 540, y, { width: 30, align: 'center' });
+      doc.text(String(row.sugar || 0), 570, y, { width: 30, align: 'center' });
+      doc.text(String(row.tea || 0), 600, y, { width: 25, align: 'center' });
+      doc.text(String(row.coffee || 0), 625, y, { width: 35, align: 'center' });
+      doc.text(String(row.creamer || 0), 660, y, { width: 35, align: 'center' });
+      doc.text(String(row.mineral || 0), 695, y, { width: 35, align: 'center' });
+      y += 15;
     });
 
-    // Keterangan Status
+    // Keterangan Status & Tanda Tangan
     y += 15;
-    doc.fontSize(8).text('Keterangan Status: VD = Vacant Dirty | VC = Vacant Clean | OD = Occupied Dirty | OC = Occupied Clean | VCU = Vacant Clean Unchecked | OOO = Out of Order | OM = House Use', 20, y);
+    doc.fontSize(8);
+    doc.text('KETERANGAN STATUS:', 20, y);
     y += 12;
-    doc.text('Prepared by: ............................    Checked by: ............................', 20, y);
+    doc.text('VD = Vacant Dirty   |   VC = Vacant Clean   |   OD = Occupied Dirty   |   OC = Occupied Clean   |   VCU = Vacant Clean Unchecked', 20, y);
+    y += 12;
+    doc.text('OOO = Out of Order   |   OM = House Use   |   DND = Do Not Disturb   |   ED = Expected Departure   |   EA = Expected Arrival', 20, y);
+    y += 20;
+    doc.text('PREPARED BY: ________________________        CHECKED BY: ________________________', 20, y);
 
     doc.end();
   });
