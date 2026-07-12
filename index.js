@@ -749,46 +749,46 @@ app.get('/unduh-excel', async (req, res) => {
 
     // ✅ Isi Header sesuai format
     sheet.getCell('B4').value = daftarTugas[0].petugas || '-';    // NAMA
-    sheet.getCell('J4').value = tanggal;                           // DATE
+    sheet.getCell('M4').value = tanggal;                           // DATE
     sheet.getCell('S4').value = 'Morning';                         // SHIFT
     sheet.getCell('AG4').value = daftarTugas[0].lantai || '-';    // FLOOR/SECTION
 
     // ✅ Isi data mulai baris ke-8
-    let baris = 8;
+    let baris = 9;
     daftarTugas.forEach((data) => {
       sheet.getCell(`B${baris}`).value = data.kamar;                 // No Kamar
       sheet.getCell(`C${baris}`).value = data.status_awal;           // Room Status
-      sheet.getCell(`D${baris}`).value = data.waktu_masuk;           // Time Masuk
-      sheet.getCell(`E${baris}`).value = data.waktu_keluar;          // Time Keluar
+      sheet.getCell(`F${baris}`).value = data.waktu_masuk;           // Time Masuk
+      sheet.getCell(`G${baris}`).value = data.waktu_keluar;          // Time Keluar
       // Linen
-      sheet.getCell(`F${baris}`).value = data.sheet_twin || 0;       // Sheet Double
-      sheet.getCell(`G${baris}`).value = data.sheet_king || 0;        // Sheet Single
-      sheet.getCell(`H${baris}`).value = data.duvet_twin || 0;       // Duvet Cover Single
-      sheet.getCell(`I${baris}`).value = data.duvet_king || 0;        // Duvet Cover Double
-      sheet.getCell(`J${baris}`).value = data.bath_towel || 0;        // Bath Towel
-      sheet.getCell(`K${baris}`).value = data.hand_towel || 0;        // Hand Towel
-      sheet.getCell(`L${baris}`).value = data.bath_mat || 0;          // Bath Mat
-      sheet.getCell(`M${baris}`).value = data.pillow_case || 0;       // Pillow Case
+      sheet.getCell(`H${baris}`).value = data.sheet_twin || 0;       // Sheet Double
+      sheet.getCell(`J${baris}`).value = data.sheet_king || 0;        // Sheet Single
+      sheet.getCell(`N${baris}`).value = data.duvet_twin || 0;       // Duvet Cover Single
+      sheet.getCell(`L${baris}`).value = data.duvet_king || 0;        // Duvet Cover Double
+      sheet.getCell(`P${baris}`).value = data.bath_towel || 0;        // Bath Towel
+      sheet.getCell(`R${baris}`).value = data.hand_towel || 0;        // Hand Towel
+      sheet.getCell(`T${baris}`).value = data.bath_mat || 0;          // Bath Mat
+      sheet.getCell(`V${baris}`).value = data.pillow_case || 0;       // Pillow Case
       // Bathroom
-      sheet.getCell(`N${baris}`).value = data.shampoo || 0;
-      sheet.getCell(`O${baris}`).value = data.soap || 0;
-      sheet.getCell(`P${baris}`).value = data.shower_gel || 0;
-      sheet.getCell(`Q${baris}`).value = data.shower_cap || 0;
-      sheet.getCell(`R${baris}`).value = data.dental_kit || 0;
-      sheet.getCell(`S${baris}`).value = data.laundry_bag || 0;
-      sheet.getCell(`T${baris}`).value = data.laundry_list || 0;
+      sheet.getCell(`Z${baris}`).value = data.shampoo || 0;
+      sheet.getCell(`Y${baris}`).value = data.soap || 0;
+      sheet.getCell(`AA${baris}`).value = data.shower_gel || 0;
+      sheet.getCell(`AD${baris}`).value = data.shower_cap || 0;
+      sheet.getCell(`AB${baris}`).value = data.dental_kit || 0;
+      sheet.getCell(`AF${baris}`).value = data.laundry_bag || 0;
+      sheet.getCell(`AG${baris}`).value = data.laundry_list || 0;
       // Bedroom & Amenitas
-      sheet.getCell(`U${baris}`).value = data.sugar || 0;
-      sheet.getCell(`V${baris}`).value = data.tea || 0;
-      sheet.getCell(`W${baris}`).value = data.coffee || 0;
-      sheet.getCell(`X${baris}`).value = data.creamer || 0;
-      sheet.getCell(`Y${baris}`).value = data.mineral || 0;
-      sheet.getCell(`Z${baris}`).value = data.tissue_facial || 0;
-      sheet.getCell(`AA${baris}`).value = data.tissue_roll || 0;
-      sheet.getCell(`AB${baris}`).value = data.cotton_bud || 0;
-      sheet.getCell(`AC${baris}`).value = data.slipper || 0;
-      sheet.getCell(`AD${baris}`).value = data.comb || 0;
-      sheet.getCell(`AE${baris}`).value = data.shaving_kit || 0;
+      sheet.getCell(`AN${baris}`).value = data.sugar || 0;
+      sheet.getCell(`AO${baris}`).value = data.tea || 0;
+      sheet.getCell(`AM${baris}`).value = data.coffee || 0;
+      sheet.getCell(`AP${baris}`).value = data.creamer || 0;
+      sheet.getCell(`AQ${baris}`).value = data.mineral || 0;
+      sheet.getCell(`AL${baris}`).value = data.tissue_facial || 0;
+      sheet.getCell(`X${baris}`).value = data.tissue_roll || 0;
+      sheet.getCell(`AW${baris}`).value = data.cotton_bud || 0;
+      sheet.getCell(`AE${baris}`).value = data.slipper || 0;
+      sheet.getCell(`AX${baris}`).value = data.comb || 0;
+      sheet.getCell(`AZ${baris}`).value = data.shaving_kit || 0;
 
       baris++;
     });
