@@ -5,7 +5,7 @@ const sqlite3 = require('sqlite3').verbose();
 const { parse } = require('json2csv');
 const PDFDocument = require('pdfkit');
 const cron = require('node-cron');
-// ✅ TAMBAHKAN PUSTAKA BARU
+// ✅ Pustaka untuk Excel
 const ExcelJS = require('exceljs');
 
 const app = express();
@@ -59,6 +59,9 @@ const HARGA_BARANG = {
   hand_towel: 1750,
   bath_mat: 2250,
   pillow_case: 1750,
+  shampoo: 650,
+  soap: 550,
+  shower_gel: 600,
   shower_cap: 600,
   dental_kit: 1450,
   laundry_bag: 1150,
@@ -86,7 +89,7 @@ const HARGA_BARANG = {
 };
 
 // ======================================
-// ✅ KONEKSI DATABASE (AMAN UNTUK RAILWAY)
+// ✅ KONEKSI DATABASE
 // ======================================
 const dbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH 
   ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'database.db')
@@ -161,18 +164,17 @@ db.serialize(() => {
         ['504','Lantai 5A','Deluxe'],['505','Lantai 5A','Deluxe'],['506','Lantai 5A','Deluxe'],
         ['507','Lantai 5A','Deluxe'],['508','Lantai 5C','Deluxe'],['509','Lantai 5C','Deluxe'],
         ['510','Lantai 5C','Deluxe'],['511','Lantai 5C','Deluxe'],['512','Lantai 5C','Deluxe'],
-        ['513','Lantai 5C','Deluxe'],['514','Lantai 5C','Deluxe'], // ✅ Kamar 514 DITAMBAHKAN
-        ['515','Lantai 5C','Deluxe'],['516','Lantai 5C','Deluxe'],['517','Lantai 5C','Deluxe'],
-        ['518','Lantai 5C','Deluxe'],['519','Lantai 5C','Deluxe'],['520','Lantai 5C','Deluxe']
+        ['513','Lantai 5C','Deluxe'],['514','Lantai 5C','Deluxe'],['515','Lantai 5C','Deluxe'],
+        ['516','Lantai 5C','Deluxe'],['517','Lantai 5C','Deluxe'],['518','Lantai 5C','Deluxe'],
+        ['519','Lantai 5C','Deluxe'],['520','Lantai 5C','Deluxe']
       ];
       daftarKamar.forEach(k => db.run(`INSERT OR IGNORE INTO kamar VALUES (?, ?, ?, 1)`, k));
     } else {
-      // Tambahkan kamar 514 jika database sudah ada tapi belum terdaftar
       db.run(`INSERT OR IGNORE INTO kamar (nomor_kamar, lantai, tipe_kamar, aktif) VALUES ('514', 'Lantai 5C', 'Deluxe', 1)`);
     }
   });
 
-  // ✅ Tabel Tugas + Kolom Notifikasi
+  // Tabel Tugas
   db.run(`CREATE TABLE IF NOT EXISTS tugas (
     tanggal TEXT,
     kamar TEXT,
@@ -185,7 +187,6 @@ db.serialize(() => {
     FOREIGN KEY (kamar) REFERENCES kamar(nomor_kamar) ON DELETE CASCADE
   )`);
 
-  // Tambah kolom jika belum ada
   db.run(`ALTER TABLE tugas ADD COLUMN sudah_dibagikan INTEGER DEFAULT 0`, () => {});
   db.run(`ALTER TABLE tugas ADD COLUMN siap_dicek INTEGER DEFAULT 0`, () => {});
 
@@ -251,7 +252,7 @@ db.serialize(() => {
 });
 
 // ======================================
-// ✅ OTOMATIS GANTI HARI JAM 00:00
+// ✅ OTOMATIS BUAT TUGAS HARI INI
 // ======================================
 const buatTugasBaruHariIni = () => {
   const tanggalSekarang = getTanggalWIB();
@@ -260,7 +261,6 @@ const buatTugasBaruHariIni = () => {
   db.get(`SELECT 1 FROM tugas WHERE tanggal = ? LIMIT 1`, [tanggalSekarang], (err, ada) => {
     if (!ada) {
       console.log(`📅 Membuat tugas baru: ${tanggalSekarang}`);
-      // ✅ Hanya ambil kamar yang terdaftar dan aktif
       db.all(`SELECT nomor_kamar FROM kamar WHERE aktif = 1`, [], (err, daftarKamar) => {
         if (err) return console.error("❌ Gagal ambil kamar:", err);
         daftarKamar.forEach(k => {
@@ -273,9 +273,7 @@ const buatTugasBaruHariIni = () => {
   });
 };
 
-// Jalankan setiap jam 00:00 WIB
 cron.schedule('0 0 * * *', buatTugasBaruHariIni, { timezone: "Asia/Jakarta" });
-// Jalankan sekali saat server mulai
 buatTugasBaruHariIni();
 
 // ======================================
@@ -327,7 +325,7 @@ app.post('/login', (req, res) => {
 });
 
 // ======================================
-// ✅ HALAMAN SUPERVISOR (DIPERBAIKI)
+// ✅ HALAMAN SUPERVISOR
 // ======================================
 app.get('/spv', (req, res) => {
   if (!req.session.user || req.session.user.peran !== 'SPV') return res.redirect('/');
@@ -338,7 +336,6 @@ app.get('/spv', (req, res) => {
   db.all(`SELECT nomor_kamar, lantai, tipe_kamar FROM kamar WHERE aktif = 1 ORDER BY nomor_kamar`, [], (err, daftarKamar) => {
     db.all(`SELECT nama FROM pengguna WHERE peran = 'RA' AND aktif = 1 ORDER BY nama`, [], (err, daftarRA) => {
 
-      // ✅ HANYA AMBIL KAMAR YANG SUDAH DIBAGIKAN
       let querySudah = `
         SELECT t.*, k.lantai, k.tipe_kamar,
                IFNULL(l.waktu_masuk, '-') AS waktu_masuk,
@@ -353,7 +350,6 @@ app.get('/spv', (req, res) => {
       querySudah += ` ORDER BY t.petugas, t.kamar`;
 
       db.all(querySudah, paramSudah, (err, daftarSudahDibagikan) => {
-        // Kelompokkan per RA
         const perRA = {};
         daftarSudahDibagikan.forEach(tugas => {
           if (!perRA[tugas.petugas]) perRA[tugas.petugas] = [];
@@ -393,7 +389,6 @@ app.post('/tambah-tugas', (req, res) => {
 
   if (total === 0) return res.redirect('/spv?pesan=gagal');
 
-  // ✅ Validasi kamar terdaftar sebelum disimpan
   const tempatkanTugas = () => {
     daftarKamar.forEach((k, idx) => {
       const status = daftarStatus[idx] || 'VD';
@@ -406,7 +401,6 @@ app.post('/tambah-tugas', (req, res) => {
     });
   };
 
-  // Cek semua kamar ada di database
   db.all(`SELECT nomor_kamar FROM kamar WHERE nomor_kamar IN (${daftarKamar.map(() => '?').join(',')})`, daftarKamar, (err, hasil) => {
     if (hasil.length !== daftarKamar.length) {
       return res.redirect('/spv?pesan=gagal&teks=Ada kamar yang tidak terdaftar');
@@ -566,7 +560,6 @@ app.post('/tambah-permintaan', (req, res) => {
 
   if (!nomor_kamar || !jenis_permintaan) return res.redirect('/ot?pesan=gagal');
 
-  // Validasi kamar terdaftar
   db.get(`SELECT 1 FROM kamar WHERE nomor_kamar = ?`, [nomor_kamar], (err, ada) => {
     if (!ada) return res.redirect('/ot?pesan=gagal&teks=Kamar tidak terdaftar');
     db.run(`INSERT INTO permintaan_tamu 
@@ -637,7 +630,7 @@ app.get('/unduh-pdf-ot', (req, res) => {
 });
 
 // ======================================
-// ✅ LAPORAN PDF SPV (DIPERBAIKI + RINCIAN + HARGA)
+// ✅ LAPORAN PDF (DIPERBAIKI + JUDUL SESUAI PERMINTAAN)
 // ======================================
 app.get('/unduh-pdf', (req, res) => {
   const tanggal = req.query.tanggal || getTanggalWIB();
@@ -651,21 +644,22 @@ app.get('/unduh-pdf', (req, res) => {
     FROM tugas t
     JOIN kamar k ON t.kamar = k.nomor_kamar
     LEFT JOIN laporan l ON t.tanggal = l.tanggal AND t.kamar = l.nomor_kamar
-    WHERE t.tanggal = ?
+    WHERE t.tanggal = ? AND t.sudah_dibagikan = 1
   `;
   const param = [tanggal];
   if (ra) { query += ` AND t.petugas = ?`; param.push(ra); }
   query += ` ORDER BY t.petugas, t.kamar`;
 
   db.all(query, param, (err, dataKamar) => {
-    if (err || !dataKamar || dataKamar.length === 0) return res.send('❌ Tidak ada data');
+    if (err || !dataKamar || dataKamar.length === 0) return res.send('❌ Tidak ada data kamar yang sudah dibagikan');
 
     const doc = new PDFDocument({ margin: 20, size: 'A4', layout: 'landscape' });
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=LAPORAN_${ra ? 'RA_' + ra : 'KEBERSIHAN'}_${tanggal}.pdf`);
+    res.setHeader('Content-Disposition', `attachment; filename=Daily_RA_Report_${ra ? ra + '_' : ''}${tanggal}.pdf`);
     doc.pipe(res);
 
-    const judul = ra ? `Worksheet Room Attendant: ${ra}` : 'LAPORAN KONTROL KEBERSIHAN';
+    // ✅ JUDUL DIUBAH SESUAI PERMINTAAN
+    const judul = ra ? `Daily Room Attendant Report - ${ra}` : 'Daily Room Attendant Report';
     doc.font('Helvetica-Bold').fontSize(18).text('HORISON HOTEL & CONVENTION', { align: 'center' });
     doc.fontSize(14).text(judul, { align: 'center', underline: true });
     doc.moveDown(1);
@@ -679,7 +673,8 @@ app.get('/unduh-pdf', (req, res) => {
     dataKamar.forEach((row, idx) => {
       doc.font('Helvetica-Bold').fontSize(10);
       doc.text(`Kamar: ${row.kamar} | Lantai: ${row.lantai} | Petugas: ${row.petugas || '-'}`, 20, y);
-      y += 15;
+      doc.text(`Status: ${row.status_awal} | Masuk: ${row.waktu_masuk} | Keluar: ${row.waktu_keluar}`, 20, y + 15);
+      y += 30;
       doc.font('Helvetica').fontSize(9);
 
       let biayaKamar = 0;
@@ -699,11 +694,12 @@ app.get('/unduh-pdf', (req, res) => {
           y += 12;
         });
       } else {
-        doc.text('Tidak ada barang yang diambil', 25, y);
+        doc.text('Belum ada laporan pemakaian barang', 25, y);
         y += 12;
       }
 
-      doc.text(`Total Biaya Kamar: Rp ${biayaKamar.toLocaleString('id-ID')}`, 25, y, { bold: true });
+      doc.font('Helvetica-Bold').fontSize(10);
+      doc.text(`Total Biaya Kamar: Rp ${biayaKamar.toLocaleString('id-ID')}`, 25, y);
       totalBiaya += biayaKamar;
       y += 20;
 
@@ -717,17 +713,16 @@ app.get('/unduh-pdf', (req, res) => {
 });
 
 // ======================================
-// ✅ ROUTE UNDUH EXCEL SESUAI FORMAT TEMPLATE
+// ✅ ROUTE UNDUH EXCEL (DIPERBAIKI SESUAI FORMAT)
 // ======================================
 app.get('/unduh-excel', async (req, res) => {
   try {
     const tanggal = req.query.tanggal || getTanggalWIB();
     const ra = req.query.ra || null;
 
-    // Ambil data lengkap dari database
     const daftarTugas = await new Promise((resolve, reject) => {
       let query = `
-        SELECT t.petugas, t.kamar, t.status_awal, k.lantai, k.tipe_kamar,
+        SELECT t.petugas, t.kamar, t.status_awal, k.lantai,
                IFNULL(l.waktu_masuk, '-') AS waktu_masuk,
                IFNULL(l.waktu_keluar, '-') AS waktu_keluar,
                l.*
@@ -747,59 +742,57 @@ app.get('/unduh-excel', async (req, res) => {
       return res.send('❌ Tidak ada data untuk tanggal ini');
     }
 
-    // Buka template Excel yang sudah Anda siapkan
     const workbook = new ExcelJS.Workbook();
     const templatePath = path.join(__dirname, 'templates', 'excel', 'roomboy_control_template.xlsx');
     await workbook.xlsx.readFile(templatePath);
     const sheet = workbook.worksheets[0];
 
-    // Isi bagian header sesuai format hotel
-    sheet.getCell('B3').value = 'HORISON HOTEL & CONVENTION';
-    sheet.getCell('B4').value = daftarTugas[0].petugas || '-';
-    sheet.getCell('J4').value = tanggal;
-    sheet.getCell('S4').value = 'Morning';
-    sheet.getCell('AG4').value = daftarTugas[0].lantai || '-';
+    // ✅ Isi Header sesuai format
+    sheet.getCell('B4').value = daftarTugas[0].petugas || '-';    // NAMA
+    sheet.getCell('J4').value = tanggal;                           // DATE
+    sheet.getCell('S4').value = 'Morning';                         // SHIFT
+    sheet.getCell('AG4').value = daftarTugas[0].lantai || '-';    // FLOOR/SECTION
 
-    // Isi data kamar mulai dari baris ke-8
+    // ✅ Isi data mulai baris ke-8
     let baris = 8;
-    daftarTugas.forEach((data, no) => {
-      sheet.getCell(`A${baris}`).value = no + 1;
-      sheet.getCell(`B${baris}`).value = data.kamar;
-      sheet.getCell(`C${baris}`).value = data.status_awal;
-      sheet.getCell(`F${baris}`).value = data.waktu_masuk;
-      sheet.getCell(`G${baris}`).value = data.waktu_keluar;
-      
-      // Isi semua barang linen & amenitas
-      sheet.getCell(`H${baris}`).value = data.sheet_twin || 0;
-      sheet.getCell(`I${baris}`).value = data.sheet_king || 0;
-      sheet.getCell(`J${baris}`).value = data.duvet_twin || 0;
-      sheet.getCell(`K${baris}`).value = data.duvet_king || 0;
-      sheet.getCell(`L${baris}`).value = data.bath_towel || 0;
-      sheet.getCell(`M${baris}`).value = data.hand_towel || 0;
-      sheet.getCell(`N${baris}`).value = data.bath_mat || 0;
-      sheet.getCell(`O${baris}`).value = data.pillow_case || 0;
-      sheet.getCell(`P${baris}`).value = data.shampoo || 0;
-      sheet.getCell(`Q${baris}`).value = data.soap || 0;
-      sheet.getCell(`R${baris}`).value = data.shower_gel || 0;
-      sheet.getCell(`S${baris}`).value = data.shower_cap || 0;
-      sheet.getCell(`T${baris}`).value = data.dental_kit || 0;
-      sheet.getCell(`U${baris}`).value = data.laundry_bag || 0;
-      sheet.getCell(`V${baris}`).value = data.sugar || 0;
-      sheet.getCell(`W${baris}`).value = data.tea || 0;
-      sheet.getCell(`X${baris}`).value = data.coffee || 0;
-      sheet.getCell(`Y${baris}`).value = data.creamer || 0;
-      sheet.getCell(`Z${baris}`).value = data.mineral || 0;
-      sheet.getCell(`AA${baris}`).value = data.tissue_facial || 0;
-      sheet.getCell(`AB${baris}`).value = data.tissue_roll || 0;
-      sheet.getCell(`AC${baris}`).value = data.cotton_bud || 0;
-      sheet.getCell(`AD${baris}`).value = data.slipper || 0;
-      sheet.getCell(`AE${baris}`).value = data.comb || 0;
-      sheet.getCell(`AF${baris}`).value = data.shaving_kit || 0;
+    daftarTugas.forEach((data) => {
+      sheet.getCell(`B${baris}`).value = data.kamar;                 // No Kamar
+      sheet.getCell(`C${baris}`).value = data.status_awal;           // Room Status
+      sheet.getCell(`D${baris}`).value = data.waktu_masuk;           // Time Masuk
+      sheet.getCell(`E${baris}`).value = data.waktu_keluar;          // Time Keluar
+      // Linen
+      sheet.getCell(`F${baris}`).value = data.sheet_twin || 0;       // Sheet Double
+      sheet.getCell(`G${baris}`).value = data.sheet_king || 0;        // Sheet Single
+      sheet.getCell(`H${baris}`).value = data.duvet_twin || 0;       // Duvet Cover Single
+      sheet.getCell(`I${baris}`).value = data.duvet_king || 0;        // Duvet Cover Double
+      sheet.getCell(`J${baris}`).value = data.bath_towel || 0;        // Bath Towel
+      sheet.getCell(`K${baris}`).value = data.hand_towel || 0;        // Hand Towel
+      sheet.getCell(`L${baris}`).value = data.bath_mat || 0;          // Bath Mat
+      sheet.getCell(`M${baris}`).value = data.pillow_case || 0;       // Pillow Case
+      // Bathroom
+      sheet.getCell(`N${baris}`).value = data.shampoo || 0;
+      sheet.getCell(`O${baris}`).value = data.soap || 0;
+      sheet.getCell(`P${baris}`).value = data.shower_gel || 0;
+      sheet.getCell(`Q${baris}`).value = data.shower_cap || 0;
+      sheet.getCell(`R${baris}`).value = data.dental_kit || 0;
+      sheet.getCell(`S${baris}`).value = data.laundry_bag || 0;
+      sheet.getCell(`T${baris}`).value = data.laundry_list || 0;
+      // Bedroom & Amenitas
+      sheet.getCell(`U${baris}`).value = data.sugar || 0;
+      sheet.getCell(`V${baris}`).value = data.tea || 0;
+      sheet.getCell(`W${baris}`).value = data.coffee || 0;
+      sheet.getCell(`X${baris}`).value = data.creamer || 0;
+      sheet.getCell(`Y${baris}`).value = data.mineral || 0;
+      sheet.getCell(`Z${baris}`).value = data.tissue_facial || 0;
+      sheet.getCell(`AA${baris}`).value = data.tissue_roll || 0;
+      sheet.getCell(`AB${baris}`).value = data.cotton_bud || 0;
+      sheet.getCell(`AC${baris}`).value = data.slipper || 0;
+      sheet.getCell(`AD${baris}`).value = data.comb || 0;
+      sheet.getCell(`AE${baris}`).value = data.shaving_kit || 0;
 
       baris++;
     });
 
-    // Kirim file ke pengguna
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename=Roomboy_Control_Sheet_${ra ? ra + '_' : ''}${tanggal}.xlsx`);
     await workbook.xlsx.write(res);
