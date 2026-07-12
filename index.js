@@ -768,17 +768,88 @@ app.get('/unduh-pdf', (req, res) => {
 app.get('/unduh-excel', async (req, res) => {
   try {
     const tanggal = req.query.tanggal || getTanggalWIB();
-    const ra = req.query.ra || null;
+    const raFilter = req.query.ra || null;
 
-    // Build SQL query with proper field aliases
-    // BATH ROOM fields need _in suffix because Excel template has IN/OUT pairs
-    // GUEST SUPPLIES fields use original names (no suffix, single column)
+    // Ambil daftar RA yang punya tugas di tanggal ini
+    const daftarRA = await new Promise((resolve, reject) => {
+      let query = `
+        SELECT DISTINCT petugas 
+        FROM tugas 
+        WHERE tanggal = ? AND petugas != '' AND sudah_dibagikan = 1 
+      `;
+      const params = [tanggal];
+      if (raFilter) {
+        query += ` AND petugas = ?`;
+        params.push(raFilter);
+      }
+      query += ` ORDER BY petugas`;
+
+      db.all(query, params, (err, rows) => {
+        if (err) {
+          console.error('❌ Error ambil daftar RA:', err.message);
+          return reject(err);
+        }
+        resolve(rows.map(r => r.petugas));
+      });
+    });
+
+    if (daftarRA.length === 0) {
+      return res.send('❌ Tidak ada RA yang memiliki tugas untuk tanggal ini');
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const templatePath = path.join(__dirname, 'templates', 'excel', 'roomboy_control_template.xlsx');
+    await workbook.xlsx.readFile(templatePath);
+    const templateSheet = workbook.worksheets[0];
+
+    // Helper: copy header & format dari template ke sheet baru
+    const copyHeaderFromTemplate = (targetSheet) => {
+      // Copy column widths & properties
+      templateSheet.columns.forEach((col, idx) => {
+        if (!targetSheet.columns[idx]) {
+          targetSheet.columns[idx] = { 
+            width: col.width, 
+            style: col.style, 
+            hidden: col.hidden 
+          };
+        } else {
+          targetSheet.columns[idx].width = col.width;
+          targetSheet.columns[idx].style = col.style;
+          targetSheet.columns[idx].hidden = col.hidden;
+        }
+      });
+
+      // Copy rows 1-8 (header area: title, shift, lantai, dll)
+      for (let r = 1; r <= 8; r++) {
+        const templateRow = templateSheet.getRow(r);
+        const targetRow = targetSheet.getRow(r);
+
+        templateRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+          const targetCell = targetRow.getCell(colNumber);
+          targetCell.value = cell.value;
+          if (cell.style) {
+            targetCell.style = JSON.parse(JSON.stringify(cell.style));
+          }
+        });
+
+        targetRow.height = templateRow.height;
+      }
+
+      // Copy merges (A1:B2, dll)
+      if (templateSheet.model && templateSheet.model.merges) {
+        templateSheet.model.merges.forEach(merge => {
+          try { targetSheet.mergeCells(merge); } catch(e) {}
+        });
+      }
+    };
+
+    // Build SQL selects
     const bathRoomFields = [
       'sheet_twin', 'sheet_king', 'duvet_twin', 'duvet_king',
       'bath_towel', 'hand_towel', 'bath_mat', 'pillow_case'
     ];
-
-    const bathRoomSelects = bathRoomFields.map(f => `IFNULL(l.${f}, 0) AS ${f}_in`).join(',\n               ');
+    const bathRoomSelects = bathRoomFields.map(f => `IFNULL(l.${f}, 0) AS ${f}_in`).join(',
+               ');
 
     const guestSuppliesFields = [
       'shower_cap', 'dental_kit', 'laundry_bag', 'laundry_list',
@@ -787,133 +858,133 @@ app.get('/unduh-excel', async (req, res) => {
       'cotton_bud', 'slipper', 'comb', 'shaving_kit',
       'stirer', 'coster', 'poly_bag_kecil', 'poly_bag_besar'
     ];
+    const guestSuppliesSelects = guestSuppliesFields.map(f => `IFNULL(l.${f}, 0) AS ${f}`).join(',
+               ');
 
-    const guestSuppliesSelects = guestSuppliesFields.map(f => `IFNULL(l.${f}, 0) AS ${f}`).join(',\n               ');
+    // Proses setiap RA
+    for (let i = 0; i < daftarRA.length; i++) {
+      const ra = daftarRA[i];
+      let sheet;
 
-    const daftarTugas = await new Promise((resolve, reject) => {
-      let query = `
-        SELECT t.petugas, t.kamar, 
-               t.status_awal AS status_fo,
-               t.status_hk_in,
-               t.status_hk_out,
-               t.selesai,
-               k.lantai,
-               IFNULL(l.waktu_masuk, '-') AS waktu_masuk,
-               IFNULL(l.waktu_keluar, '-') AS waktu_keluar,
-               ${bathRoomSelects},
-               ${guestSuppliesSelects}
-        FROM tugas t
-        JOIN kamar k ON t.kamar = k.nomor_kamar
-        LEFT JOIN laporan l ON t.tanggal = l.tanggal AND t.kamar = l.nomor_kamar
-        WHERE t.tanggal = ? 
-          AND (t.sudah_dibagikan = 1 OR t.sudah_dibagikan IS NULL OR t.sudah_dibagikan = 0)
-      `;
-      const param = [tanggal];
-      if (ra) { query += ` AND t.petugas = ?`; param.push(ra); }
-      query += ` ORDER BY t.petugas, t.kamar`;
+      if (i === 0) {
+        // RA pertama: gunakan sheet template yang sudah ada, rename ke nama RA
+        sheet = templateSheet;
+        sheet.name = ra;
+      } else {
+        // RA berikutnya: buat sheet baru, copy header dari template
+        sheet = workbook.addWorksheet(ra);
+        copyHeaderFromTemplate(sheet);
+      }
 
-      db.all(query, param, (err, rows) => {
-        if (err) {
-          console.error('❌ Error query Excel:', err.message);
-          return reject(err);
-        }
-        console.log('📊 Query Excel rows:', rows.length);
-        if (rows.length > 0) {
-          console.log('📊 Sample row keys:', Object.keys(rows[0]).slice(0, 20));
-          console.log('📊 Sample data (kamar 201):', rows.find(r => r.kamar === '201') || rows[0]);
-        }
-        resolve(rows);
+      // Query data kamar untuk RA ini
+      const dataRA = await new Promise((resolve, reject) => {
+        const query = `
+          SELECT t.petugas, t.kamar, 
+                 t.status_awal AS status_fo,
+                 t.status_hk_in,
+                 t.status_hk_out,
+                 t.selesai,
+                 k.lantai,
+                 IFNULL(l.waktu_masuk, '-') AS waktu_masuk,
+                 IFNULL(l.waktu_keluar, '-') AS waktu_keluar,
+                 ${bathRoomSelects},
+                 ${guestSuppliesSelects}
+          FROM tugas t
+          JOIN kamar k ON t.kamar = k.nomor_kamar
+          LEFT JOIN laporan l ON t.tanggal = l.tanggal AND t.kamar = l.nomor_kamar
+          WHERE t.tanggal = ? AND t.petugas = ? AND t.sudah_dibagikan = 1
+          ORDER BY t.kamar
+        `;
+        db.all(query, [tanggal, ra], (err, rows) => {
+          if (err) {
+            console.error(`❌ Error query data RA ${ra}:`, err.message);
+            return reject(err);
+          }
+          console.log(`📊 RA ${ra}: ${rows.length} kamar ditemukan`);
+          resolve(rows);
+        });
       });
-    });
 
-    const dataValid = daftarTugas.filter(item => item.petugas && item.petugas !== '');
+      if (dataRA.length === 0) continue;
 
-    if (!dataValid || dataValid.length === 0) {
-      return res.send('❌ Tidak ada data untuk tanggal ini');
+      // Isi header info (baris 4)
+      sheet.getCell('B4').value = ra;
+      sheet.getCell('J4').value = tanggal;
+      sheet.getCell('S4').value = 'Morning';
+      sheet.getCell('AG4').value = dataRA[0]?.lantai || '-';
+
+      // Isi data kamar mulai baris 9
+      let baris = 9;
+      dataRA.forEach((data) => {
+        sheet.getCell(`B${baris}`).value = data.kamar;
+        sheet.getCell(`C${baris}`).value = data.status_fo || '';
+
+        let statusHKin = data.status_hk_in || '';
+        if (!statusHKin) {
+          if (data.status_fo === 'VD' || data.status_fo === 'ED') statusHKin = 'VD';
+          else if (data.status_fo === 'VCU') statusHKin = 'VCU';
+          else if (data.status_fo === 'OD') statusHKin = 'OD';
+        }
+        sheet.getCell(`D${baris}`).value = statusHKin;
+
+        let statusHKout = data.status_hk_out || '';
+        if (!statusHKout && data.selesai === 1) {
+          if (statusHKin === 'VD' || statusHKin === 'VCU' || data.status_fo === 'ED') statusHKout = 'VC';
+          else if (statusHKin === 'OD') statusHKout = 'OC';
+        }
+        sheet.getCell(`E${baris}`).value = statusHKout;
+
+        sheet.getCell(`F${baris}`).value = data.waktu_masuk !== '-' ? data.waktu_masuk : '';
+        sheet.getCell(`G${baris}`).value = data.waktu_keluar !== '-' ? data.waktu_keluar : '';
+
+        // === BATH ROOM (pasangan IN / OUT) ===
+        sheet.getCell(`H${baris}`).value = data.sheet_twin_in || 0;
+        sheet.getCell(`I${baris}`).value = data.sheet_twin_in || 0;
+        sheet.getCell(`J${baris}`).value = data.sheet_king_in || 0;
+        sheet.getCell(`K${baris}`).value = data.sheet_king_in || 0;
+        sheet.getCell(`L${baris}`).value = data.duvet_twin_in || 0;
+        sheet.getCell(`M${baris}`).value = data.duvet_twin_in || 0;
+        sheet.getCell(`N${baris}`).value = data.duvet_king_in || 0;
+        sheet.getCell(`O${baris}`).value = data.duvet_king_in || 0;
+        sheet.getCell(`P${baris}`).value = data.bath_towel_in || 0;
+        sheet.getCell(`Q${baris}`).value = data.bath_towel_in || 0;
+        sheet.getCell(`R${baris}`).value = data.hand_towel_in || 0;
+        sheet.getCell(`S${baris}`).value = data.hand_towel_in || 0;
+        sheet.getCell(`T${baris}`).value = data.bath_mat_in || 0;
+        sheet.getCell(`U${baris}`).value = data.bath_mat_in || 0;
+        sheet.getCell(`V${baris}`).value = data.pillow_case_in || 0;
+        sheet.getCell(`W${baris}`).value = data.pillow_case_in || 0;
+
+        // === GUEST SUPPLIES & AMENITIES (1 kolom per item) ===
+        sheet.getCell(`AD${baris}`).value = data.shower_cap || 0;
+        sheet.getCell(`AE${baris}`).value = data.dental_kit || 0;
+        sheet.getCell(`AF${baris}`).value = data.laundry_bag || 0;
+        sheet.getCell(`AG${baris}`).value = data.laundry_list || 0;
+        sheet.getCell(`AH${baris}`).value = data.note_pad || 0;
+        sheet.getCell(`AI${baris}`).value = data.pensil || 0;
+        sheet.getCell(`AJ${baris}`).value = ''; // Guest Comment
+        sheet.getCell(`AL${baris}`).value = data.tissue_facial || 0;
+        sheet.getCell(`AM${baris}`).value = data.tissue_roll || 0;
+        sheet.getCell(`AN${baris}`).value = data.coffee || 0;
+        sheet.getCell(`AO${baris}`).value = data.sugar || 0;
+        sheet.getCell(`AP${baris}`).value = data.tea || 0;
+        sheet.getCell(`AQ${baris}`).value = data.creamer || 0;
+        sheet.getCell(`AR${baris}`).value = data.mineral || 0;
+        sheet.getCell(`AS${baris}`).value = data.cotton_bud || 0;
+        sheet.getCell(`AT${baris}`).value = data.slipper || 0;
+        sheet.getCell(`AU${baris}`).value = data.comb || 0;
+        sheet.getCell(`AV${baris}`).value = data.shaving_kit || 0;
+        sheet.getCell(`AW${baris}`).value = data.stirer || 0;
+        sheet.getCell(`AX${baris}`).value = data.coster || 0;
+        sheet.getCell(`AY${baris}`).value = data.poly_bag_kecil || 0;
+        sheet.getCell(`AZ${baris}`).value = data.poly_bag_besar || 0;
+
+        baris++;
+      });
     }
 
-    const workbook = new ExcelJS.Workbook();
-    const templatePath = path.join(__dirname, 'templates', 'excel', 'roomboy_control_template.xlsx');
-    await workbook.xlsx.readFile(templatePath);
-    const sheet = workbook.worksheets[0];
-
-    sheet.getCell('B4').value = dataValid[0].petugas || '-';
-    sheet.getCell('J4').value = tanggal;
-    sheet.getCell('S4').value = 'Morning';
-    sheet.getCell('AG4').value = dataValid[0].lantai || '-';
-
-    let baris = 9;
-    dataValid.forEach((data) => {
-      // === INFO DASAR ===
-      sheet.getCell(`B${baris}`).value = data.kamar;
-      sheet.getCell(`C${baris}`).value = data.status_fo || '';
-
-      let statusHKin = data.status_hk_in || '';
-      if (!statusHKin) {
-        if (data.status_fo === 'VD' || data.status_fo === 'ED') statusHKin = 'VD';
-        else if (data.status_fo === 'VCU') statusHKin = 'VCU';
-        else if (data.status_fo === 'OD') statusHKin = 'OD';
-      }
-      sheet.getCell(`D${baris}`).value = statusHKin;
-
-      let statusHKout = data.status_hk_out || '';
-      if (!statusHKout && data.selesai === 1) {
-        if (statusHKin === 'VD' || statusHKin === 'VCU' || data.status_fo === 'ED') statusHKout = 'VC';
-        else if (statusHKin === 'OD') statusHKout = 'OC';
-      }
-      sheet.getCell(`E${baris}`).value = statusHKout;
-
-      sheet.getCell(`F${baris}`).value = data.waktu_masuk !== '-' ? data.waktu_masuk : '';
-      sheet.getCell(`G${baris}`).value = data.waktu_keluar !== '-' ? data.waktu_keluar : '';
-
-      // === BATH ROOM (pasangan IN / OUT) ===
-      // H = sheet_twin_in, I = sheet_twin_in (out)
-      sheet.getCell(`H${baris}`).value = data.sheet_twin_in || 0;
-      sheet.getCell(`I${baris}`).value = data.sheet_twin_in || 0;
-      sheet.getCell(`J${baris}`).value = data.sheet_king_in || 0;
-      sheet.getCell(`K${baris}`).value = data.sheet_king_in || 0;
-      sheet.getCell(`L${baris}`).value = data.duvet_twin_in || 0;
-      sheet.getCell(`M${baris}`).value = data.duvet_twin_in || 0;
-      sheet.getCell(`N${baris}`).value = data.duvet_king_in || 0;
-      sheet.getCell(`O${baris}`).value = data.duvet_king_in || 0;
-      sheet.getCell(`P${baris}`).value = data.bath_towel_in || 0;
-      sheet.getCell(`Q${baris}`).value = data.bath_towel_in || 0;
-      sheet.getCell(`R${baris}`).value = data.hand_towel_in || 0;
-      sheet.getCell(`S${baris}`).value = data.hand_towel_in || 0;
-      sheet.getCell(`T${baris}`).value = data.bath_mat_in || 0;
-      sheet.getCell(`U${baris}`).value = data.bath_mat_in || 0;
-      sheet.getCell(`V${baris}`).value = data.pillow_case_in || 0;
-      sheet.getCell(`W${baris}`).value = data.pillow_case_in || 0;
-
-      // === GUEST SUPPLIES & AMENITIES (hanya 1 kolom per item, tanpa IN/OUT) ===
-      sheet.getCell(`AD${baris}`).value = data.shower_cap || 0;
-      sheet.getCell(`AE${baris}`).value = data.dental_kit || 0;
-      sheet.getCell(`AF${baris}`).value = data.laundry_bag || 0;
-      sheet.getCell(`AG${baris}`).value = data.laundry_list || 0;
-      sheet.getCell(`AH${baris}`).value = data.note_pad || 0;
-      sheet.getCell(`AI${baris}`).value = data.pensil || 0;
-      sheet.getCell(`AJ${baris}`).value = ''; // Guest Comment
-      sheet.getCell(`AL${baris}`).value = data.tissue_facial || 0;
-      sheet.getCell(`AM${baris}`).value = data.tissue_roll || 0;
-      sheet.getCell(`AN${baris}`).value = data.coffee || 0;
-      sheet.getCell(`AO${baris}`).value = data.sugar || 0;
-      sheet.getCell(`AP${baris}`).value = data.tea || 0;
-      sheet.getCell(`AQ${baris}`).value = data.creamer || 0;
-      sheet.getCell(`AR${baris}`).value = data.mineral || 0;
-      sheet.getCell(`AS${baris}`).value = data.cotton_bud || 0;
-      sheet.getCell(`AT${baris}`).value = data.slipper || 0;
-      sheet.getCell(`AU${baris}`).value = data.comb || 0;
-      sheet.getCell(`AV${baris}`).value = data.shaving_kit || 0;
-      sheet.getCell(`AW${baris}`).value = data.stirer || 0;
-      sheet.getCell(`AX${baris}`).value = data.coster || 0;
-      sheet.getCell(`AY${baris}`).value = data.poly_bag_kecil || 0;
-      sheet.getCell(`AZ${baris}`).value = data.poly_bag_besar || 0;
-
-      baris++;
-    });
-
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename=Roomboy_Control_Sheet_${ra ? ra + '_' : ''}${tanggal}.xlsx`);
+    res.setHeader('Content-Disposition', `attachment; filename=Roomboy_Control_Sheet_${tanggal}.xlsx`);
     await workbook.xlsx.write(res);
     res.end();
 
