@@ -487,7 +487,7 @@ app.post('/selesai-kamar', (req, res) => {
     pensil, note_pad } = req.body;
   const waktuKeluar = getWaktuWIBJamMenit();
 
-  db.run(`
+  const sql = `
     INSERT OR REPLACE INTO laporan (
       tanggal, nomor_kamar, waktu_masuk, waktu_keluar,
       sheet_twin, sheet_king, duvet_twin, duvet_king,
@@ -507,7 +507,9 @@ app.post('/selesai-kamar', (req, res) => {
       pensil, note_pad,
       petugas
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `, [
+  `;
+
+  const params = [
     tanggal, kamar, waktu_masuk, waktuKeluar,
     sheet_twin||0, sheet_king||0, duvet_twin||0, duvet_king||0,
     bath_towel||0, hand_towel||0, bath_mat||0, pillow_case||0,
@@ -525,11 +527,30 @@ app.post('/selesai-kamar', (req, res) => {
     poly_bag_kecil||0, poly_bag_besar||0,
     pensil||0, note_pad||0,
     req.session.user.nama
-  ], err => {
-    if (err) return console.error(err);
+  ];
+
+  console.log('📥 Submit selesai-kamar:', { tanggal, kamar, waktu_masuk, waktuKeluar });
+  console.log('📊 Jumlah ? di SQL:', (sql.match(/\?/g) || []).length);
+  console.log('📊 Jumlah params:', params.length);
+
+  db.run(sql, params, function(err) {
+    if (err) {
+      console.error('❌ Error INSERT laporan:', err.message);
+      return res.redirect('/ra?pesan=gagal');
+    }
+
+    console.log('✅ Laporan tersimpan, rows affected:', this.changes);
 
     db.get(`SELECT status_awal, status_hk_in FROM tugas WHERE tanggal = ? AND kamar = ?`, [tanggal, kamar], (err, data) => {
-      if (err) return console.error(err);
+      if (err) {
+        console.error('❌ Error SELECT tugas:', err.message);
+        return res.redirect('/ra?pesan=gagal');
+      }
+      
+      if (!data) {
+        console.error('❌ Data tugas tidak ditemukan:', tanggal, kamar);
+        return res.redirect('/ra?pesan=gagal');
+      }
       
       let statusHKout = '';
       if (data.status_hk_in === 'VD' || data.status_hk_in === 'VCU' || data.status_awal === 'ED') {
@@ -538,10 +559,21 @@ app.post('/selesai-kamar', (req, res) => {
         statusHKout = 'OC';
       }
 
+      console.log('📝 Update status_hk_out:', statusHKout, 'untuk kamar', kamar);
+
       db.run(`UPDATE tugas 
               SET status_hk_out = ?, selesai = 1, siap_dicek = 1 
               WHERE tanggal = ? AND kamar = ?`,
-        [statusHKout, tanggal, kamar], () => res.redirect('/ra?pesan=berhasil'));
+        [statusHKout, tanggal, kamar], 
+        function(err) {
+          if (err) {
+            console.error('❌ Error UPDATE tugas:', err.message);
+            return res.redirect('/ra?pesan=gagal');
+          }
+          console.log('✅ Tugas selesai diupdate, rows:', this.changes);
+          res.redirect('/ra?pesan=berhasil');
+        }
+      );
     });
   });
 });
