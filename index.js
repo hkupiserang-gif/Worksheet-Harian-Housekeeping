@@ -824,25 +824,49 @@ app.get('/unduh-excel', async (req, res) => {
       sheet.getCell(`V${baris}`).value = data.pillow_case_in;
       sheet.getCell(`W${baris}`).value = data.pillow_case_in;
 
-      sheet.getCell(`AD${baris}`).value = data.shower_cap_in;
-      sheet.getCell(`AE${baris}`).value = data.shower_cap_in;
-      sheet.getCell(`AF${baris}`).value = data.dental_kit_in;
-      sheet.getCell(`AG${baris}`).value = data.dental_kit_in;
-      sheet.getCell(`AH${baris}`).value = data.laundry_bag_in;
-      sheet.getCell(`AI${baris}`).value = data.laundry_bag_in;
-      sheet.getCell(`AJ${baris}`).value = data.laundry_list_in;
+      // === BATH ROOM (pasangan IN / OUT) ===
+      sheet.getCell(`H${baris}`).value = data.sheet_twin_in;
+      sheet.getCell(`I${baris}`).value = data.sheet_twin_in;
+      sheet.getCell(`J${baris}`).value = data.sheet_king_in;
+      sheet.getCell(`K${baris}`).value = data.sheet_king_in;
+      sheet.getCell(`L${baris}`).value = data.duvet_twin_in;
+      sheet.getCell(`M${baris}`).value = data.duvet_twin_in;
+      sheet.getCell(`N${baris}`).value = data.duvet_king_in;
+      sheet.getCell(`O${baris}`).value = data.duvet_king_in;
+      sheet.getCell(`P${baris}`).value = data.bath_towel_in;
+      sheet.getCell(`Q${baris}`).value = data.bath_towel_in;
+      sheet.getCell(`R${baris}`).value = data.hand_towel_in;
+      sheet.getCell(`S${baris}`).value = data.hand_towel_in;
+      sheet.getCell(`T${baris}`).value = data.bath_mat_in;
+      sheet.getCell(`U${baris}`).value = data.bath_mat_in;
+      sheet.getCell(`V${baris}`).value = data.pillow_case_in;
+      sheet.getCell(`W${baris}`).value = data.pillow_case_in;
 
-      sheet.getCell(`AN${baris}`).value = data.sugar || 0;
-      sheet.getCell(`AO${baris}`).value = data.tea || 0;
-      sheet.getCell(`AM${baris}`).value = data.coffee || 0;
-      sheet.getCell(`AP${baris}`).value = data.creamer || 0;
-      sheet.getCell(`AQ${baris}`).value = data.mineral || 0;
-      sheet.getCell(`AL${baris}`).value = data.tissue_facial || 0;
-      sheet.getCell(`X${baris}`).value = data.tissue_roll || 0;
-      sheet.getCell(`AW${baris}`).value = data.cotton_bud || 0;
-      sheet.getCell(`AE${baris}`).value = data.slipper || 0;
-      sheet.getCell(`AX${baris}`).value = data.comb || 0;
-      sheet.getCell(`AZ${baris}`).value = data.shaving_kit || 0;
+      // === GUEST SUPPLIES & AMENITIES (hanya 1 kolom per item, tanpa IN/OUT) ===
+      // Sesuaikan huruf kolom dengan template Excel kamu
+      sheet.getCell(`AD${baris}`).value = data.shower_cap;
+      sheet.getCell(`AE${baris}`).value = data.dental_kit;
+      sheet.getCell(`AF${baris}`).value = data.laundry_bag;
+      sheet.getCell(`AG${baris}`).value = data.laundry_list;
+      sheet.getCell(`AH${baris}`).value = data.note_pad;
+      sheet.getCell(`AI${baris}`).value = data.pensil;
+      // AJ = GUEST COMMENT (tidak ada di DB, biarkan kosong atau isi manual)
+      sheet.getCell(`AJ${baris}`).value = ''; 
+      sheet.getCell(`AL${baris}`).value = data.tissue_facial;
+      sheet.getCell(`AM${baris}`).value = data.tissue_roll;
+      sheet.getCell(`AN${baris}`).value = data.coffee;
+      sheet.getCell(`AO${baris}`).value = data.sugar;
+      sheet.getCell(`AP${baris}`).value = data.tea;
+      sheet.getCell(`AQ${baris}`).value = data.creamer;
+      sheet.getCell(`AR${baris}`).value = data.mineral;
+      sheet.getCell(`AS${baris}`).value = data.cotton_bud;
+      sheet.getCell(`AT${baris}`).value = data.slipper;
+      sheet.getCell(`AU${baris}`).value = data.comb;
+      sheet.getCell(`AV${baris}`).value = data.shaving_kit;
+      sheet.getCell(`AW${baris}`).value = data.stirer;
+      sheet.getCell(`AX${baris}`).value = data.coster;
+      sheet.getCell(`AY${baris}`).value = data.poly_bag_kecil;
+      sheet.getCell(`AZ${baris}`).value = data.poly_bag_besar;
 
       baris++;
     });
