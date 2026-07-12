@@ -887,26 +887,26 @@ app.get('/unduh-excel', async (req, res) => {
 
       // === GUEST SUPPLIES & AMENITIES (hanya 1 kolom per item, tanpa IN/OUT) ===
       sheet.getCell(`AD${baris}`).value = data.shower_cap || 0;
-      sheet.getCell(`AE${baris}`).value = data.dental_kit || 0;
+      sheet.getCell(`AB${baris}`).value = data.dental_kit || 0;
       sheet.getCell(`AF${baris}`).value = data.laundry_bag || 0;
       sheet.getCell(`AG${baris}`).value = data.laundry_list || 0;
       sheet.getCell(`AH${baris}`).value = data.note_pad || 0;
       sheet.getCell(`AI${baris}`).value = data.pensil || 0;
       sheet.getCell(`AJ${baris}`).value = ''; // Guest Comment
       sheet.getCell(`AL${baris}`).value = data.tissue_facial || 0;
-      sheet.getCell(`AM${baris}`).value = data.tissue_roll || 0;
-      sheet.getCell(`AN${baris}`).value = data.coffee || 0;
-      sheet.getCell(`AO${baris}`).value = data.sugar || 0;
-      sheet.getCell(`AP${baris}`).value = data.tea || 0;
-      sheet.getCell(`AQ${baris}`).value = data.creamer || 0;
-      sheet.getCell(`AR${baris}`).value = data.mineral || 0;
+      sheet.getCell(`X${baris}`).value = data.tissue_roll || 0;
+      sheet.getCell(`AM${baris}`).value = data.coffee || 0;
+      sheet.getCell(`AN${baris}`).value = data.sugar || 0;
+      sheet.getCell(`AO${baris}`).value = data.tea || 0;
+      sheet.getCell(`AP${baris}`).value = data.creamer || 0;
+      sheet.getCell(`AQ${baris}`).value = data.mineral || 0;
       sheet.getCell(`AS${baris}`).value = data.cotton_bud || 0;
-      sheet.getCell(`AT${baris}`).value = data.slipper || 0;
+      sheet.getCell(`AE${baris}`).value = data.slipper || 0;
       sheet.getCell(`AU${baris}`).value = data.comb || 0;
       sheet.getCell(`AV${baris}`).value = data.shaving_kit || 0;
-      sheet.getCell(`AW${baris}`).value = data.stirer || 0;
+      sheet.getCell(`AC${baris}`).value = data.stirer || 0;
       sheet.getCell(`AX${baris}`).value = data.coster || 0;
-      sheet.getCell(`AY${baris}`).value = data.poly_bag_kecil || 0;
+      sheet.getCell(`AK${baris}`).value = data.poly_bag_kecil || 0;
       sheet.getCell(`AZ${baris}`).value = data.poly_bag_besar || 0;
 
       baris++;
