@@ -801,26 +801,8 @@ app.get('/unduh-excel', async (req, res) => {
     }
 
     const workbook = new ExcelJS.Workbook();
-    const templatePath = path.join(__dirname, 'templates', 'excel', 'roomboy_control_template.xlsx');
 
-    console.log('📁 Template path:', templatePath);
-
-    // Check if template exists
-    const fs = require('fs');
-    if (!fs.existsSync(templatePath)) {
-      console.error('❌ Template file tidak ditemukan:', templatePath);
-      return res.send('❌ Template Excel tidak ditemukan di server');
-    }
-
-    await workbook.xlsx.readFile(templatePath);
-    const templateSheet = workbook.worksheets[0];
-
-    if (!templateSheet) {
-      console.error('❌ Template sheet tidak ditemukan');
-      return res.send('❌ Template Excel rusak atau kosong');
-    }
-
-    console.log('📊 Template sheet name:', templateSheet.name);
+    // TIDAK PAKAI TEMPLATE - buat sheet dari nol
 
     // Build SQL selects
     const bathRoomFields = [
@@ -841,77 +823,98 @@ app.get('/unduh-excel', async (req, res) => {
     // Proses setiap RA
     for (let i = 0; i < daftarRA.length; i++) {
       const ra = daftarRA[i];
-      let sheet;
 
-      if (i === 0) {
-        // RA pertama: rename sheet template
-        sheet = templateSheet;
-        sheet.name = ra;
-      } else {
-        // RA berikutnya: clone sheet dari template dengan cara yang lebih aman
-        // Buat sheet baru dengan nama RA
-        sheet = workbook.addWorksheet(ra);
+      // Buat sheet baru dengan nama RA
+      const sheet = workbook.addWorksheet(ra);
 
-        // Copy column properties
-        templateSheet.columns.forEach((col, idx) => {
-          if (sheet.columns[idx]) {
-            sheet.columns[idx].width = col.width;
-            sheet.columns[idx].hidden = col.hidden;
-          }
-        });
+      // === BUAT HEADER MANUAL ===
 
-        // Copy merged cells info
-        const merges = [];
-        if (templateSheet.model && templateSheet.model.merges) {
-          templateSheet.model.merges.forEach(m => merges.push(m));
-        }
+      // Row 1: Title
+      sheet.getCell('A1').value = 'ROOMBOY CONTROL SHEET';
+      sheet.getCell('A1').font = { bold: true, size: 14 };
+      sheet.mergeCells('A1:B2');
 
-        // Copy row values and styles (hanya baris 1-8 untuk header)
-        for (let r = 1; r <= 8; r++) {
-          const srcRow = templateSheet.getRow(r);
-          const destRow = sheet.getRow(r);
+      // Row 3: Shift & Date
+      sheet.getCell('D3').value = 'SHIFT:';
+      sheet.getCell('D3').font = { bold: true };
+      sheet.getCell('E3').value = 'Morning';
 
-          // Copy row height
-          if (srcRow && srcRow.height) {
-            destRow.height = srcRow.height;
-          }
+      sheet.getCell('H3').value = 'DATE:';
+      sheet.getCell('H3').font = { bold: true };
+      sheet.getCell('I3').value = tanggal;
 
-          // Copy cell values and styles
-          if (srcRow && srcRow.eachCell) {
-            srcRow.eachCell({ includeEmpty: true }, (srcCell, colNumber) => {
-              const destCell = destRow.getCell(colNumber);
+      sheet.getCell('L3').value = 'FLOOR/SECTION:';
+      sheet.getCell('L3').font = { bold: true };
 
-              // Copy value
-              if (srcCell.value !== undefined && srcCell.value !== null) {
-                destCell.value = srcCell.value;
-              }
+      // Row 4: RA Name & Lantai
+      sheet.getCell('A4').value = 'RA:';
+      sheet.getCell('A4').font = { bold: true };
+      sheet.getCell('B4').value = ra;
 
-              // Copy style (safely)
-              if (srcCell.style) {
-                try {
-                  destCell.style = JSON.parse(JSON.stringify(srcCell.style));
-                } catch(e) {
-                  // ignore style copy errors
-                }
-              }
+      // Row 5: Column headers
+      const headers = [
+        { col: 'A', text: 'NO' },
+        { col: 'B', text: 'ROOM' },
+        { col: 'C', text: 'FO' },
+        { col: 'D', text: 'HK IN' },
+        { col: 'E', text: 'HK OUT' },
+        { col: 'F', text: 'TIME IN' },
+        { col: 'G', text: 'TIME OUT' },
+        { col: 'H', text: 'SHEET TWIN' },
+        { col: 'I', text: 'SHEET KING' },
+        { col: 'J', text: 'DUVET TWIN' },
+        { col: 'K', text: 'DUVET KING' },
+        { col: 'L', text: 'BATH TOWEL' },
+        { col: 'M', text: 'HAND TOWEL' },
+        { col: 'N', text: 'BATH MAT' },
+        { col: 'O', text: 'PILLOW CASE' },
+        { col: 'P', text: 'SHOWER CAP' },
+        { col: 'Q', text: 'DENTAL KIT' },
+        { col: 'R', text: 'LAUNDRY BAG' },
+        { col: 'S', text: 'LAUNDRY LIST' },
+        { col: 'T', text: 'NOTE PAD' },
+        { col: 'U', text: 'PENSIL' },
+        { col: 'V', text: 'TISSUE FACIAL' },
+        { col: 'W', text: 'TISSUE ROLL' },
+        { col: 'X', text: 'COFFEE' },
+        { col: 'Y', text: 'SUGAR' },
+        { col: 'Z', text: 'TEA' },
+        { col: 'AA', text: 'CREAMER' },
+        { col: 'AB', text: 'MINERAL' },
+        { col: 'AC', text: 'COTTON BUD' },
+        { col: 'AD', text: 'SLIPPER' },
+        { col: 'AE', text: 'COMB' },
+        { col: 'AF', text: 'SHAVING KIT' },
+        { col: 'AG', text: 'STIRER' },
+        { col: 'AH', text: 'COSTER' },
+        { col: 'AI', text: 'POLY BAG KECIL' },
+        { col: 'AJ', text: 'POLY BAG BESAR' }
+      ];
 
-              // Copy number format
-              if (srcCell.numFmt) {
-                destCell.numFmt = srcCell.numFmt;
-              }
-            });
-          }
-        }
+      headers.forEach(h => {
+        const cell = sheet.getCell(h.col + '5');
+        cell.value = h.text;
+        cell.font = { bold: true, size: 9 };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
+        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+        cell.border = {
+          top: { style: 'thin' },
+          bottom: { style: 'thin' },
+          left: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+      });
 
-        // Apply merges after all cells are set
-        merges.forEach(merge => {
-          try {
-            sheet.mergeCells(merge);
-          } catch(e) {
-            console.log('⚠️ Merge error:', merge, e.message);
-          }
-        });
-      }
+      // Set column widths
+      sheet.getColumn('A').width = 4;
+      sheet.getColumn('B').width = 8;
+      sheet.getColumn('C').width = 6;
+      sheet.getColumn('D').width = 8;
+      sheet.getColumn('E').width = 8;
+      sheet.getColumn('F').width = 10;
+      sheet.getColumn('G').width = 10;
+      ['H','I','J','K','L','M','N','O'].forEach(c => sheet.getColumn(c).width = 12);
+      ['P','Q','R','S','T','U','V','W','X','Y','Z','AA','AB','AC','AD','AE','AF','AG','AH','AI','AJ'].forEach(c => sheet.getColumn(c).width = 10);
 
       // Query data kamar untuk RA ini
       const dataRA = await new Promise((resolve, reject) => {
@@ -944,19 +947,26 @@ app.get('/unduh-excel', async (req, res) => {
 
       if (dataRA.length === 0) continue;
 
-      // Isi header info (baris 4)
-      const firstRow = dataRA[0];
-      sheet.getCell('B4').value = ra;
-      sheet.getCell('J4').value = tanggal;
-      sheet.getCell('S4').value = 'Morning';
-      sheet.getCell('AG4').value = (firstRow && firstRow.lantai) ? firstRow.lantai : '-';
+      // Update lantai di header
+      sheet.getCell('M3').value = (dataRA[0] && dataRA[0].lantai) ? dataRA[0].lantai : '-';
 
-      // Isi data kamar mulai baris 9
-      let baris = 9;
+      // Isi data kamar mulai baris 6
+      let baris = 6;
+      let no = 1;
       dataRA.forEach((data) => {
-        sheet.getCell('B' + baris).value = data.kamar || '';
-        sheet.getCell('C' + baris).value = data.status_fo || '';
+        // NO
+        sheet.getCell('A' + baris).value = no++;
+        sheet.getCell('A' + baris).alignment = { horizontal: 'center' };
 
+        // ROOM
+        sheet.getCell('B' + baris).value = data.kamar || '';
+        sheet.getCell('B' + baris).alignment = { horizontal: 'center' };
+
+        // FO
+        sheet.getCell('C' + baris).value = data.status_fo || '';
+        sheet.getCell('C' + baris).alignment = { horizontal: 'center' };
+
+        // HK IN
         let statusHKin = data.status_hk_in || '';
         if (!statusHKin) {
           if (data.status_fo === 'VD' || data.status_fo === 'ED') statusHKin = 'VD';
@@ -964,58 +974,66 @@ app.get('/unduh-excel', async (req, res) => {
           else if (data.status_fo === 'OD') statusHKin = 'OD';
         }
         sheet.getCell('D' + baris).value = statusHKin;
+        sheet.getCell('D' + baris).alignment = { horizontal: 'center' };
 
+        // HK OUT
         let statusHKout = data.status_hk_out || '';
         if (!statusHKout && data.selesai === 1) {
           if (statusHKin === 'VD' || statusHKin === 'VCU' || data.status_fo === 'ED') statusHKout = 'VC';
           else if (statusHKin === 'OD') statusHKout = 'OC';
         }
         sheet.getCell('E' + baris).value = statusHKout;
+        sheet.getCell('E' + baris).alignment = { horizontal: 'center' };
 
+        // TIME IN / TIME OUT
         sheet.getCell('F' + baris).value = data.waktu_masuk !== '-' ? data.waktu_masuk : '';
+        sheet.getCell('F' + baris).alignment = { horizontal: 'center' };
         sheet.getCell('G' + baris).value = data.waktu_keluar !== '-' ? data.waktu_keluar : '';
+        sheet.getCell('G' + baris).alignment = { horizontal: 'center' };
 
-        // === BATH ROOM (pasangan IN / OUT) ===
+        // === BATH ROOM ===
         sheet.getCell('H' + baris).value = data.sheet_twin_in || 0;
-        sheet.getCell('I' + baris).value = data.sheet_twin_in || 0;
-        sheet.getCell('J' + baris).value = data.sheet_king_in || 0;
-        sheet.getCell('K' + baris).value = data.sheet_king_in || 0;
-        sheet.getCell('L' + baris).value = data.duvet_twin_in || 0;
-        sheet.getCell('M' + baris).value = data.duvet_twin_in || 0;
-        sheet.getCell('N' + baris).value = data.duvet_king_in || 0;
-        sheet.getCell('O' + baris).value = data.duvet_king_in || 0;
-        sheet.getCell('P' + baris).value = data.bath_towel_in || 0;
-        sheet.getCell('Q' + baris).value = data.bath_towel_in || 0;
-        sheet.getCell('R' + baris).value = data.hand_towel_in || 0;
-        sheet.getCell('S' + baris).value = data.hand_towel_in || 0;
-        sheet.getCell('T' + baris).value = data.bath_mat_in || 0;
-        sheet.getCell('U' + baris).value = data.bath_mat_in || 0;
-        sheet.getCell('V' + baris).value = data.pillow_case_in || 0;
-        sheet.getCell('W' + baris).value = data.pillow_case_in || 0;
+        sheet.getCell('I' + baris).value = data.sheet_king_in || 0;
+        sheet.getCell('J' + baris).value = data.duvet_twin_in || 0;
+        sheet.getCell('K' + baris).value = data.duvet_king_in || 0;
+        sheet.getCell('L' + baris).value = data.bath_towel_in || 0;
+        sheet.getCell('M' + baris).value = data.hand_towel_in || 0;
+        sheet.getCell('N' + baris).value = data.bath_mat_in || 0;
+        sheet.getCell('O' + baris).value = data.pillow_case_in || 0;
 
-        // === GUEST SUPPLIES & AMENITIES (1 kolom per item) ===
-        sheet.getCell('AD' + baris).value = data.shower_cap || 0;
-        sheet.getCell('AE' + baris).value = data.dental_kit || 0;
-        sheet.getCell('AF' + baris).value = data.laundry_bag || 0;
-        sheet.getCell('AG' + baris).value = data.laundry_list || 0;
-        sheet.getCell('AH' + baris).value = data.note_pad || 0;
-        sheet.getCell('AI' + baris).value = data.pensil || 0;
-        sheet.getCell('AJ' + baris).value = ''; // Guest Comment
-        sheet.getCell('AL' + baris).value = data.tissue_facial || 0;
-        sheet.getCell('AM' + baris).value = data.tissue_roll || 0;
-        sheet.getCell('AN' + baris).value = data.coffee || 0;
-        sheet.getCell('AO' + baris).value = data.sugar || 0;
-        sheet.getCell('AP' + baris).value = data.tea || 0;
-        sheet.getCell('AQ' + baris).value = data.creamer || 0;
-        sheet.getCell('AR' + baris).value = data.mineral || 0;
-        sheet.getCell('AS' + baris).value = data.cotton_bud || 0;
-        sheet.getCell('AT' + baris).value = data.slipper || 0;
-        sheet.getCell('AU' + baris).value = data.comb || 0;
-        sheet.getCell('AV' + baris).value = data.shaving_kit || 0;
-        sheet.getCell('AW' + baris).value = data.stirer || 0;
-        sheet.getCell('AX' + baris).value = data.coster || 0;
-        sheet.getCell('AY' + baris).value = data.poly_bag_kecil || 0;
-        sheet.getCell('AZ' + baris).value = data.poly_bag_besar || 0;
+        // === GUEST SUPPLIES & AMENITIES ===
+        sheet.getCell('P' + baris).value = data.shower_cap || 0;
+        sheet.getCell('Q' + baris).value = data.dental_kit || 0;
+        sheet.getCell('R' + baris).value = data.laundry_bag || 0;
+        sheet.getCell('S' + baris).value = data.laundry_list || 0;
+        sheet.getCell('T' + baris).value = data.note_pad || 0;
+        sheet.getCell('U' + baris).value = data.pensil || 0;
+        sheet.getCell('V' + baris).value = data.tissue_facial || 0;
+        sheet.getCell('W' + baris).value = data.tissue_roll || 0;
+        sheet.getCell('X' + baris).value = data.coffee || 0;
+        sheet.getCell('Y' + baris).value = data.sugar || 0;
+        sheet.getCell('Z' + baris).value = data.tea || 0;
+        sheet.getCell('AA' + baris).value = data.creamer || 0;
+        sheet.getCell('AB' + baris).value = data.mineral || 0;
+        sheet.getCell('AC' + baris).value = data.cotton_bud || 0;
+        sheet.getCell('AD' + baris).value = data.slipper || 0;
+        sheet.getCell('AE' + baris).value = data.comb || 0;
+        sheet.getCell('AF' + baris).value = data.shaving_kit || 0;
+        sheet.getCell('AG' + baris).value = data.stirer || 0;
+        sheet.getCell('AH' + baris).value = data.coster || 0;
+        sheet.getCell('AI' + baris).value = data.poly_bag_kecil || 0;
+        sheet.getCell('AJ' + baris).value = data.poly_bag_besar || 0;
+
+        // Apply borders to all data cells
+        for (let col = 'A'.charCodeAt(0); col <= 'J'.charCodeAt(0); col++) {
+          const cell = sheet.getCell(String.fromCharCode(col) + baris);
+          cell.border = {
+            top: { style: 'thin' },
+            bottom: { style: 'thin' },
+            left: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+        }
 
         baris++;
       });
