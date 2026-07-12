@@ -174,7 +174,9 @@
                                                     <% } else if (tugas.status_awal === 'OC') { %>
                                                         <span class="badge bg-primary status-badge">OC - Bersih Terisi</span>
                                                     <% } else if (tugas.status_awal === 'OM') { %>
-                                                        <span class="badge bg-dark status-badge">OM - Perawatan</span>
+                                                        <span class="badge bg-dark status-badge">OM - Off Market</span>
+                                                    <% } else if (tugas.status_awal === 'ED') { %>
+                                                        <span class="badge bg-dark status-badge">ED - Expected Depature</span>
                                                     <% } else if (tugas.status_awal === 'OOO') { %>
                                                         <span class="badge bg-danger status-badge">OOO - Tidak Terpakai</span>
                                                     <% } else { %>
