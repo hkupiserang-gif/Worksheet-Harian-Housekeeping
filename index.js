@@ -802,7 +802,7 @@ app.get('/unduh-excel', async (req, res) => {
 
     const workbook = new ExcelJS.Workbook();
 
-    // Build SQL selects
+    // Build SQL selects - LINEN pakai pasangan IN/OUT
     const bathRoomFields = [
       'sheet_twin', 'sheet_king', 'duvet_twin', 'duvet_king',
       'bath_towel', 'hand_towel', 'bath_mat', 'pillow_case'
@@ -829,9 +829,9 @@ app.get('/unduh-excel', async (req, res) => {
       const colWidths = {
         'A': 4, 'B': 10, 'C': 6, 'D': 6, 'E': 6, 'F': 6, 'G': 6,
         'H': 8, 'I': 8, 'J': 8, 'K': 8, 'L': 8, 'M': 8, 'N': 8, 'O': 8,
-        'P': 8, 'Q': 8, 'R': 8, 'S': 8, 'T': 8, 'U': 8, 'V': 8, 'W': 8,
-        'X': 8, 'Y': 8, 'Z': 8, 'AA': 8, 'AB': 8, 'AC': 8, 'AD': 8,
-        'AE': 8, 'AF': 8, 'AG': 8, 'AH': 8, 'AI': 8, 'AJ': 8
+        'P': 12, 'Q': 12, 'R': 12, 'S': 12, 'T': 12, 'U': 12, 'V': 12,
+        'W': 12, 'X': 12, 'Y': 12, 'Z': 12, 'AA': 12, 'AB': 12, 'AC': 12,
+        'AD': 12, 'AE': 12, 'AF': 12, 'AG': 12, 'AH': 12, 'AI': 12, 'AJ': 12
       };
       Object.keys(colWidths).forEach(col => {
         sheet.getColumn(col).width = colWidths[col];
@@ -846,29 +846,25 @@ app.get('/unduh-excel', async (req, res) => {
       // === ROW 2: EMPTY ===
 
       // === ROW 3: INFO HEADER ===
-      sheet.getCell('A3').value = 'NAME:';
+      sheet.getCell('A3').value = 'DATE:';
       sheet.getCell('A3').font = { bold: true };
-      sheet.getCell('B3').value = ra;
+      sheet.getCell('B3').value = tanggal;
 
-      sheet.getCell('D3').value = 'DATE:';
+      sheet.getCell('D3').value = 'SHIFT:';
       sheet.getCell('D3').font = { bold: true };
-      sheet.getCell('E3').value = tanggal;
+      sheet.getCell('E3').value = 'Morning';
 
-      sheet.getCell('H3').value = 'SHIFT:';
-      sheet.getCell('H3').font = { bold: true };
-      sheet.getCell('I3').value = 'Morning';
-
-      sheet.getCell('K3').value = 'FLOOR/SECTION:';
-      sheet.getCell('K3').font = { bold: true };
+      sheet.getCell('G3').value = 'FLOOR/SECTION:';
+      sheet.getCell('G3').font = { bold: true };
 
       // === ROW 4: MAIN HEADER ===
       const row4Headers = [
-        { col: 'A', text: 'NO', mergeTo: 'A6' },
-        { col: 'B', text: 'NO OF ROOM', mergeTo: 'B6' },
-        { col: 'C', text: 'ROOM STATUS', mergeTo: 'E5' },
-        { col: 'F', text: 'TIME', mergeTo: 'G5' },
-        { col: 'H', text: 'LINEN', mergeTo: 'O5' },
-        { col: 'P', text: 'GUEST SUPPLIES & AMENITIES', mergeTo: 'AJ5' }
+        { col: 'A', text: 'NO' },
+        { col: 'B', text: 'NO OF ROOM' },
+        { col: 'C', text: 'ROOM STATUS' },
+        { col: 'F', text: 'TIME' },
+        { col: 'H', text: 'LINEN' },
+        { col: 'P', text: 'GUEST SUPPLIES & AMENITIES' }
       ];
 
       row4Headers.forEach(h => {
@@ -898,7 +894,7 @@ app.get('/unduh-excel', async (req, res) => {
       sheet.getCell('F6').value = 'IN';
       sheet.getCell('G6').value = 'OUT';
 
-      // LINEN sub-headers
+      // LINEN sub-headers with IN/OUT
       const linenSub = [
         { col: 'H', text: 'SHEET\nDOUBLE' },
         { col: 'I', text: 'SHEET\nSINGLE' },
@@ -919,31 +915,6 @@ app.get('/unduh-excel', async (req, res) => {
       });
 
       // GUEST SUPPLIES sub-headers
-      const guestSub = [
-        { col: 'P', text: 'BATH ROOM' },
-        { col: 'Q', text: 'BATH ROOM' },
-        { col: 'R', text: 'BED ROOM' },
-        { col: 'S', text: 'BED ROOM' },
-        { col: 'T', text: 'BED ROOM' },
-        { col: 'U', text: 'BED ROOM' },
-        { col: 'V', text: 'BED ROOM' },
-        { col: 'W', text: 'CONDIMEN' },
-        { col: 'X', text: 'CONDIMEN' },
-        { col: 'Y', text: 'CONDIMEN' },
-        { col: 'Z', text: 'CONDIMEN' },
-        { col: 'AA', text: 'CONDIMEN' },
-        { col: 'AB', text: 'CONDIMEN' },
-        { col: 'AC', text: 'CONDIMEN' },
-        { col: 'AD', text: 'CONDIMEN' },
-        { col: 'AE', text: 'CONDIMEN' },
-        { col: 'AF', text: 'CONDIMEN' },
-        { col: 'AG', text: 'CONDIMEN' },
-        { col: 'AH', text: 'CONDIMEN' },
-        { col: 'AI', text: 'CONDIMEN' },
-        { col: 'AJ', text: 'CONDIMEN' }
-      ];
-
-      // Merge guest supplies sub-headers by category
       sheet.mergeCells('P6:Q6');  // BATH ROOM
       sheet.mergeCells('R6:V6');  // BED ROOM
       sheet.mergeCells('W6:AJ6'); // CONDIMEN
@@ -962,39 +933,39 @@ app.get('/unduh-excel', async (req, res) => {
 
       // === ROW 7: ITEM NAMES ===
       const row7Items = [
-        { col: 'P', text: 'SHOWER\nCAP' },
-        { col: 'Q', text: 'DENTAL\nKIT' },
-        { col: 'R', text: 'LAUNDRY\nBAG' },
-        { col: 'S', text: 'LAUNDRY\nLIST' },
-        { col: 'T', text: 'MEMO\nPAD' },
+        { col: 'P', text: 'SHOWER CAP' },
+        { col: 'Q', text: 'DENTAL KIT' },
+        { col: 'R', text: 'LAUNDRY BAG' },
+        { col: 'S', text: 'LAUNDRY LIST' },
+        { col: 'T', text: 'MEMO PAD' },
         { col: 'U', text: 'PENCIL' },
-        { col: 'V', text: 'GUEST\nCOMMENT' },
-        { col: 'W', text: 'TISSUE\nROLL' },
-        { col: 'X', text: 'HAND\nSOAP' },
+        { col: 'V', text: 'GUEST COMMENT' },
+        { col: 'W', text: 'TISSUE ROLL' },
+        { col: 'X', text: 'HAND SOAP' },
         { col: 'Y', text: 'SHAMPOO' },
-        { col: 'Z', text: 'SHOWER\nGEL' },
-        { col: 'AA', text: 'TOOTH\nBRUSH' },
+        { col: 'Z', text: 'SHOWER GEL' },
+        { col: 'AA', text: 'TOOTH BRUSH' },
         { col: 'AB', text: 'STERER' },
         { col: 'AC', text: 'SLIPPER' },
         { col: 'AD', text: 'COFFEE' },
         { col: 'AE', text: 'SUGAR' },
         { col: 'AF', text: 'TEA' },
         { col: 'AG', text: 'CREAMER' },
-        { col: 'AH', text: 'MINERAL\nWATER' },
-        { col: 'AI', text: 'PLASTIC\nBIN' },
+        { col: 'AH', text: 'MINERAL WATER' },
+        { col: 'AI', text: 'PLASTIC BIN' },
         { col: 'AJ', text: 'TISUE' }
       ];
 
       row7Items.forEach(item => {
         const cell = sheet.getCell(item.col + '7');
         cell.value = item.text;
-        cell.font = { bold: true, size: 7 };
+        cell.font = { bold: true, size: 9 };
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2EFDA' } };
         cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
         cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
       });
 
-      // Apply borders to all header cells in row 5-6
+      // Apply borders to all header cells in row 4-7
       for (let row = 4; row <= 7; row++) {
         for (let colCode = 'A'.charCodeAt(0); colCode <= 'J'.charCodeAt(0); colCode++) {
           const cell = sheet.getCell(String.fromCharCode(colCode) + row);
@@ -1036,7 +1007,7 @@ app.get('/unduh-excel', async (req, res) => {
       if (dataRA.length === 0) continue;
 
       // Update lantai
-      sheet.getCell('M3').value = (dataRA[0] && dataRA[0].lantai) ? dataRA[0].lantai : '-';
+      sheet.getCell('I3').value = (dataRA[0] && dataRA[0].lantai) ? dataRA[0].lantai : '-';
 
       // === DATA ROWS (mulai baris 8) ===
       let baris = 8;
@@ -1045,14 +1016,17 @@ app.get('/unduh-excel', async (req, res) => {
         // NO
         sheet.getCell('A' + baris).value = no++;
         sheet.getCell('A' + baris).alignment = { horizontal: 'center' };
+        sheet.getCell('A' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
 
         // ROOM
         sheet.getCell('B' + baris).value = data.kamar || '';
         sheet.getCell('B' + baris).alignment = { horizontal: 'center' };
+        sheet.getCell('B' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
 
         // FO
         sheet.getCell('C' + baris).value = data.status_fo || '';
         sheet.getCell('C' + baris).alignment = { horizontal: 'center' };
+        sheet.getCell('C' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
 
         // HK IN
         let statusHKin = data.status_hk_in || '';
@@ -1063,6 +1037,7 @@ app.get('/unduh-excel', async (req, res) => {
         }
         sheet.getCell('D' + baris).value = statusHKin;
         sheet.getCell('D' + baris).alignment = { horizontal: 'center' };
+        sheet.getCell('D' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
 
         // HK OUT
         let statusHKout = data.status_hk_out || '';
@@ -1072,51 +1047,88 @@ app.get('/unduh-excel', async (req, res) => {
         }
         sheet.getCell('E' + baris).value = statusHKout;
         sheet.getCell('E' + baris).alignment = { horizontal: 'center' };
+        sheet.getCell('E' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
 
         // TIME IN / TIME OUT
         sheet.getCell('F' + baris).value = data.waktu_masuk !== '-' ? data.waktu_masuk : '';
         sheet.getCell('F' + baris).alignment = { horizontal: 'center' };
+        sheet.getCell('F' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
         sheet.getCell('G' + baris).value = data.waktu_keluar !== '-' ? data.waktu_keluar : '';
         sheet.getCell('G' + baris).alignment = { horizontal: 'center' };
+        sheet.getCell('G' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
 
-        // === LINEN (BATH ROOM) ===
-        sheet.getCell('H' + baris).value = data.sheet_twin_in || 0;
-        sheet.getCell('I' + baris).value = data.sheet_king_in || 0;
-        sheet.getCell('J' + baris).value = data.duvet_twin_in || 0;
-        sheet.getCell('K' + baris).value = data.duvet_king_in || 0;
-        sheet.getCell('L' + baris).value = data.bath_towel_in || 0;
-        sheet.getCell('M' + baris).value = data.hand_towel_in || 0;
-        sheet.getCell('N' + baris).value = data.bath_mat_in || 0;
-        sheet.getCell('O' + baris).value = data.pillow_case_in || 0;
+        // === LINEN (IN = OUT, sama persis) ===
+        const valH = data.sheet_twin_in || 0;
+        sheet.getCell('H' + baris).value = valH;
+        sheet.getCell('H' + baris).alignment = { horizontal: 'center' };
+        sheet.getCell('H' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+
+        const valI = data.sheet_king_in || 0;
+        sheet.getCell('I' + baris).value = valI;
+        sheet.getCell('I' + baris).alignment = { horizontal: 'center' };
+        sheet.getCell('I' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+
+        const valJ = data.duvet_twin_in || 0;
+        sheet.getCell('J' + baris).value = valJ;
+        sheet.getCell('J' + baris).alignment = { horizontal: 'center' };
+        sheet.getCell('J' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+
+        const valK = data.duvet_king_in || 0;
+        sheet.getCell('K' + baris).value = valK;
+        sheet.getCell('K' + baris).alignment = { horizontal: 'center' };
+        sheet.getCell('K' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+
+        const valL = data.bath_towel_in || 0;
+        sheet.getCell('L' + baris).value = valL;
+        sheet.getCell('L' + baris).alignment = { horizontal: 'center' };
+        sheet.getCell('L' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+
+        const valM = data.hand_towel_in || 0;
+        sheet.getCell('M' + baris).value = valM;
+        sheet.getCell('M' + baris).alignment = { horizontal: 'center' };
+        sheet.getCell('M' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+
+        const valN = data.bath_mat_in || 0;
+        sheet.getCell('N' + baris).value = valN;
+        sheet.getCell('N' + baris).alignment = { horizontal: 'center' };
+        sheet.getCell('N' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+
+        const valO = data.pillow_case_in || 0;
+        sheet.getCell('O' + baris).value = valO;
+        sheet.getCell('O' + baris).alignment = { horizontal: 'center' };
+        sheet.getCell('O' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
 
         // === GUEST SUPPLIES & AMENITIES ===
-        sheet.getCell('P' + baris).value = data.shower_cap || 0;
-        sheet.getCell('Q' + baris).value = data.dental_kit || 0;
-        sheet.getCell('R' + baris).value = data.laundry_bag || 0;
-        sheet.getCell('S' + baris).value = data.laundry_list || 0;
-        sheet.getCell('T' + baris).value = data.note_pad || 0;
-        sheet.getCell('U' + baris).value = data.pensil || 0;
-        sheet.getCell('V' + baris).value = ''; // Guest Comment - kosong
-        sheet.getCell('W' + baris).value = data.tissue_roll || 0;
-        sheet.getCell('X' + baris).value = data.tissue_facial || 0; // Hand soap = tissue facial
-        sheet.getCell('Y' + baris).value = data.cotton_bud || 0; // Shampoo = cotton bud
-        sheet.getCell('Z' + baris).value = data.shower_cap || 0; // Shower gel = shower cap
-        sheet.getCell('AA' + baris).value = data.dental_kit || 0; // Tooth brush = dental kit
-        sheet.getCell('AB' + baris).value = data.stirer || 0;
-        sheet.getCell('AC' + baris).value = data.slipper || 0;
-        sheet.getCell('AD' + baris).value = data.coffee || 0;
-        sheet.getCell('AE' + baris).value = data.sugar || 0;
-        sheet.getCell('AF' + baris).value = data.tea || 0;
-        sheet.getCell('AG' + baris).value = data.creamer || 0;
-        sheet.getCell('AH' + baris).value = data.mineral || 0;
-        sheet.getCell('AI' + baris).value = data.poly_bag_kecil || 0;
-        sheet.getCell('AJ' + baris).value = data.tissue_facial || 0;
+        const guestCells = [
+          { col: 'P', val: data.shower_cap || 0 },
+          { col: 'Q', val: data.dental_kit || 0 },
+          { col: 'R', val: data.laundry_bag || 0 },
+          { col: 'S', val: data.laundry_list || 0 },
+          { col: 'T', val: data.note_pad || 0 },
+          { col: 'U', val: data.pensil || 0 },
+          { col: 'V', val: '' },
+          { col: 'W', val: data.tissue_roll || 0 },
+          { col: 'X', val: data.tissue_facial || 0 },
+          { col: 'Y', val: data.cotton_bud || 0 },
+          { col: 'Z', val: data.shower_cap || 0 },
+          { col: 'AA', val: data.dental_kit || 0 },
+          { col: 'AB', val: data.stirer || 0 },
+          { col: 'AC', val: data.slipper || 0 },
+          { col: 'AD', val: data.coffee || 0 },
+          { col: 'AE', val: data.sugar || 0 },
+          { col: 'AF', val: data.tea || 0 },
+          { col: 'AG', val: data.creamer || 0 },
+          { col: 'AH', val: data.mineral || 0 },
+          { col: 'AI', val: data.poly_bag_kecil || 0 },
+          { col: 'AJ', val: data.tissue_facial || 0 }
+        ];
 
-        // Apply borders to all data cells
-        for (let colCode = 'A'.charCodeAt(0); colCode <= 'J'.charCodeAt(0); colCode++) {
-          const cell = sheet.getCell(String.fromCharCode(colCode) + baris);
+        guestCells.forEach(g => {
+          const cell = sheet.getCell(g.col + baris);
+          cell.value = g.val;
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
           cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
-        }
+        });
 
         baris++;
       });
@@ -1126,12 +1138,18 @@ app.get('/unduh-excel', async (req, res) => {
       sheet.getCell('A' + totalRow).value = 'TOTAL SOILED:';
       sheet.getCell('A' + totalRow).font = { bold: true };
       sheet.mergeCells('A' + totalRow + ':B' + totalRow);
+      for (let colCode = 'A'.charCodeAt(0); colCode <= 'J'.charCodeAt(0); colCode++) {
+        sheet.getCell(String.fromCharCode(colCode) + totalRow).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+      }
 
       // === REMARKS ROW ===
       const remarksRow = totalRow + 1;
       sheet.getCell('A' + remarksRow).value = 'REMARKS';
       sheet.getCell('A' + remarksRow).font = { bold: true };
       sheet.mergeCells('A' + remarksRow + ':AJ' + (remarksRow + 2));
+      for (let colCode = 'A'.charCodeAt(0); colCode <= 'J'.charCodeAt(0); colCode++) {
+        sheet.getCell(String.fromCharCode(colCode) + remarksRow).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+      }
 
       // === LEGEND ROWS ===
       const legendStart = remarksRow + 3;
