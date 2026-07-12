@@ -180,6 +180,8 @@ db.serialize(() => {
     kamar TEXT,
     petugas TEXT,
     status_awal TEXT DEFAULT 'VD',
+    status_hk_in TEXT DEFAULT '',
+    status_hk_out TEXT DEFAULT '',
     selesai INTEGER DEFAULT 0,
     sudah_dibagikan INTEGER DEFAULT 0,
     siap_dicek INTEGER DEFAULT 0,
@@ -187,8 +189,11 @@ db.serialize(() => {
     FOREIGN KEY (kamar) REFERENCES kamar(nomor_kamar) ON DELETE CASCADE
   )`);
 
+  // Tambah kolom jika belum ada di versi lama
   db.run(`ALTER TABLE tugas ADD COLUMN sudah_dibagikan INTEGER DEFAULT 0`, () => {});
   db.run(`ALTER TABLE tugas ADD COLUMN siap_dicek INTEGER DEFAULT 0`, () => {});
+  db.run(`ALTER TABLE tugas ADD COLUMN status_hk_in TEXT DEFAULT ''`, () => {});
+  db.run(`ALTER TABLE tugas ADD COLUMN status_hk_out TEXT DEFAULT ''`, () => {});
 
   // Tabel Laporan
   db.run(`CREATE TABLE IF NOT EXISTS laporan (
@@ -265,8 +270,8 @@ const buatTugasBaruHariIni = () => {
         if (err) return console.error("❌ Gagal ambil kamar:", err);
         daftarKamar.forEach(k => {
           db.run(`INSERT OR IGNORE INTO tugas 
-            (tanggal, kamar, petugas, status_awal, selesai, sudah_dibagikan, siap_dicek)
-            VALUES (?, ?, '', 'VD', 0, 0, 0)`, [tanggalSekarang, k.nomor_kamar]);
+            (tanggal, kamar, petugas, status_awal, status_hk_in, status_hk_out, selesai, sudah_dibagikan, siap_dicek)
+            VALUES (?, ?, '', 'VD', '', '', 0, 0, 0)`, [tanggalSekarang, k.nomor_kamar]);
         });
       });
     }
@@ -375,7 +380,6 @@ app.get('/spv', (req, res) => {
             daftarSudahDibagikan: perRA,
             daftarPermintaan,
             pesan: res.locals.pesan,
-            // ✅ Daftar status yang bisa dipilih (sudah ditambah ED)
             daftarStatus: [
               {kode:'VD', nama:'Vacant Dirty'},
               {kode:'VCU', nama:'Vacant Clean Unchecked'},
@@ -403,9 +407,9 @@ app.post('/tambah-tugas', (req, res) => {
     daftarKamar.forEach((k, idx) => {
       const status = daftarStatus[idx] || 'VD';
       db.run(`INSERT OR REPLACE INTO tugas 
-        (tanggal, kamar, petugas, status_awal, selesai, sudah_dibagikan, siap_dicek) 
-        VALUES (?, ?, ?, ?, ?, 1, 0)`, 
-        [tanggal, k, petugas, status, 0], 
+        (tanggal, kamar, petugas, status_awal, status_hk_in, status_hk_out, selesai, sudah_dibagikan, siap_dicek) 
+        VALUES (?, ?, ?, ?, '', '', 0, 1, 0)`, 
+        [tanggal, k, petugas, status], 
         () => { if (++selesai === total) res.redirect('/spv?pesan=berhasil'); }
       );
     });
@@ -479,13 +483,32 @@ app.get('/ra', (req, res) => {
   });
 });
 
+// ======================================
+// ✅ PROSES MULAI KAMAR + SIMPAN STATUS HK IN
+// ======================================
 app.post('/mulai-kamar', (req, res) => {
   const waktuMasuk = getWaktuWIBJamMenit();
-  db.run(`INSERT OR REPLACE INTO laporan (tanggal, nomor_kamar, waktu_masuk, petugas) VALUES (?, ?, ?, ?)`,
-    [req.body.tanggal, req.body.kamar, waktuMasuk, req.session.user.nama], err => {
-      if (err) console.error(err);
-      res.redirect('/ra?pesan=berhasil');
-    });
+  const { tanggal, kamar } = req.body;
+
+  db.get(`SELECT status_awal FROM tugas WHERE tanggal = ? AND kamar = ?`, [tanggal, kamar], (err, data) => {
+    if (err) return console.error(err);
+    
+    let hkIn = '';
+    if (data.status_awal === 'VD' || data.status_awal === 'ED') hkIn = 'VD';
+    else if (data.status_awal === 'VCU') hkIn = 'VCU';
+    else if (data.status_awal === 'OD') hkIn = 'OD';
+
+    db.run(`INSERT OR REPLACE INTO laporan (tanggal, nomor_kamar, waktu_masuk, petugas) VALUES (?, ?, ?, ?)`,
+      [tanggal, kamar, waktuMasuk, req.session.user.nama], err => {
+        if (err) console.error(err);
+        
+        db.run(`UPDATE tugas SET status_hk_in = ? WHERE tanggal = ? AND kamar = ?`,
+          [hkIn, tanggal, kamar], err => {
+            if (err) console.error(err);
+            res.redirect('/ra?pesan=berhasil');
+          });
+      });
+  });
 });
 
 // ======================================
@@ -529,19 +552,20 @@ app.post('/selesai-kamar', (req, res) => {
   ], err => {
     if (err) return console.error(err);
 
-    db.get(`SELECT status_awal FROM tugas WHERE tanggal = ? AND kamar = ?`, [tanggal, kamar], (err, data) => {
+    db.get(`SELECT status_awal, status_hk_in FROM tugas WHERE tanggal = ? AND kamar = ?`, [tanggal, kamar], (err, data) => {
       if (err) return console.error(err);
-      let statusBaru = data.status_awal;
-
-      // ✅ Aturan perubahan status sesuai permintaan
-      if (data.status_awal === 'VD' || data.status_awal === 'VCU' || data.status_awal === 'ED') {
-        statusBaru = 'VC';
-      } else if (data.status_awal === 'OD') {
-        statusBaru = 'OC';
+      
+      let statusHKout = '';
+      if (data.status_hk_in === 'VD' || data.status_hk_in === 'VCU' || data.status_awal === 'ED') {
+        statusHKout = 'VC';
+      } else if (data.status_hk_in === 'OD') {
+        statusHKout = 'OC';
       }
 
-      db.run(`UPDATE tugas SET status_awal = ?, selesai = 1, siap_dicek = 1 WHERE tanggal = ? AND kamar = ?`,
-        [statusBaru, tanggal, kamar], () => res.redirect('/ra?pesan=berhasil'));
+      db.run(`UPDATE tugas 
+              SET status_hk_out = ?, selesai = 1, siap_dicek = 1 
+              WHERE tanggal = ? AND kamar = ?`,
+        [statusHKout, tanggal, kamar], () => res.redirect('/ra?pesan=berhasil'));
     });
   });
 });
@@ -647,7 +671,7 @@ app.get('/unduh-pdf-ot', (req, res) => {
 });
 
 // ======================================
-// ✅ LAPORAN PDF (DIPERBAIKI + JUDUL SESUAI PERMINTAAN)
+// ✅ LAPORAN PDF
 // ======================================
 app.get('/unduh-pdf', (req, res) => {
   const tanggal = req.query.tanggal || getTanggalWIB();
@@ -675,7 +699,6 @@ app.get('/unduh-pdf', (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename=Daily_RA_Report_${ra ? ra + '_' : ''}${tanggal}.pdf`);
     doc.pipe(res);
 
-    // ✅ JUDUL DIUBAH SESUAI PERMINTAAN
     const judul = ra ? `Daily Room Attendant Report - ${ra}` : 'Daily Room Attendant Report';
     doc.font('Helvetica-Bold').fontSize(18).text('HORISON HOTEL & CONVENTION', { align: 'center' });
     doc.fontSize(14).text(judul, { align: 'center', underline: true });
@@ -690,7 +713,7 @@ app.get('/unduh-pdf', (req, res) => {
     dataKamar.forEach((row, idx) => {
       doc.font('Helvetica-Bold').fontSize(10);
       doc.text(`Kamar: ${row.kamar} | Lantai: ${row.lantai} | Petugas: ${row.petugas || '-'}`, 20, y);
-      doc.text(`Status: ${row.status_awal} | Masuk: ${row.waktu_masuk} | Keluar: ${row.waktu_keluar}`, 20, y + 15);
+      doc.text(`FO: ${row.status_awal || '-'} | HK IN: ${row.status_hk_in || '-'} | HK OUT: ${row.status_hk_out || '-'} | Masuk: ${row.waktu_masuk} | Keluar: ${row.waktu_keluar}`, 20, y + 15);
       y += 30;
       doc.font('Helvetica').fontSize(9);
 
@@ -730,7 +753,7 @@ app.get('/unduh-pdf', (req, res) => {
 });
 
 // ======================================
-// ✅ UNDUH EXCEL + KOLOM OUT OTOMATIS = IN + STATUS SESUAI
+// ✅ UNDUH EXCEL (LENGKAP DIPERBAIKI)
 // ======================================
 app.get('/unduh-excel', async (req, res) => {
   try {
@@ -739,7 +762,12 @@ app.get('/unduh-excel', async (req, res) => {
 
     const daftarTugas = await new Promise((resolve, reject) => {
       let query = `
-        SELECT t.petugas, t.kamar, t.status_awal AS status_fo, k.lantai,
+        SELECT t.petugas, t.kamar, 
+               t.status_awal AS status_fo,
+               t.status_hk_in,
+               t.status_hk_out,
+               t.selesai,
+               k.lantai,
                IFNULL(l.waktu_masuk, '-') AS waktu_masuk,
                IFNULL(l.waktu_keluar, '-') AS waktu_keluar,
                IFNULL(l.sheet_twin, 0) AS sheet_twin_in,
@@ -767,8 +795,7 @@ app.get('/unduh-excel', async (req, res) => {
                IFNULL(l.cotton_bud, 0) AS cotton_bud_in,
                IFNULL(l.slipper, 0) AS slipper_in,
                IFNULL(l.comb, 0) AS comb_in,
-               IFNULL(l.shaving_kit, 0) AS shaving_kit_in,
-               t.status_awal, t.selesai
+               IFNULL(l.shaving_kit, 0) AS shaving_kit_in
         FROM tugas t
         JOIN kamar k ON t.kamar = k.nomor_kamar
         LEFT JOIN laporan l ON t.tanggal = l.tanggal AND t.kamar = l.nomor_kamar
@@ -803,20 +830,22 @@ app.get('/unduh-excel', async (req, res) => {
       // ✅ No Kamar
       sheet.getCell(`B${baris}`).value = data.kamar;
       
-      // ✅ Room Status FO = status awal
+      // ✅ Room Status FO = Status Awal dari Supervisor (TETAP)
       sheet.getCell(`C${baris}`).value = data.status_fo || '';
       
-      // ✅ HK IN = status saat mulai kerja
-      let statusHKin = '';
-      if (data.status_fo === 'VD' || data.status_fo === 'ED') statusHKin = 'VD';
-      else if (data.status_fo === 'VCU') statusHKin = 'VCU';
-      else if (data.status_fo === 'OD') statusHKin = 'OD';
+      // ✅ HK IN = Status saat mulai kerja
+      let statusHKin = data.status_hk_in || '';
+      if (!statusHKin) {
+        if (data.status_fo === 'VD' || data.status_fo === 'ED') statusHKin = 'VD';
+        else if (data.status_fo === 'VCU') statusHKin = 'VCU';
+        else if (data.status_fo === 'OD') statusHKin = 'OD';
+      }
       sheet.getCell(`D${baris}`).value = statusHKin;
       
-      // ✅ HK OUT = status akhir selesai
-      let statusHKout = '';
-      if (data.selesai === 1) {
-        if (statusHKin === 'VD' || statusHKin === 'VCU' || statusHKin === 'ED') statusHKout = 'VC';
+      // ✅ HK OUT = Status akhir setelah selesai
+      let statusHKout = data.status_hk_out || '';
+      if (!statusHKout && data.selesai === 1) {
+        if (statusHKin === 'VD' || statusHKin === 'VCU' || data.status_fo === 'ED') statusHKout = 'VC';
         else if (statusHKin === 'OD') statusHKout = 'OC';
       }
       sheet.getCell(`E${baris}`).value = statusHKout;
@@ -827,7 +856,7 @@ app.get('/unduh-excel', async (req, res) => {
 
       // ✅ Linen - IN & OUT otomatis sama
       sheet.getCell(`H${baris}`).value = data.sheet_twin_in;
-      sheet.getCell(`I${baris}`).value = data.sheet_twin_in; // OUT = IN
+      sheet.getCell(`I${baris}`).value = data.sheet_twin_in;
       sheet.getCell(`J${baris}`).value = data.sheet_king_in;
       sheet.getCell(`K${baris}`).value = data.sheet_king_in;
       sheet.getCell(`L${baris}`).value = data.duvet_twin_in;
