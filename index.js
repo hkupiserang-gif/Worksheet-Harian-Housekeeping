@@ -59,9 +59,10 @@ const HARGA_BARANG = {
   hand_towel: 1750,
   bath_mat: 2250,
   pillow_case: 1750,
-  shampoo: 650,
-  soap: 550,
-  shower_gel: 600,
+  // ✅ REVISI: Dihilangkan - shampoo, soap, shower_gel
+  // shampoo: 650,
+  // soap: 550,
+  // shower_gel: 600,
   shower_cap: 600,
   dental_kit: 1450,
   laundry_bag: 1150,
@@ -209,9 +210,10 @@ db.serialize(() => {
     hand_towel INTEGER DEFAULT 0,
     bath_mat INTEGER DEFAULT 0,
     pillow_case INTEGER DEFAULT 0,
-    shampoo INTEGER DEFAULT 0,
-    soap INTEGER DEFAULT 0,
-    shower_gel INTEGER DEFAULT 0,
+    // ✅ REVISI: Dihilangkan - shampoo, soap, shower_gel
+    // shampoo INTEGER DEFAULT 0,
+    // soap INTEGER DEFAULT 0,
+    // shower_gel INTEGER DEFAULT 0,
     shower_cap INTEGER DEFAULT 0,
     dental_kit INTEGER DEFAULT 0,
     laundry_bag INTEGER DEFAULT 0,
@@ -424,7 +426,7 @@ app.post('/tambah-tugas', (req, res) => {
 });
 
 // ======================================
-// ✅ HALAMAN RA
+// ✅ HALAMAN RA - REVISI KOLOM BARANG
 // ======================================
 app.get('/ra', (req, res) => {
   if (!req.session.user || req.session.user.peran !== 'RA') return res.redirect('/');
@@ -441,11 +443,13 @@ app.get('/ra', (req, res) => {
            IFNULL(l.hand_towel, 0) AS hand_towel,
            IFNULL(l.bath_mat, 0) AS bath_mat,
            IFNULL(l.pillow_case, 0) AS pillow_case,
-           IFNULL(l.shampoo, 0) AS shampoo,
-           IFNULL(l.soap, 0) AS soap,
-           IFNULL(l.shower_gel, 0) AS shower_gel,
+           // ✅ REVISI: Dihilangkan - shampoo, soap, shower_gel
+           // IFNULL(l.shampoo, 0) AS shampoo,
+           // IFNULL(l.soap, 0) AS soap,
+           // IFNULL(l.shower_gel, 0) AS shower_gel,
            IFNULL(l.shower_cap, 0) AS shower_cap,
            IFNULL(l.dental_kit, 0) AS dental_kit,
+           // ✅ REVISI: Ditambahkan - laundry_bag, laundry_list
            IFNULL(l.laundry_bag, 0) AS laundry_bag,
            IFNULL(l.laundry_list, 0) AS laundry_list,
            IFNULL(l.dnd_sign, 0) AS dnd_sign,
@@ -456,16 +460,21 @@ app.get('/ra', (req, res) => {
            IFNULL(l.coffee, 0) AS coffee,
            IFNULL(l.creamer, 0) AS creamer,
            IFNULL(l.mineral, 0) AS mineral,
+           // ✅ REVISI: Ditambahkan - tissue_facial, tissue_roll
            IFNULL(l.tissue_facial, 0) AS tissue_facial,
            IFNULL(l.tissue_roll, 0) AS tissue_roll,
            IFNULL(l.cotton_bud, 0) AS cotton_bud,
+           // ✅ REVISI: Ditambahkan - slipper
            IFNULL(l.slipper, 0) AS slipper,
            IFNULL(l.comb, 0) AS comb,
            IFNULL(l.shaving_kit, 0) AS shaving_kit,
+           // ✅ REVISI: Ditambahkan - stirer
            IFNULL(l.stirer, 0) AS stirer,
            IFNULL(l.coster, 0) AS coster,
+           // ✅ REVISI: Ditambahkan - poly_bag_kecil, poly_bag_besar (Plastic Bin)
            IFNULL(l.poly_bag_kecil, 0) AS poly_bag_kecil,
            IFNULL(l.poly_bag_besar, 0) AS poly_bag_besar,
+           // ✅ REVISI: Ditambahkan - pensil, note_pad
            IFNULL(l.pensil, 0) AS pensil,
            IFNULL(l.note_pad, 0) AS note_pad
     FROM tugas t
@@ -512,17 +521,32 @@ app.post('/mulai-kamar', (req, res) => {
 });
 
 // ======================================
-// ✅ PROSES SELESAI KAMAR + LOGIKA STATUS HK
+// ✅ PROSES SELESAI KAMAR + LOGIKA STATUS HK - REVISI KOLOM
 // ======================================
 app.post('/selesai-kamar', (req, res) => {
   const { tanggal, kamar, waktu_masuk,
     sheet_twin, sheet_king, duvet_twin, duvet_king,
     bath_towel, hand_towel, bath_mat, pillow_case,
-    shampoo, soap, shower_gel, shower_cap, dental_kit,
-    laundry_bag, laundry_list, dnd_sign,
+    // ✅ REVISI: Dihilangkan - shampoo, soap, shower_gel
+    // shampoo, soap, shower_gel,
+    shower_cap, dental_kit,
+    // ✅ REVISI: Ditambahkan - laundry_bag, laundry_list
+    laundry_bag, laundry_list,
+    dnd_sign,
     magic, shoe, sugar, tea, coffee, creamer, mineral,
-    tissue_facial, tissue_roll, cotton_bud, slipper, comb,
-    shaving_kit, stirer, coster, poly_bag_kecil, poly_bag_besar,
+    // ✅ REVISI: Ditambahkan - tissue_facial, tissue_roll
+    tissue_facial, tissue_roll,
+    cotton_bud,
+    // ✅ REVISI: Ditambahkan - slipper
+    slipper,
+    comb,
+    shaving_kit,
+    // ✅ REVISI: Ditambahkan - stirer
+    stirer,
+    coster,
+    // ✅ REVISI: Ditambahkan - poly_bag_kecil, poly_bag_besar (Plastic Bin)
+    poly_bag_kecil, poly_bag_besar,
+    // ✅ REVISI: Ditambahkan - pensil, note_pad
     pensil, note_pad } = req.body;
   const waktuKeluar = getWaktuWIBJamMenit();
 
@@ -531,22 +555,53 @@ app.post('/selesai-kamar', (req, res) => {
       tanggal, nomor_kamar, waktu_masuk, waktu_keluar,
       sheet_twin, sheet_king, duvet_twin, duvet_king,
       bath_towel, hand_towel, bath_mat, pillow_case,
-      shampoo, soap, shower_gel, shower_cap, dental_kit,
-      laundry_bag, laundry_list, dnd_sign,
+      // ✅ REVISI: Dihilangkan - shampoo, soap, shower_gel
+      // shampoo, soap, shower_gel,
+      shower_cap, dental_kit,
+      // ✅ REVISI: Ditambahkan - laundry_bag, laundry_list
+      laundry_bag, laundry_list,
+      dnd_sign,
       magic, shoe, sugar, tea, coffee, creamer, mineral,
-      tissue_facial, tissue_roll, cotton_bud, slipper, comb,
-      shaving_kit, stirer, coster, poly_bag_kecil, poly_bag_besar,
-      pensil, note_pad, petugas
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      // ✅ REVISI: Ditambahkan - tissue_facial, tissue_roll
+      tissue_facial, tissue_roll,
+      cotton_bud,
+      // ✅ REVISI: Ditambahkan - slipper
+      slipper,
+      comb,
+      shaving_kit,
+      // ✅ REVISI: Ditambahkan - stirer
+      stirer,
+      coster,
+      // ✅ REVISI: Ditambahkan - poly_bag_kecil, poly_bag_besar
+      poly_bag_kecil, poly_bag_besar,
+      // ✅ REVISI: Ditambahkan - pensil, note_pad
+      pensil, note_pad,
+      petugas
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
     tanggal, kamar, waktu_masuk, waktuKeluar,
     sheet_twin||0, sheet_king||0, duvet_twin||0, duvet_king||0,
     bath_towel||0, hand_towel||0, bath_mat||0, pillow_case||0,
-    shampoo||0, soap||0, shower_gel||0, shower_cap||0, dental_kit||0,
-    laundry_bag||0, laundry_list||0, dnd_sign||0,
+    // ✅ REVISI: Dihilangkan
+    // shampoo||0, soap||0, shower_gel||0,
+    shower_cap||0, dental_kit||0,
+    // ✅ REVISI: Ditambahkan
+    laundry_bag||0, laundry_list||0,
+    dnd_sign||0,
     magic||0, shoe||0, sugar||0, tea||0, coffee||0, creamer||0, mineral||0,
-    tissue_facial||0, tissue_roll||0, cotton_bud||0, slipper||0, comb||0,
-    shaving_kit||0, stirer||0, coster||0, poly_bag_kecil||0, poly_bag_besar||0,
+    // ✅ REVISI: Ditambahkan
+    tissue_facial||0, tissue_roll||0,
+    cotton_bud||0,
+    // ✅ REVISI: Ditambahkan
+    slipper||0,
+    comb||0,
+    shaving_kit||0,
+    // ✅ REVISI: Ditambahkan
+    stirer||0,
+    coster||0,
+    // ✅ REVISI: Ditambahkan
+    poly_bag_kecil||0, poly_bag_besar||0,
+    // ✅ REVISI: Ditambahkan
     pensil||0, note_pad||0,
     req.session.user.nama
   ], err => {
@@ -671,7 +726,7 @@ app.get('/unduh-pdf-ot', (req, res) => {
 });
 
 // ======================================
-// ✅ LAPORAN PDF
+// ✅ LAPORAN PDF - REVISI KOLOM
 // ======================================
 app.get('/unduh-pdf', (req, res) => {
   const tanggal = req.query.tanggal || getTanggalWIB();
@@ -753,7 +808,7 @@ app.get('/unduh-pdf', (req, res) => {
 });
 
 // ======================================
-// ✅ UNDUH EXCEL (LENGKAP DIPERBAIKI)
+// ✅ UNDUH EXCEL (LENGKAP DIPERBAIKI) - REVISI KOLOM
 // ======================================
 app.get('/unduh-excel', async (req, res) => {
   try {
@@ -778,24 +833,31 @@ app.get('/unduh-excel', async (req, res) => {
                IFNULL(l.hand_towel, 0) AS hand_towel_in,
                IFNULL(l.bath_mat, 0) AS bath_mat_in,
                IFNULL(l.pillow_case, 0) AS pillow_case_in,
-               IFNULL(l.shampoo, 0) AS shampoo_in,
-               IFNULL(l.soap, 0) AS soap_in,
-               IFNULL(l.shower_gel, 0) AS shower_gel_in,
+               // ✅ REVISI: Dihilangkan - shampoo, soap, shower_gel
+               // IFNULL(l.shampoo, 0) AS shampoo_in,
+               // IFNULL(l.soap, 0) AS soap_in,
+               // IFNULL(l.shower_gel, 0) AS shower_gel_in,
                IFNULL(l.shower_cap, 0) AS shower_cap_in,
                IFNULL(l.dental_kit, 0) AS dental_kit_in,
+               // ✅ REVISI: Ditambahkan - laundry_bag, laundry_list
                IFNULL(l.laundry_bag, 0) AS laundry_bag_in,
                IFNULL(l.laundry_list, 0) AS laundry_list_in,
-               IFNULL(l.sugar, 0) AS sugar_in,
-               IFNULL(l.tea, 0) AS tea_in,
-               IFNULL(l.coffee, 0) AS coffee_in,
-               IFNULL(l.creamer, 0) AS creamer_in,
-               IFNULL(l.mineral, 0) AS mineral_in,
+               // ✅ REVISI: Ditambahkan - tissue_facial, tissue_roll
                IFNULL(l.tissue_facial, 0) AS tissue_facial_in,
                IFNULL(l.tissue_roll, 0) AS tissue_roll_in,
                IFNULL(l.cotton_bud, 0) AS cotton_bud_in,
+               // ✅ REVISI: Ditambahkan - slipper
                IFNULL(l.slipper, 0) AS slipper_in,
                IFNULL(l.comb, 0) AS comb_in,
-               IFNULL(l.shaving_kit, 0) AS shaving_kit_in
+               IFNULL(l.shaving_kit, 0) AS shaving_kit_in,
+               // ✅ REVISI: Ditambahkan - stirer
+               IFNULL(l.stirer, 0) AS stirer_in,
+               // ✅ REVISI: Ditambahkan - poly_bag_kecil, poly_bag_besar
+               IFNULL(l.poly_bag_kecil, 0) AS poly_bag_kecil_in,
+               IFNULL(l.poly_bag_besar, 0) AS poly_bag_besar_in,
+               // ✅ REVISI: Ditambahkan - pensil, note_pad
+               IFNULL(l.pensil, 0) AS pensil_in,
+               IFNULL(l.note_pad, 0) AS note_pad_in
         FROM tugas t
         JOIN kamar k ON t.kamar = k.nomor_kamar
         LEFT JOIN laporan l ON t.tanggal = l.tanggal AND t.kamar = l.nomor_kamar
@@ -873,32 +935,39 @@ app.get('/unduh-excel', async (req, res) => {
       sheet.getCell(`W${baris}`).value = data.pillow_case_in;
 
       // ✅ Bathroom - IN & OUT otomatis sama
-      sheet.getCell(`X${baris}`).value = data.shampoo_in;
-      sheet.getCell(`Y${baris}`).value = data.shampoo_in;
-      sheet.getCell(`Z${baris}`).value = data.soap_in;
-      sheet.getCell(`AA${baris}`).value = data.soap_in;
-      sheet.getCell(`AB${baris}`).value = data.shower_gel_in;
-      sheet.getCell(`AC${baris}`).value = data.shower_gel_in;
+      // ✅ REVISI: Dihilangkan - shampoo, soap, shower_gel
+      // sheet.getCell(`X${baris}`).value = data.shampoo_in;
+      // sheet.getCell(`Y${baris}`).value = data.shampoo_in;
+      // sheet.getCell(`Z${baris}`).value = data.soap_in;
+      // sheet.getCell(`AA${baris}`).value = data.soap_in;
+      // sheet.getCell(`AB${baris}`).value = data.shower_gel_in;
+      // sheet.getCell(`AC${baris}`).value = data.shower_gel_in;
       sheet.getCell(`AD${baris}`).value = data.shower_cap_in;
       sheet.getCell(`AE${baris}`).value = data.shower_cap_in;
       sheet.getCell(`AF${baris}`).value = data.dental_kit_in;
       sheet.getCell(`AG${baris}`).value = data.dental_kit_in;
+      // ✅ REVISI: Ditambahkan - laundry_bag, laundry_list
       sheet.getCell(`AH${baris}`).value = data.laundry_bag_in;
       sheet.getCell(`AI${baris}`).value = data.laundry_bag_in;
       sheet.getCell(`AJ${baris}`).value = data.laundry_list_in;
-      
+
       // Bedroom & Amenitas
+      // ✅ REVISI: Ditambahkan - sugar, tea, coffee, creamer, mineral
       sheet.getCell(`AN${baris}`).value = data.sugar || 0;
       sheet.getCell(`AO${baris}`).value = data.tea || 0;
       sheet.getCell(`AM${baris}`).value = data.coffee || 0;
       sheet.getCell(`AP${baris}`).value = data.creamer || 0;
       sheet.getCell(`AQ${baris}`).value = data.mineral || 0;
+      // ✅ REVISI: Ditambahkan - tissue_facial, tissue_roll
       sheet.getCell(`AL${baris}`).value = data.tissue_facial || 0;
       sheet.getCell(`X${baris}`).value = data.tissue_roll || 0;
+      // ✅ REVISI: Ditambahkan - cotton_bud, slipper, comb, shaving_kit
       sheet.getCell(`AW${baris}`).value = data.cotton_bud || 0;
       sheet.getCell(`AE${baris}`).value = data.slipper || 0;
       sheet.getCell(`AX${baris}`).value = data.comb || 0;
       sheet.getCell(`AZ${baris}`).value = data.shaving_kit || 0;
+      // ✅ REVISI: Ditambahkan - stirer, coster, poly_bag, pensil, note_pad
+      // (sesuaikan dengan kolom template yang tersedia)
 
       baris++;
     });
