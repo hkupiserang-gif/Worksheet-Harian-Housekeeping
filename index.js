@@ -78,6 +78,25 @@ const HARGA_BARANG = {
   note_pad: 500
 };
 
+// Daftar field amenitas untuk query dinamis
+const AMENITY_FIELDS = [
+  'sheet_twin', 'sheet_king', 'duvet_twin', 'duvet_king',
+  'bath_towel', 'hand_towel', 'bath_mat', 'pillow_case',
+  'shower_cap', 'dental_kit',
+  'laundry_bag', 'laundry_list',
+  'dnd_sign',
+  'magic', 'shoe', 'sugar', 'tea', 'coffee', 'creamer', 'mineral',
+  'tissue_facial', 'tissue_roll',
+  'cotton_bud',
+  'slipper',
+  'comb',
+  'shaving_kit',
+  'stirer',
+  'coster',
+  'poly_bag_kecil', 'poly_bag_besar',
+  'pensil', 'note_pad'
+];
+
 const dbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH 
   ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'database.db')
   : './database.db';
@@ -178,45 +197,15 @@ db.serialize(() => {
   db.run(`ALTER TABLE tugas ADD COLUMN status_hk_in TEXT DEFAULT ''`, () => {});
   db.run(`ALTER TABLE tugas ADD COLUMN status_hk_out TEXT DEFAULT ''`, () => {});
 
-  // HAPUS tabel laporan lama dan buat ulang dengan struktur baru (38 kolom)
+  // HAPUS tabel laporan lama dan buat ulang dengan struktur baru
   db.run(`DROP TABLE IF EXISTS laporan`, () => {
+    const amenityCols = AMENITY_FIELDS.map(f => `${f} INTEGER DEFAULT 0`).join(',\n      ');
     db.run(`CREATE TABLE IF NOT EXISTS laporan (
       tanggal TEXT,
       nomor_kamar TEXT,
       waktu_masuk TEXT,
       waktu_keluar TEXT,
-      sheet_twin INTEGER DEFAULT 0,
-      sheet_king INTEGER DEFAULT 0,
-      duvet_twin INTEGER DEFAULT 0,
-      duvet_king INTEGER DEFAULT 0,
-      bath_towel INTEGER DEFAULT 0,
-      hand_towel INTEGER DEFAULT 0,
-      bath_mat INTEGER DEFAULT 0,
-      pillow_case INTEGER DEFAULT 0,
-      shower_cap INTEGER DEFAULT 0,
-      dental_kit INTEGER DEFAULT 0,
-      laundry_bag INTEGER DEFAULT 0,
-      laundry_list INTEGER DEFAULT 0,
-      dnd_sign INTEGER DEFAULT 0,
-      magic INTEGER DEFAULT 0,
-      shoe INTEGER DEFAULT 0,
-      sugar INTEGER DEFAULT 0,
-      tea INTEGER DEFAULT 0,
-      coffee INTEGER DEFAULT 0,
-      creamer INTEGER DEFAULT 0,
-      mineral INTEGER DEFAULT 0,
-      tissue_facial INTEGER DEFAULT 0,
-      tissue_roll INTEGER DEFAULT 0,
-      cotton_bud INTEGER DEFAULT 0,
-      slipper INTEGER DEFAULT 0,
-      comb INTEGER DEFAULT 0,
-      shaving_kit INTEGER DEFAULT 0,
-      stirer INTEGER DEFAULT 0,
-      coster INTEGER DEFAULT 0,
-      poly_bag_kecil INTEGER DEFAULT 0,
-      poly_bag_besar INTEGER DEFAULT 0,
-      pensil INTEGER DEFAULT 0,
-      note_pad INTEGER DEFAULT 0,
+      ${amenityCols},
       petugas TEXT,
       PRIMARY KEY (tanggal, nomor_kamar),
       FOREIGN KEY (nomor_kamar) REFERENCES kamar(nomor_kamar) ON DELETE CASCADE
@@ -366,7 +355,7 @@ app.post('/tambah-tugas', (req, res) => {
   const { tanggal, petugas, kamar, status_awal } = req.body;
   const daftarKamar = Array.isArray(kamar) ? kamar : [kamar];
   const daftarStatus = Array.isArray(status_awal) ? status_awal : [status_awal || 'VD'];
-  
+
   let selesai = 0;
   const total = daftarKamar.length;
 
@@ -395,42 +384,15 @@ app.post('/tambah-tugas', (req, res) => {
 app.get('/ra', (req, res) => {
   if (!req.session.user || req.session.user.peran !== 'RA') return res.redirect('/');
   const hariIni = getTanggalWIB();
+
+  // Build amenity select columns dynamically
+  const amenitySelects = AMENITY_FIELDS.map(f => `IFNULL(l.${f}, 0) AS ${f}`).join(',\n           ');
+
   db.all(`
     SELECT t.*,
            IFNULL(l.waktu_masuk, '-') AS waktu_masuk,
            IFNULL(l.waktu_keluar, '-') AS waktu_keluar,
-           IFNULL(l.sheet_twin, 0) AS sheet_twin,
-           IFNULL(l.sheet_king, 0) AS sheet_king,
-           IFNULL(l.duvet_twin, 0) AS duvet_twin,
-           IFNULL(l.duvet_king, 0) AS duvet_king,
-           IFNULL(l.bath_towel, 0) AS bath_towel,
-           IFNULL(l.hand_towel, 0) AS hand_towel,
-           IFNULL(l.bath_mat, 0) AS bath_mat,
-           IFNULL(l.pillow_case, 0) AS pillow_case,
-           IFNULL(l.shower_cap, 0) AS shower_cap,
-           IFNULL(l.dental_kit, 0) AS dental_kit,
-           IFNULL(l.laundry_bag, 0) AS laundry_bag,
-           IFNULL(l.laundry_list, 0) AS laundry_list,
-           IFNULL(l.dnd_sign, 0) AS dnd_sign,
-           IFNULL(l.magic, 0) AS magic,
-           IFNULL(l.shoe, 0) AS shoe,
-           IFNULL(l.sugar, 0) AS sugar,
-           IFNULL(l.tea, 0) AS tea,
-           IFNULL(l.coffee, 0) AS coffee,
-           IFNULL(l.creamer, 0) AS creamer,
-           IFNULL(l.mineral, 0) AS mineral,
-           IFNULL(l.tissue_facial, 0) AS tissue_facial,
-           IFNULL(l.tissue_roll, 0) AS tissue_roll,
-           IFNULL(l.cotton_bud, 0) AS cotton_bud,
-           IFNULL(l.slipper, 0) AS slipper,
-           IFNULL(l.comb, 0) AS comb,
-           IFNULL(l.shaving_kit, 0) AS shaving_kit,
-           IFNULL(l.stirer, 0) AS stirer,
-           IFNULL(l.coster, 0) AS coster,
-           IFNULL(l.poly_bag_kecil, 0) AS poly_bag_kecil,
-           IFNULL(l.poly_bag_besar, 0) AS poly_bag_besar,
-           IFNULL(l.pensil, 0) AS pensil,
-           IFNULL(l.note_pad, 0) AS note_pad
+           ${amenitySelects}
     FROM tugas t
     JOIN kamar k ON t.kamar = k.nomor_kamar
     LEFT JOIN laporan l ON t.tanggal = l.tanggal AND t.kamar = l.nomor_kamar
@@ -451,92 +413,90 @@ app.post('/mulai-kamar', (req, res) => {
   const { tanggal, kamar } = req.body;
 
   db.get(`SELECT status_awal FROM tugas WHERE tanggal = ? AND kamar = ?`, [tanggal, kamar], (err, data) => {
-    if (err) return console.error(err);
-    
+    if (err) {
+      console.error('❌ Error SELECT tugas:', err.message);
+      return res.redirect('/ra?pesan=gagal');
+    }
+    if (!data) {
+      console.error('❌ Tugas tidak ditemukan:', tanggal, kamar);
+      return res.redirect('/ra?pesan=gagal');
+    }
+
     let hkIn = '';
     if (data.status_awal === 'VD' || data.status_awal === 'ED') hkIn = 'VD';
     else if (data.status_awal === 'VCU') hkIn = 'VCU';
     else if (data.status_awal === 'OD') hkIn = 'OD';
 
-    db.run(`INSERT OR REPLACE INTO laporan (tanggal, nomor_kamar, waktu_masuk, petugas) VALUES (?, ?, ?, ?)`,
-      [tanggal, kamar, waktuMasuk, req.session.user.nama], err => {
-        if (err) console.error(err);
-        
-        db.run(`UPDATE tugas SET status_hk_in = ? WHERE tanggal = ? AND kamar = ?`,
-          [hkIn, tanggal, kamar], err => {
-            if (err) console.error(err);
-            res.redirect('/ra?pesan=berhasil');
+    // Cek apakah laporan sudah ada, jika ya UPDATE saja, jika tidak INSERT
+    db.get(`SELECT 1 FROM laporan WHERE tanggal = ? AND nomor_kamar = ?`, [tanggal, kamar], (err, row) => {
+      if (err) {
+        console.error('❌ Error cek laporan:', err.message);
+        return res.redirect('/ra?pesan=gagal');
+      }
+
+      const petugas = req.session.user.nama;
+
+      if (row) {
+        // Update waktu_masuk dan petugas saja, jangan hapus data amenitas yang sudah ada
+        db.run(`UPDATE laporan SET waktu_masuk = ?, petugas = ? WHERE tanggal = ? AND nomor_kamar = ?`,
+          [waktuMasuk, petugas, tanggal, kamar], err => {
+            if (err) {
+              console.error('❌ Error UPDATE laporan:', err.message);
+              return res.redirect('/ra?pesan=gagal');
+            }
+            db.run(`UPDATE tugas SET status_hk_in = ? WHERE tanggal = ? AND kamar = ?`,
+              [hkIn, tanggal, kamar], err => {
+                if (err) console.error(err);
+                res.redirect('/ra?pesan=berhasil');
+              });
           });
-      });
+      } else {
+        // Insert baru dengan hanya 4 kolom
+        db.run(`INSERT INTO laporan (tanggal, nomor_kamar, waktu_masuk, petugas) VALUES (?, ?, ?, ?)`,
+          [tanggal, kamar, waktuMasuk, petugas], err => {
+            if (err) {
+              console.error('❌ Error INSERT laporan:', err.message);
+              return res.redirect('/ra?pesan=gagal');
+            }
+            db.run(`UPDATE tugas SET status_hk_in = ? WHERE tanggal = ? AND kamar = ?`,
+              [hkIn, tanggal, kamar], err => {
+                if (err) console.error(err);
+                res.redirect('/ra?pesan=berhasil');
+              });
+          });
+      }
+    });
   });
 });
 
 app.post('/selesai-kamar', (req, res) => {
-  const { tanggal, kamar, waktu_masuk,
-    sheet_twin, sheet_king, duvet_twin, duvet_king,
-    bath_towel, hand_towel, bath_mat, pillow_case,
-    shower_cap, dental_kit,
-    laundry_bag, laundry_list,
-    dnd_sign,
-    magic, shoe, sugar, tea, coffee, creamer, mineral,
-    tissue_facial, tissue_roll,
-    cotton_bud,
-    slipper,
-    comb,
-    shaving_kit,
-    stirer,
-    coster,
-    poly_bag_kecil, poly_bag_besar,
-    pensil, note_pad } = req.body;
   const waktuKeluar = getWaktuWIBJamMenit();
+  const { tanggal, kamar, waktu_masuk } = req.body;
+  const petugas = req.session.user.nama;
 
-  const sql = `
-    INSERT OR REPLACE INTO laporan (
-      tanggal, nomor_kamar, waktu_masuk, waktu_keluar,
-      sheet_twin, sheet_king, duvet_twin, duvet_king,
-      bath_towel, hand_towel, bath_mat, pillow_case,
-      shower_cap, dental_kit,
-      laundry_bag, laundry_list,
-      dnd_sign,
-      magic, shoe, sugar, tea, coffee, creamer, mineral,
-      tissue_facial, tissue_roll,
-      cotton_bud,
-      slipper,
-      comb,
-      shaving_kit,
-      stirer,
-      coster,
-      poly_bag_kecil, poly_bag_besar,
-      pensil, note_pad,
-      petugas
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `;
+  // Build query dinamis untuk menghindari mismatch jumlah kolom dan params
+  const baseFields = ['tanggal', 'nomor_kamar', 'waktu_masuk', 'waktu_keluar'];
+  const baseValues = [tanggal, kamar, waktu_masuk, waktuKeluar];
 
-  const params = [
-    tanggal, kamar, waktu_masuk, waktuKeluar,
-    sheet_twin||0, sheet_king||0, duvet_twin||0, duvet_king||0,
-    bath_towel||0, hand_towel||0, bath_mat||0, pillow_case||0,
-    shower_cap||0, dental_kit||0,
-    laundry_bag||0, laundry_list||0,
-    dnd_sign||0,
-    magic||0, shoe||0, sugar||0, tea||0, coffee||0, creamer||0, mineral||0,
-    tissue_facial||0, tissue_roll||0,
-    cotton_bud||0,
-    slipper||0,
-    comb||0,
-    shaving_kit||0,
-    stirer||0,
-    coster||0,
-    poly_bag_kecil||0, poly_bag_besar||0,
-    pensil||0, note_pad||0,
-    req.session.user.nama
-  ];
+  // Ambil nilai amenitas dari req.body, default 0 jika tidak ada
+  const amenityValues = AMENITY_FIELDS.map(field => {
+    const val = req.body[field];
+    return (val !== undefined && val !== '' && !isNaN(val)) ? parseInt(val) : 0;
+  });
+
+  const allFields = [...baseFields, ...AMENITY_FIELDS, 'petugas'];
+  const allValues = [...baseValues, ...amenityValues, petugas];
+  const placeholders = allFields.map(() => '?').join(',');
+
+  const sql = `INSERT OR REPLACE INTO laporan (${allFields.join(',')}) VALUES (${placeholders})`;
 
   console.log('📥 Submit selesai-kamar:', { tanggal, kamar, waktu_masuk, waktuKeluar });
-  console.log('📊 Jumlah ? di SQL:', (sql.match(/\?/g) || []).length);
-  console.log('📊 Jumlah params:', params.length);
+  console.log('📊 Jumlah kolom:', allFields.length);
+  console.log('📊 Jumlah params:', allValues.length);
+  console.log('📊 SQL:', sql);
+  console.log('📊 Params:', allValues);
 
-  db.run(sql, params, function(err) {
+  db.run(sql, allValues, function(err) {
     if (err) {
       console.error('❌ Error INSERT laporan:', err.message);
       return res.redirect('/ra?pesan=gagal');
@@ -549,12 +509,12 @@ app.post('/selesai-kamar', (req, res) => {
         console.error('❌ Error SELECT tugas:', err.message);
         return res.redirect('/ra?pesan=gagal');
       }
-      
+
       if (!data) {
         console.error('❌ Data tugas tidak ditemukan:', tanggal, kamar);
         return res.redirect('/ra?pesan=gagal');
       }
-      
+
       let statusHKout = '';
       if (data.status_hk_in === 'VD' || data.status_hk_in === 'VCU' || data.status_awal === 'ED') {
         statusHKout = 'VC';
@@ -584,7 +544,7 @@ app.post('/selesai-kamar', (req, res) => {
 app.get('/ot', (req, res) => {
   if (!req.session.user || req.session.user.peran !== 'OT') return res.redirect('/');
   const hariIni = getTanggalWIB();
-  
+
   db.all(`SELECT nomor_kamar, lantai, tipe_kamar FROM kamar WHERE aktif = 1 ORDER BY nomor_kamar`, [], (err, daftarKamar) => {
     if (err) return res.redirect('/?pesan=gagal');
     db.all(`SELECT * FROM permintaan_tamu WHERE tanggal = ? ORDER BY waktu_masuk DESC, id DESC`, [hariIni], (err, daftarPermintaan) => {
@@ -828,7 +788,7 @@ app.get('/unduh-excel', async (req, res) => {
     dataValid.forEach((data) => {
       sheet.getCell(`B${baris}`).value = data.kamar;
       sheet.getCell(`C${baris}`).value = data.status_fo || '';
-      
+
       let statusHKin = data.status_hk_in || '';
       if (!statusHKin) {
         if (data.status_fo === 'VD' || data.status_fo === 'ED') statusHKin = 'VD';
@@ -836,14 +796,14 @@ app.get('/unduh-excel', async (req, res) => {
         else if (data.status_fo === 'OD') statusHKin = 'OD';
       }
       sheet.getCell(`D${baris}`).value = statusHKin;
-      
+
       let statusHKout = data.status_hk_out || '';
       if (!statusHKout && data.selesai === 1) {
         if (statusHKin === 'VD' || statusHKin === 'VCU' || data.status_fo === 'ED') statusHKout = 'VC';
         else if (statusHKin === 'OD') statusHKout = 'OC';
       }
       sheet.getCell(`E${baris}`).value = statusHKout;
-      
+
       sheet.getCell(`F${baris}`).value = data.waktu_masuk !== '-' ? data.waktu_masuk : '';
       sheet.getCell(`G${baris}`).value = data.waktu_keluar !== '-' ? data.waktu_keluar : '';
 
