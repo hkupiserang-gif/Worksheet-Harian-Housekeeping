@@ -325,7 +325,7 @@ app.post('/login', (req, res) => {
 });
 
 // ======================================
-// ✅ HALAMAN SUPERVISOR
+// ✅ HALAMAN SUPERVISOR + TAMBAH STATUS ED
 // ======================================
 app.get('/spv', (req, res) => {
   if (!req.session.user || req.session.user.peran !== 'SPV') return res.redirect('/');
@@ -343,7 +343,8 @@ app.get('/spv', (req, res) => {
         FROM tugas t
         JOIN kamar k ON t.kamar = k.nomor_kamar
         LEFT JOIN laporan l ON t.tanggal = l.tanggal AND t.kamar = l.nomor_kamar
-        WHERE t.tanggal = ? AND t.sudah_dibagikan = 1
+        WHERE t.tanggal = ? 
+          AND (t.sudah_dibagikan = 1 OR t.sudah_dibagikan IS NULL OR t.sudah_dibagikan = 0)
       `;
       const paramSudah = [cariTanggal];
       if (cariKamar) { querySudah += ` AND t.kamar = ?`; paramSudah.push(cariKamar); }
@@ -352,8 +353,10 @@ app.get('/spv', (req, res) => {
       db.all(querySudah, paramSudah, (err, daftarSudahDibagikan) => {
         const perRA = {};
         daftarSudahDibagikan.forEach(tugas => {
-          if (!perRA[tugas.petugas]) perRA[tugas.petugas] = [];
-          perRA[tugas.petugas].push(tugas);
+          if (tugas.petugas && tugas.petugas !== '') {
+            if (!perRA[tugas.petugas]) perRA[tugas.petugas] = [];
+            perRA[tugas.petugas].push(tugas);
+          }
         });
 
         db.all(`SELECT * FROM permintaan_tamu WHERE tanggal = ? ORDER BY waktu_masuk DESC`, [cariTanggal], (err, daftarPermintaan) => {
@@ -371,7 +374,14 @@ app.get('/spv', (req, res) => {
             daftarRA,
             daftarSudahDibagikan: perRA,
             daftarPermintaan,
-            pesan: res.locals.pesan
+            pesan: res.locals.pesan,
+            // ✅ Daftar status yang bisa dipilih (sudah ditambah ED)
+            daftarStatus: [
+              {kode:'VD', nama:'Vacant Dirty'},
+              {kode:'VCU', nama:'Vacant Clean Unchecked'},
+              {kode:'OD', nama:'Occupied Dirty'},
+              {kode:'ED', nama:'Expected Departure'}
+            ]
           });
         });
       });
@@ -478,6 +488,9 @@ app.post('/mulai-kamar', (req, res) => {
     });
 });
 
+// ======================================
+// ✅ PROSES SELESAI KAMAR + LOGIKA STATUS HK
+// ======================================
 app.post('/selesai-kamar', (req, res) => {
   const { tanggal, kamar, waktu_masuk,
     sheet_twin, sheet_king, duvet_twin, duvet_king,
@@ -520,8 +533,12 @@ app.post('/selesai-kamar', (req, res) => {
       if (err) return console.error(err);
       let statusBaru = data.status_awal;
 
-      if (data.status_awal === 'VD' || data.status_awal === 'VCU') statusBaru = 'VC';
-      else if (data.status_awal === 'OD') statusBaru = 'OC';
+      // ✅ Aturan perubahan status sesuai permintaan
+      if (data.status_awal === 'VD' || data.status_awal === 'VCU' || data.status_awal === 'ED') {
+        statusBaru = 'VC';
+      } else if (data.status_awal === 'OD') {
+        statusBaru = 'OC';
+      }
 
       db.run(`UPDATE tugas SET status_awal = ?, selesai = 1, siap_dicek = 1 WHERE tanggal = ? AND kamar = ?`,
         [statusBaru, tanggal, kamar], () => res.redirect('/ra?pesan=berhasil'));
@@ -713,7 +730,7 @@ app.get('/unduh-pdf', (req, res) => {
 });
 
 // ======================================
-// ✅ ROUTE UNDUH EXCEL (DIPERBAIKI SESUAI FORMAT)
+// ✅ UNDUH EXCEL + KOLOM OUT OTOMATIS = IN + STATUS SESUAI
 // ======================================
 app.get('/unduh-excel', async (req, res) => {
   try {
@@ -722,14 +739,41 @@ app.get('/unduh-excel', async (req, res) => {
 
     const daftarTugas = await new Promise((resolve, reject) => {
       let query = `
-        SELECT t.petugas, t.kamar, t.status_awal, k.lantai,
+        SELECT t.petugas, t.kamar, t.status_awal AS status_fo, k.lantai,
                IFNULL(l.waktu_masuk, '-') AS waktu_masuk,
                IFNULL(l.waktu_keluar, '-') AS waktu_keluar,
-               l.*
+               IFNULL(l.sheet_twin, 0) AS sheet_twin_in,
+               IFNULL(l.sheet_king, 0) AS sheet_king_in,
+               IFNULL(l.duvet_twin, 0) AS duvet_twin_in,
+               IFNULL(l.duvet_king, 0) AS duvet_king_in,
+               IFNULL(l.bath_towel, 0) AS bath_towel_in,
+               IFNULL(l.hand_towel, 0) AS hand_towel_in,
+               IFNULL(l.bath_mat, 0) AS bath_mat_in,
+               IFNULL(l.pillow_case, 0) AS pillow_case_in,
+               IFNULL(l.shampoo, 0) AS shampoo_in,
+               IFNULL(l.soap, 0) AS soap_in,
+               IFNULL(l.shower_gel, 0) AS shower_gel_in,
+               IFNULL(l.shower_cap, 0) AS shower_cap_in,
+               IFNULL(l.dental_kit, 0) AS dental_kit_in,
+               IFNULL(l.laundry_bag, 0) AS laundry_bag_in,
+               IFNULL(l.laundry_list, 0) AS laundry_list_in,
+               IFNULL(l.sugar, 0) AS sugar_in,
+               IFNULL(l.tea, 0) AS tea_in,
+               IFNULL(l.coffee, 0) AS coffee_in,
+               IFNULL(l.creamer, 0) AS creamer_in,
+               IFNULL(l.mineral, 0) AS mineral_in,
+               IFNULL(l.tissue_facial, 0) AS tissue_facial_in,
+               IFNULL(l.tissue_roll, 0) AS tissue_roll_in,
+               IFNULL(l.cotton_bud, 0) AS cotton_bud_in,
+               IFNULL(l.slipper, 0) AS slipper_in,
+               IFNULL(l.comb, 0) AS comb_in,
+               IFNULL(l.shaving_kit, 0) AS shaving_kit_in,
+               t.status_awal, t.selesai
         FROM tugas t
         JOIN kamar k ON t.kamar = k.nomor_kamar
         LEFT JOIN laporan l ON t.tanggal = l.tanggal AND t.kamar = l.nomor_kamar
-        WHERE t.tanggal = ? AND t.sudah_dibagikan = 1
+        WHERE t.tanggal = ? 
+          AND (t.sudah_dibagikan = 1 OR t.sudah_dibagikan IS NULL OR t.sudah_dibagikan = 0)
       `;
       const param = [tanggal];
       if (ra) { query += ` AND t.petugas = ?`; param.push(ra); }
@@ -738,7 +782,9 @@ app.get('/unduh-excel', async (req, res) => {
       db.all(query, param, (err, rows) => err ? reject(err) : resolve(rows));
     });
 
-    if (!daftarTugas || daftarTugas.length === 0) {
+    const dataValid = daftarTugas.filter(item => item.petugas && item.petugas !== '');
+
+    if (!dataValid || dataValid.length === 0) {
       return res.send('❌ Tidak ada data untuk tanggal ini');
     }
 
@@ -747,36 +793,71 @@ app.get('/unduh-excel', async (req, res) => {
     await workbook.xlsx.readFile(templatePath);
     const sheet = workbook.worksheets[0];
 
-    // ✅ Isi Header sesuai format
-    sheet.getCell('B4').value = daftarTugas[0].petugas || '-';    // NAMA
-    sheet.getCell('M4').value = tanggal;                           // DATE
-    sheet.getCell('S4').value = 'Morning';                         // SHIFT
-    sheet.getCell('AG4').value = daftarTugas[0].lantai || '-';    // FLOOR/SECTION
+    sheet.getCell('B4').value = dataValid[0].petugas || '-';
+    sheet.getCell('J4').value = tanggal;
+    sheet.getCell('S4').value = 'Morning';
+    sheet.getCell('AG4').value = dataValid[0].lantai || '-';
 
-    // ✅ Isi data mulai baris ke-8
-    let baris = 9;
-    daftarTugas.forEach((data) => {
-      sheet.getCell(`B${baris}`).value = data.kamar;                 // No Kamar
-      sheet.getCell(`C${baris}`).value = data.status_awal;           // Room Status
-      sheet.getCell(`F${baris}`).value = data.waktu_masuk;           // Time Masuk
-      sheet.getCell(`G${baris}`).value = data.waktu_keluar;          // Time Keluar
-      // Linen
-      sheet.getCell(`H${baris}`).value = data.sheet_twin || 0;       // Sheet Double
-      sheet.getCell(`J${baris}`).value = data.sheet_king || 0;        // Sheet Single
-      sheet.getCell(`N${baris}`).value = data.duvet_twin || 0;       // Duvet Cover Single
-      sheet.getCell(`L${baris}`).value = data.duvet_king || 0;        // Duvet Cover Double
-      sheet.getCell(`P${baris}`).value = data.bath_towel || 0;        // Bath Towel
-      sheet.getCell(`R${baris}`).value = data.hand_towel || 0;        // Hand Towel
-      sheet.getCell(`T${baris}`).value = data.bath_mat || 0;          // Bath Mat
-      sheet.getCell(`V${baris}`).value = data.pillow_case || 0;       // Pillow Case
-      // Bathroom
-      sheet.getCell(`Z${baris}`).value = data.shampoo || 0;
-      sheet.getCell(`Y${baris}`).value = data.soap || 0;
-      sheet.getCell(`AA${baris}`).value = data.shower_gel || 0;
-      sheet.getCell(`AD${baris}`).value = data.shower_cap || 0;
-      sheet.getCell(`AB${baris}`).value = data.dental_kit || 0;
-      sheet.getCell(`AF${baris}`).value = data.laundry_bag || 0;
-      sheet.getCell(`AG${baris}`).value = data.laundry_list || 0;
+    let baris = 9; // Mulai dari baris 9 sesuai template
+    dataValid.forEach((data) => {
+      // ✅ No Kamar
+      sheet.getCell(`B${baris}`).value = data.kamar;
+      
+      // ✅ Room Status FO = status awal
+      sheet.getCell(`C${baris}`).value = data.status_fo || '';
+      
+      // ✅ HK IN = status saat mulai kerja
+      let statusHKin = '';
+      if (data.status_fo === 'VD' || data.status_fo === 'ED') statusHKin = 'VD';
+      else if (data.status_fo === 'VCU') statusHKin = 'VCU';
+      else if (data.status_fo === 'OD') statusHKin = 'OD';
+      sheet.getCell(`D${baris}`).value = statusHKin;
+      
+      // ✅ HK OUT = status akhir selesai
+      let statusHKout = '';
+      if (data.selesai === 1) {
+        if (statusHKin === 'VD' || statusHKin === 'VCU' || statusHKin === 'ED') statusHKout = 'VC';
+        else if (statusHKin === 'OD') statusHKout = 'OC';
+      }
+      sheet.getCell(`E${baris}`).value = statusHKout;
+      
+      // ✅ Waktu IN & OUT
+      sheet.getCell(`F${baris}`).value = data.waktu_masuk !== '-' ? data.waktu_masuk : '';
+      sheet.getCell(`G${baris}`).value = data.waktu_keluar !== '-' ? data.waktu_keluar : '';
+
+      // ✅ Linen - IN & OUT otomatis sama
+      sheet.getCell(`H${baris}`).value = data.sheet_twin_in;
+      sheet.getCell(`I${baris}`).value = data.sheet_twin_in; // OUT = IN
+      sheet.getCell(`J${baris}`).value = data.sheet_king_in;
+      sheet.getCell(`K${baris}`).value = data.sheet_king_in;
+      sheet.getCell(`L${baris}`).value = data.duvet_twin_in;
+      sheet.getCell(`M${baris}`).value = data.duvet_twin_in;
+      sheet.getCell(`N${baris}`).value = data.duvet_king_in;
+      sheet.getCell(`O${baris}`).value = data.duvet_king_in;
+      sheet.getCell(`P${baris}`).value = data.bath_towel_in;
+      sheet.getCell(`Q${baris}`).value = data.bath_towel_in;
+      sheet.getCell(`R${baris}`).value = data.hand_towel_in;
+      sheet.getCell(`S${baris}`).value = data.hand_towel_in;
+      sheet.getCell(`T${baris}`).value = data.bath_mat_in;
+      sheet.getCell(`U${baris}`).value = data.bath_mat_in;
+      sheet.getCell(`V${baris}`).value = data.pillow_case_in;
+      sheet.getCell(`W${baris}`).value = data.pillow_case_in;
+
+      // ✅ Bathroom - IN & OUT otomatis sama
+      sheet.getCell(`X${baris}`).value = data.shampoo_in;
+      sheet.getCell(`Y${baris}`).value = data.shampoo_in;
+      sheet.getCell(`Z${baris}`).value = data.soap_in;
+      sheet.getCell(`AA${baris}`).value = data.soap_in;
+      sheet.getCell(`AB${baris}`).value = data.shower_gel_in;
+      sheet.getCell(`AC${baris}`).value = data.shower_gel_in;
+      sheet.getCell(`AD${baris}`).value = data.shower_cap_in;
+      sheet.getCell(`AE${baris}`).value = data.shower_cap_in;
+      sheet.getCell(`AF${baris}`).value = data.dental_kit_in;
+      sheet.getCell(`AG${baris}`).value = data.dental_kit_in;
+      sheet.getCell(`AH${baris}`).value = data.laundry_bag_in;
+      sheet.getCell(`AI${baris}`).value = data.laundry_bag_in;
+      sheet.getCell(`AJ${baris}`).value = data.laundry_list_in;
+      
       // Bedroom & Amenitas
       sheet.getCell(`AN${baris}`).value = data.sugar || 0;
       sheet.getCell(`AO${baris}`).value = data.tea || 0;
