@@ -6,7 +6,6 @@ const { parse } = require('json2csv');
 const PDFDocument = require('pdfkit');
 const cron = require('node-cron');
 const ExcelJS = require('exceljs');
-const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 8888;
@@ -79,6 +78,7 @@ const HARGA_BARANG = {
   note_pad: 500
 };
 
+// Daftar field amenitas untuk query dinamis
 const AMENITY_FIELDS = [
   'sheet_twin', 'sheet_king', 'duvet_twin', 'duvet_king',
   'bath_towel', 'hand_towel', 'bath_mat', 'pillow_case',
@@ -197,6 +197,7 @@ db.serialize(() => {
   db.run(`ALTER TABLE tugas ADD COLUMN status_hk_in TEXT DEFAULT ''`, () => {});
   db.run(`ALTER TABLE tugas ADD COLUMN status_hk_out TEXT DEFAULT ''`, () => {});
 
+  // HAPUS tabel laporan lama dan buat ulang dengan struktur baru
   db.run(`DROP TABLE IF EXISTS laporan`, () => {
     const amenityCols = AMENITY_FIELDS.map(f => `${f} INTEGER DEFAULT 0`).join(',\n      ');
     db.run(`CREATE TABLE IF NOT EXISTS laporan (
@@ -384,6 +385,7 @@ app.get('/ra', (req, res) => {
   if (!req.session.user || req.session.user.peran !== 'RA') return res.redirect('/');
   const hariIni = getTanggalWIB();
 
+  // Build amenity select columns dynamically
   const amenitySelects = AMENITY_FIELDS.map(f => `IFNULL(l.${f}, 0) AS ${f}`).join(',\n           ');
 
   db.all(`
@@ -425,6 +427,7 @@ app.post('/mulai-kamar', (req, res) => {
     else if (data.status_awal === 'VCU') hkIn = 'VCU';
     else if (data.status_awal === 'OD') hkIn = 'OD';
 
+    // Cek apakah laporan sudah ada, jika ya UPDATE saja, jika tidak INSERT
     db.get(`SELECT 1 FROM laporan WHERE tanggal = ? AND nomor_kamar = ?`, [tanggal, kamar], (err, row) => {
       if (err) {
         console.error('❌ Error cek laporan:', err.message);
@@ -434,6 +437,7 @@ app.post('/mulai-kamar', (req, res) => {
       const petugas = req.session.user.nama;
 
       if (row) {
+        // Update waktu_masuk dan petugas saja, jangan hapus data amenitas yang sudah ada
         db.run(`UPDATE laporan SET waktu_masuk = ?, petugas = ? WHERE tanggal = ? AND nomor_kamar = ?`,
           [waktuMasuk, petugas, tanggal, kamar], err => {
             if (err) {
@@ -447,6 +451,7 @@ app.post('/mulai-kamar', (req, res) => {
               });
           });
       } else {
+        // Insert baru dengan hanya 4 kolom
         db.run(`INSERT INTO laporan (tanggal, nomor_kamar, waktu_masuk, petugas) VALUES (?, ?, ?, ?)`,
           [tanggal, kamar, waktuMasuk, petugas], err => {
             if (err) {
@@ -469,9 +474,11 @@ app.post('/selesai-kamar', (req, res) => {
   const { tanggal, kamar, waktu_masuk } = req.body;
   const petugas = req.session.user.nama;
 
+  // Build query dinamis untuk menghindari mismatch jumlah kolom dan params
   const baseFields = ['tanggal', 'nomor_kamar', 'waktu_masuk', 'waktu_keluar'];
   const baseValues = [tanggal, kamar, waktu_masuk, waktuKeluar];
 
+  // Ambil nilai amenitas dari req.body, default 0 jika tidak ada
   const amenityValues = AMENITY_FIELDS.map(field => {
     const val = req.body[field];
     return (val !== undefined && val !== '' && !isNaN(val)) ? parseInt(val) : 0;
@@ -758,21 +765,6 @@ app.get('/unduh-pdf', (req, res) => {
   });
 });
 
-// ============================================
-// EXCEL DOWNLOAD - ROOMBOY CONTROL SHEET
-// ============================================
-
-const LOGO_PATH = path.join(__dirname, 'public', 'logo.png');
-
-function setBorder(cell) {
-  cell.border = {
-    top: { style: 'thin', color: { argb: 'FF000000' } },
-    bottom: { style: 'thin', color: { argb: 'FF000000' } },
-    left: { style: 'thin', color: { argb: 'FF000000' } },
-    right: { style: 'thin', color: { argb: 'FF000000' } }
-  };
-}
-
 app.get('/unduh-excel', async (req, res) => {
   try {
     const tanggal = req.query.tanggal || getTanggalWIB();
@@ -780,6 +772,7 @@ app.get('/unduh-excel', async (req, res) => {
 
     console.log('📥 Download Excel request:', { tanggal, raFilter });
 
+    // Ambil daftar RA yang punya tugas di tanggal ini
     const daftarRA = await new Promise((resolve, reject) => {
       let query = `
         SELECT DISTINCT petugas 
@@ -809,11 +802,12 @@ app.get('/unduh-excel', async (req, res) => {
 
     const workbook = new ExcelJS.Workbook();
 
+    // Build SQL selects
     const bathRoomFields = [
       'sheet_twin', 'sheet_king', 'duvet_twin', 'duvet_king',
       'bath_towel', 'hand_towel', 'bath_mat', 'pillow_case'
     ];
-    const bathRoomSelects = bathRoomFields.map(f => 'IFNULL(l.' + f + ', 0) AS ' + f + '_val').join(', ');
+    const bathRoomSelects = bathRoomFields.map(f => 'IFNULL(l.' + f + ', 0) AS ' + f + '_in').join(', ');
 
     const guestSuppliesFields = [
       'shower_cap', 'dental_kit', 'laundry_bag', 'laundry_list',
@@ -824,22 +818,17 @@ app.get('/unduh-excel', async (req, res) => {
     ];
     const guestSuppliesSelects = guestSuppliesFields.map(f => 'IFNULL(l.' + f + ', 0) AS ' + f).join(', ');
 
-    let logoImageId = null;
-    if (fs.existsSync(LOGO_PATH)) {
-      const logoBuffer = fs.readFileSync(LOGO_PATH);
-      logoImageId = workbook.addImage({
-        buffer: logoBuffer,
-        extension: 'png',
-      });
-    }
-
+    // Proses setiap RA
     for (let i = 0; i < daftarRA.length; i++) {
       const ra = daftarRA[i];
+
+      // Buat sheet baru dengan nama RA
       const sheet = workbook.addWorksheet(ra);
 
+      // === SET COLUMN WIDTHS ===
       const colWidths = {
         'A': 4, 'B': 10, 'C': 6, 'D': 6, 'E': 6, 'F': 6, 'G': 6,
-        'H': 6, 'I': 6, 'J': 6, 'K': 6, 'L': 6, 'M': 6, 'N': 6, 'O': 6,
+        'H': 8, 'I': 8, 'J': 8, 'K': 8, 'L': 8, 'M': 8, 'N': 8, 'O': 8,
         'P': 12, 'Q': 12, 'R': 12, 'S': 12, 'T': 12, 'U': 12, 'V': 12,
         'W': 12, 'X': 12, 'Y': 12, 'Z': 12, 'AA': 12, 'AB': 12, 'AC': 12,
         'AD': 12, 'AE': 12, 'AF': 12, 'AG': 12, 'AH': 12, 'AI': 12, 'AJ': 12
@@ -848,45 +837,46 @@ app.get('/unduh-excel', async (req, res) => {
         sheet.getColumn(col).width = colWidths[col];
       });
 
-      sheet.getRow(1).height = 45;
-      sheet.getRow(2).height = 18;
-      sheet.getRow(3).height = 18;
-      sheet.getRow(4).height = 22;
-      sheet.getRow(5).height = 22;
-      sheet.getRow(6).height = 35;
-      sheet.getRow(7).height = 35;
-
-      // === LOGO (POJOK KIRI ATAS) ===
-      if (logoImageId !== null) {
-        sheet.addImage(logoImageId, {
-          tl: { col: 0, row: 0 },
-          ext: { width: 140, height: 50 },
-          editAs: 'oneCell'
-        });
-      }
-
       // === ROW 1: TITLE ===
-      sheet.getCell('C1').value = 'ROOMBOY CONTROL SHEET';
-      sheet.getCell('C1').font = { bold: true, size: 14, name: 'Arial' };
-      sheet.getCell('C1').alignment = { horizontal: 'center', vertical: 'middle' };
-      sheet.mergeCells('C1:AJ1');
+      sheet.getCell('A1').value = 'ROOMBOY CONTROL SHEET';
+      sheet.getCell('A1').font = { bold: true, size: 14 };
+      sheet.getCell('A1').alignment = { horizontal: 'center' };
+      sheet.mergeCells('A1:AJ1');
+
+      // === ROW 2: EMPTY ===
 
       // === ROW 3: INFO HEADER ===
       sheet.getCell('A3').value = 'DATE:';
-      sheet.getCell('A3').font = { bold: true, size: 10, name: 'Arial' };
+      sheet.getCell('A3').font = { bold: true };
       sheet.getCell('B3').value = tanggal;
-      sheet.getCell('B3').font = { size: 10, name: 'Arial' };
 
       sheet.getCell('D3').value = 'SHIFT:';
-      sheet.getCell('D3').font = { bold: true, size: 10, name: 'Arial' };
+      sheet.getCell('D3').font = { bold: true };
       sheet.getCell('E3').value = 'Morning';
-      sheet.getCell('E3').font = { size: 10, name: 'Arial' };
 
       sheet.getCell('G3').value = 'FLOOR/SECTION:';
-      sheet.getCell('G3').font = { bold: true, size: 10, name: 'Arial' };
-      sheet.getCell('I3').font = { size: 10, name: 'Arial' };
+      sheet.getCell('G3').font = { bold: true };
 
-      // === ROW 4-6: MAIN HEADERS ===
+      // === ROW 4: MAIN HEADER ===
+      const row4Headers = [
+        { col: 'A', text: 'NO' },
+        { col: 'B', text: 'NO OF ROOM' },
+        { col: 'C', text: 'ROOM STATUS' },
+        { col: 'F', text: 'TIME' },
+        { col: 'H', text: 'LINEN' },
+        { col: 'P', text: 'GUEST SUPPLIES & AMENITIES' }
+      ];
+
+      row4Headers.forEach(h => {
+        const cell = sheet.getCell(h.col + '4');
+        cell.value = h.text;
+        cell.font = { bold: true, size: 9 };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
+        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+        cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+      });
+
+      // Merge row 4
       sheet.mergeCells('A4:A6');
       sheet.mergeCells('B4:B6');
       sheet.mergeCells('C4:E5');
@@ -894,64 +884,17 @@ app.get('/unduh-excel', async (req, res) => {
       sheet.mergeCells('H4:O5');
       sheet.mergeCells('P4:AJ5');
 
-      sheet.getCell('A4').value = 'NO';
-      sheet.getCell('A4').font = { bold: true, size: 9, name: 'Arial' };
-      sheet.getCell('A4').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
-      sheet.getCell('A4').alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-      setBorder(sheet.getCell('A4'));
-
-      sheet.getCell('B4').value = 'NO OF ROOM';
-      sheet.getCell('B4').font = { bold: true, size: 9, name: 'Arial' };
-      sheet.getCell('B4').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
-      sheet.getCell('B4').alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-      setBorder(sheet.getCell('B4'));
-
-      sheet.getCell('C4').value = 'ROOM STATUS';
-      sheet.getCell('C4').font = { bold: true, size: 9, name: 'Arial' };
-      sheet.getCell('C4').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
-      sheet.getCell('C4').alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-      setBorder(sheet.getCell('C4'));
-
-      sheet.getCell('F4').value = 'TIME';
-      sheet.getCell('F4').font = { bold: true, size: 9, name: 'Arial' };
-      sheet.getCell('F4').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
-      sheet.getCell('F4').alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-      setBorder(sheet.getCell('F4'));
-
-      sheet.getCell('H4').value = 'LINEN';
-      sheet.getCell('H4').font = { bold: true, size: 9, name: 'Arial' };
-      sheet.getCell('H4').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
-      sheet.getCell('H4').alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-      setBorder(sheet.getCell('H4'));
-
-      sheet.getCell('P4').value = 'GUEST SUPPLIES & AMENITIES';
-      sheet.getCell('P4').font = { bold: true, size: 9, name: 'Arial' };
-      sheet.getCell('P4').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
-      sheet.getCell('P4').alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-      setBorder(sheet.getCell('P4'));
-
-      // === ROW 6: SUB-HEADERS ===
+      // === ROW 5: SUB-HEADERS ===
+      // ROOM STATUS sub-headers
       sheet.getCell('C6').value = 'FO';
       sheet.getCell('D6').value = 'HK';
       sheet.getCell('E6').value = 'HK';
-      ['C6', 'D6', 'E6'].forEach(ref => {
-        const cell = sheet.getCell(ref);
-        cell.font = { bold: true, size: 9, name: 'Arial' };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
-        cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        setBorder(cell);
-      });
 
+      // TIME sub-headers
       sheet.getCell('F6').value = 'IN';
       sheet.getCell('G6').value = 'OUT';
-      ['F6', 'G6'].forEach(ref => {
-        const cell = sheet.getCell(ref);
-        cell.font = { bold: true, size: 9, name: 'Arial' };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
-        cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        setBorder(cell);
-      });
 
+      // LINEN sub-headers - tanpa IN/OUT label
       const linenSub = [
         { col: 'H', text: 'SHEET\nDOUBLE' },
         { col: 'I', text: 'SHEET\nSINGLE' },
@@ -965,15 +908,16 @@ app.get('/unduh-excel', async (req, res) => {
       linenSub.forEach(h => {
         const cell = sheet.getCell(h.col + '6');
         cell.value = h.text;
-        cell.font = { bold: true, size: 8, name: 'Arial' };
+        cell.font = { bold: true, size: 8 };
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
         cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-        setBorder(cell);
+        cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
       });
 
-      sheet.mergeCells('P6:Q6');
-      sheet.mergeCells('R6:V6');
-      sheet.mergeCells('W6:AJ6');
+      // GUEST SUPPLIES sub-headers
+      sheet.mergeCells('P6:Q6');  // BATH ROOM
+      sheet.mergeCells('R6:V6');  // BED ROOM
+      sheet.mergeCells('W6:AJ6'); // CONDIMEN
 
       sheet.getCell('P6').value = 'BATH ROOM';
       sheet.getCell('R6').value = 'BED ROOM';
@@ -981,10 +925,10 @@ app.get('/unduh-excel', async (req, res) => {
 
       ['P6', 'R6', 'W6'].forEach(cellRef => {
         const cell = sheet.getCell(cellRef);
-        cell.font = { bold: true, size: 8, name: 'Arial' };
+        cell.font = { bold: true, size: 8 };
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
         cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        setBorder(cell);
+        cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
       });
 
       // === ROW 7: ITEM NAMES ===
@@ -1015,19 +959,23 @@ app.get('/unduh-excel', async (req, res) => {
       row7Items.forEach(item => {
         const cell = sheet.getCell(item.col + '7');
         cell.value = item.text;
-        cell.font = { bold: true, size: 8, name: 'Arial' };
+        cell.font = { bold: true, size: 9 };
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2EFDA' } };
         cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-        setBorder(cell);
+        cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
       });
 
+      // Apply borders to all header cells in row 4-7
       for (let row = 4; row <= 7; row++) {
         for (let colCode = 'A'.charCodeAt(0); colCode <= 'J'.charCodeAt(0); colCode++) {
           const cell = sheet.getCell(String.fromCharCode(colCode) + row);
-          setBorder(cell);
+          if (!cell.border || !cell.border.top) {
+            cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+          }
         }
       }
 
+      // Query data kamar untuk RA ini
       const dataRA = await new Promise((resolve, reject) => {
         const query = `
           SELECT t.petugas, t.kamar, 
@@ -1058,29 +1006,29 @@ app.get('/unduh-excel', async (req, res) => {
 
       if (dataRA.length === 0) continue;
 
+      // Update lantai
       sheet.getCell('I3').value = (dataRA[0] && dataRA[0].lantai) ? dataRA[0].lantai : '-';
 
-      // === DATA ROWS (1 BARIS PER KAMAR) ===
+      // === DATA ROWS (mulai baris 8) - 1 BARIS PER KAMAR ===
       let baris = 8;
       let no = 1;
       dataRA.forEach((data) => {
-        sheet.getRow(baris).height = 18;
-
+        // NO
         sheet.getCell('A' + baris).value = no++;
-        sheet.getCell('A' + baris).alignment = { horizontal: 'center', vertical: 'middle' };
-        sheet.getCell('A' + baris).font = { size: 9, name: 'Arial' };
-        setBorder(sheet.getCell('A' + baris));
+        sheet.getCell('A' + baris).alignment = { horizontal: 'center' };
+        sheet.getCell('A' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
 
+        // ROOM
         sheet.getCell('B' + baris).value = data.kamar || '';
-        sheet.getCell('B' + baris).alignment = { horizontal: 'center', vertical: 'middle' };
-        sheet.getCell('B' + baris).font = { size: 9, name: 'Arial' };
-        setBorder(sheet.getCell('B' + baris));
+        sheet.getCell('B' + baris).alignment = { horizontal: 'center' };
+        sheet.getCell('B' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
 
+        // FO
         sheet.getCell('C' + baris).value = data.status_fo || '';
-        sheet.getCell('C' + baris).alignment = { horizontal: 'center', vertical: 'middle' };
-        sheet.getCell('C' + baris).font = { size: 9, name: 'Arial' };
-        setBorder(sheet.getCell('C' + baris));
+        sheet.getCell('C' + baris).alignment = { horizontal: 'center' };
+        sheet.getCell('C' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
 
+        // HK IN
         let statusHKin = data.status_hk_in || '';
         if (!statusHKin) {
           if (data.status_fo === 'VD' || data.status_fo === 'ED') statusHKin = 'VD';
@@ -1088,39 +1036,37 @@ app.get('/unduh-excel', async (req, res) => {
           else if (data.status_fo === 'OD') statusHKin = 'OD';
         }
         sheet.getCell('D' + baris).value = statusHKin;
-        sheet.getCell('D' + baris).alignment = { horizontal: 'center', vertical: 'middle' };
-        sheet.getCell('D' + baris).font = { size: 9, name: 'Arial' };
-        setBorder(sheet.getCell('D' + baris));
+        sheet.getCell('D' + baris).alignment = { horizontal: 'center' };
+        sheet.getCell('D' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
 
+        // HK OUT
         let statusHKout = data.status_hk_out || '';
         if (!statusHKout && data.selesai === 1) {
           if (statusHKin === 'VD' || statusHKin === 'VCU' || data.status_fo === 'ED') statusHKout = 'VC';
           else if (statusHKin === 'OD') statusHKout = 'OC';
         }
         sheet.getCell('E' + baris).value = statusHKout;
-        sheet.getCell('E' + baris).alignment = { horizontal: 'center', vertical: 'middle' };
-        sheet.getCell('E' + baris).font = { size: 9, name: 'Arial' };
-        setBorder(sheet.getCell('E' + baris));
+        sheet.getCell('E' + baris).alignment = { horizontal: 'center' };
+        sheet.getCell('E' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
 
+        // TIME IN / TIME OUT
         sheet.getCell('F' + baris).value = data.waktu_masuk !== '-' ? data.waktu_masuk : '';
-        sheet.getCell('F' + baris).alignment = { horizontal: 'center', vertical: 'middle' };
-        sheet.getCell('F' + baris).font = { size: 9, name: 'Arial' };
-        setBorder(sheet.getCell('F' + baris));
-
+        sheet.getCell('F' + baris).alignment = { horizontal: 'center' };
+        sheet.getCell('F' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
         sheet.getCell('G' + baris).value = data.waktu_keluar !== '-' ? data.waktu_keluar : '';
-        sheet.getCell('G' + baris).alignment = { horizontal: 'center', vertical: 'middle' };
-        sheet.getCell('G' + baris).font = { size: 9, name: 'Arial' };
-        setBorder(sheet.getCell('G' + baris));
+        sheet.getCell('G' + baris).alignment = { horizontal: 'center' };
+        sheet.getCell('G' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
 
+        // === LINEN (1 baris saja, angka = IN = OUT) ===
         const linenValues = [
-          data.sheet_king_val || 0,
-          data.sheet_twin_val || 0,
-          data.duvet_king_val || 0,
-          data.duvet_twin_val || 0,
-          data.bath_towel_val || 0,
-          data.hand_towel_val || 0,
-          data.bath_mat_val || 0,
-          data.pillow_case_val || 0
+          data.sheet_twin_in || 0,
+          data.sheet_king_in || 0,
+          data.duvet_twin_in || 0,
+          data.duvet_king_in || 0,
+          data.bath_towel_in || 0,
+          data.hand_towel_in || 0,
+          data.bath_mat_in || 0,
+          data.pillow_case_in || 0
         ];
 
         const linenCols = ['H', 'I', 'J', 'K', 'L', 'M', 'N', 'O'];
@@ -1128,10 +1074,10 @@ app.get('/unduh-excel', async (req, res) => {
           const cell = sheet.getCell(col + baris);
           cell.value = linenValues[idx];
           cell.alignment = { horizontal: 'center', vertical: 'middle' };
-          cell.font = { size: 9, name: 'Arial' };
-          setBorder(cell);
+          cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
         });
 
+        // === GUEST SUPPLIES & AMENITIES ===
         const guestCells = [
           { col: 'P', val: data.shower_cap || 0 },
           { col: 'Q', val: data.dental_kit || 0 },
@@ -1160,49 +1106,28 @@ app.get('/unduh-excel', async (req, res) => {
           const cell = sheet.getCell(g.col + baris);
           cell.value = g.val;
           cell.alignment = { horizontal: 'center', vertical: 'middle' };
-          cell.font = { size: 9, name: 'Arial' };
-          setBorder(cell);
+          cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
         });
 
         baris++;
       });
 
       // === TOTAL SOILED ROW ===
-      const totalRow = baris;
-      sheet.getRow(totalRow).height = 20;
+      const totalRow = baris + 1;
       sheet.getCell('A' + totalRow).value = 'TOTAL SOILED:';
-      sheet.getCell('A' + totalRow).font = { bold: true, size: 10, name: 'Arial' };
+      sheet.getCell('A' + totalRow).font = { bold: true };
       sheet.mergeCells('A' + totalRow + ':B' + totalRow);
-
       for (let colCode = 'A'.charCodeAt(0); colCode <= 'J'.charCodeAt(0); colCode++) {
-        const cell = sheet.getCell(String.fromCharCode(colCode) + totalRow);
-        setBorder(cell);
+        sheet.getCell(String.fromCharCode(colCode) + totalRow).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
       }
-
-      const totalLinenCols = ['H', 'I', 'J', 'K', 'L', 'M', 'N', 'O'];
-      totalLinenCols.forEach(col => {
-        let sum = 0;
-        for (let r = 8; r < totalRow; r++) {
-          const val = sheet.getCell(col + r).value;
-          if (typeof val === 'number') sum += val;
-        }
-        sheet.getCell(col + totalRow).value = sum;
-        sheet.getCell(col + totalRow).font = { bold: true, size: 9, name: 'Arial' };
-        sheet.getCell(col + totalRow).alignment = { horizontal: 'center', vertical: 'middle' };
-        setBorder(sheet.getCell(col + totalRow));
-      });
 
       // === REMARKS ROW ===
       const remarksRow = totalRow + 1;
-      sheet.getRow(remarksRow).height = 18;
       sheet.getCell('A' + remarksRow).value = 'REMARKS';
-      sheet.getCell('A' + remarksRow).font = { bold: true, size: 10, name: 'Arial' };
+      sheet.getCell('A' + remarksRow).font = { bold: true };
       sheet.mergeCells('A' + remarksRow + ':AJ' + (remarksRow + 2));
-
-      for (let r = remarksRow; r <= remarksRow + 2; r++) {
-        for (let c = 'A'.charCodeAt(0); c <= 'J'.charCodeAt(0); c++) {
-          setBorder(sheet.getCell(String.fromCharCode(c) + r));
-        }
+      for (let colCode = 'A'.charCodeAt(0); colCode <= 'J'.charCodeAt(0); colCode++) {
+        sheet.getCell(String.fromCharCode(colCode) + remarksRow).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
       }
 
       // === LEGEND ROWS ===
@@ -1218,25 +1143,22 @@ app.get('/unduh-excel', async (req, res) => {
       legends.forEach((legend, idx) => {
         const row = legendStart + idx;
         sheet.getCell('C' + row).value = legend[0];
-        sheet.getCell('C' + row).font = { bold: true, size: 9, name: 'Arial' };
+        sheet.getCell('C' + row).font = { bold: true };
         sheet.getCell('D' + row).value = legend[1];
-        sheet.getCell('D' + row).font = { size: 9, name: 'Arial' };
         sheet.getCell('F' + row).value = legend[2];
-        sheet.getCell('F' + row).font = { bold: true, size: 9, name: 'Arial' };
+        sheet.getCell('F' + row).font = { bold: true };
         sheet.getCell('G' + row).value = legend[3];
-        sheet.getCell('G' + row).font = { size: 9, name: 'Arial' };
         sheet.getCell('I' + row).value = legend[4];
-        sheet.getCell('I' + row).font = { bold: true, size: 9, name: 'Arial' };
+        sheet.getCell('I' + row).font = { bold: true };
         sheet.getCell('J' + row).value = legend[5];
-        sheet.getCell('J' + row).font = { size: 9, name: 'Arial' };
       });
 
       // === PREPARED BY / CHECKED BY ===
       const signRow = legendStart + legends.length + 1;
       sheet.getCell('A' + signRow).value = 'PREPARED BY:';
-      sheet.getCell('A' + signRow).font = { bold: true, size: 10, name: 'Arial' };
+      sheet.getCell('A' + signRow).font = { bold: true };
       sheet.getCell('H' + signRow).value = 'CHECKED BY';
-      sheet.getCell('H' + signRow).font = { bold: true, size: 10, name: 'Arial' };
+      sheet.getCell('H' + signRow).font = { bold: true };
     }
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
