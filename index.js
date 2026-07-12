@@ -815,36 +815,59 @@ app.get('/unduh-excel', async (req, res) => {
     await workbook.xlsx.readFile(templatePath);
     const templateSheet = workbook.worksheets[0];
 
+    if (!templateSheet) {
+      console.error('❌ Template sheet tidak ditemukan');
+      return res.send('❌ Template Excel rusak atau kosong');
+    }
+
     console.log('📊 Template sheet name:', templateSheet.name);
-    console.log('📊 Template columns:', templateSheet.columns.length);
+    console.log('📊 Template rowCount:', templateSheet.rowCount);
+    console.log('📊 Template actualRowCount:', templateSheet.actualRowCount);
 
     // Helper: copy header & format dari template ke sheet baru
     const copyHeaderFromTemplate = (targetSheet) => {
       // Copy column widths
-      templateSheet.columns.forEach((col, idx) => {
-        if (targetSheet.columns[idx]) {
-          targetSheet.columns[idx].width = col.width;
-        }
-      });
+      if (templateSheet.columns && templateSheet.columns.length > 0) {
+        templateSheet.columns.forEach((col, idx) => {
+          if (targetSheet.columns[idx]) {
+            targetSheet.columns[idx].width = col.width;
+          }
+        });
+      }
 
       // Copy rows 1-8 (header area)
       for (let r = 1; r <= 8; r++) {
         const templateRow = templateSheet.getRow(r);
+
+        // Null check - skip if row doesn't exist
+        if (!templateRow) {
+          console.log('⚠️ Template row ' + r + ' is null, skipping');
+          continue;
+        }
+
         const targetRow = targetSheet.getRow(r);
 
-        templateRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-          const targetCell = targetRow.getCell(colNumber);
-          targetCell.value = cell.value;
-          if (cell.style) {
-            targetCell.style = JSON.parse(JSON.stringify(cell.style));
-          }
-        });
+        // Check if row has cells
+        if (templateRow.eachCell) {
+          templateRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+            if (!cell) return;
+            const targetCell = targetRow.getCell(colNumber);
+            targetCell.value = cell.value;
+            if (cell.style) {
+              try {
+                targetCell.style = JSON.parse(JSON.stringify(cell.style));
+              } catch(e) {
+                // ignore style copy error
+              }
+            }
+          });
+        }
 
         targetRow.height = templateRow.height;
       }
 
       // Copy merges
-      if (templateSheet.model && templateSheet.model.merges) {
+      if (templateSheet.model && templateSheet.model.merges && templateSheet.model.merges.length > 0) {
         templateSheet.model.merges.forEach(merge => {
           try { targetSheet.mergeCells(merge); } catch(e) {}
         });
@@ -873,9 +896,11 @@ app.get('/unduh-excel', async (req, res) => {
       let sheet;
 
       if (i === 0) {
+        // RA pertama: gunakan sheet template (di-rename ke nama RA)
         sheet = templateSheet;
         sheet.name = ra;
       } else {
+        // RA berikutnya: buat sheet baru, copy header/format dari template
         sheet = workbook.addWorksheet(ra);
         copyHeaderFromTemplate(sheet);
       }
@@ -906,7 +931,7 @@ app.get('/unduh-excel', async (req, res) => {
           }
           console.log('📊 RA ' + ra + ': ' + rows.length + ' kamar');
           if (rows.length > 0) {
-            console.log('📊 Sample row:', JSON.stringify(rows[0], null, 2));
+            console.log('📊 Sample row keys:', Object.keys(rows[0]).slice(0, 10));
           }
           resolve(rows);
         });
