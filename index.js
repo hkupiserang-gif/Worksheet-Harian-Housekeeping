@@ -828,7 +828,7 @@ app.get('/unduh-excel', async (req, res) => {
       // === SET COLUMN WIDTHS ===
       const colWidths = {
         'A': 4, 'B': 10, 'C': 6, 'D': 6, 'E': 6, 'F': 6, 'G': 6,
-        'H': 8, 'I': 8, 'J': 8, 'K': 8, 'L': 8, 'M': 8, 'N': 8, 'O': 8,
+        'H': 6, 'I': 6, 'J': 6, 'K': 6, 'L': 6, 'M': 6, 'N': 6, 'O': 6,
         'P': 12, 'Q': 12, 'R': 12, 'S': 12, 'T': 12, 'U': 12, 'V': 12,
         'W': 12, 'X': 12, 'Y': 12, 'Z': 12, 'AA': 12, 'AB': 12, 'AC': 12,
         'AD': 12, 'AE': 12, 'AF': 12, 'AG': 12, 'AH': 12, 'AI': 12, 'AJ': 12
@@ -894,7 +894,7 @@ app.get('/unduh-excel', async (req, res) => {
       sheet.getCell('F6').value = 'IN';
       sheet.getCell('G6').value = 'OUT';
 
-      // LINEN sub-headers with IN/OUT
+      // LINEN sub-headers - IN/OUT labels
       const linenSub = [
         { col: 'H', text: 'SHEET\nDOUBLE' },
         { col: 'I', text: 'SHEET\nSINGLE' },
@@ -1057,48 +1057,40 @@ app.get('/unduh-excel', async (req, res) => {
         sheet.getCell('G' + baris).alignment = { horizontal: 'center' };
         sheet.getCell('G' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
 
-        // === LINEN (IN = OUT, sama persis) ===
-        const valH = data.sheet_twin_in || 0;
-        sheet.getCell('H' + baris).value = valH;
-        sheet.getCell('H' + baris).alignment = { horizontal: 'center' };
-        sheet.getCell('H' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+        // === LINEN (IN = OUT, angka sama, tampil IN/OUT) ===
+        // Row 7 sudah ada header IN/OUT, sekarang kita perlu 2 baris per kamar untuk LINEN
+        // Baris pertama = IN, Baris kedua = OUT
 
-        const valI = data.sheet_king_in || 0;
-        sheet.getCell('I' + baris).value = valI;
-        sheet.getCell('I' + baris).alignment = { horizontal: 'center' };
-        sheet.getCell('I' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+        const linenValues = [
+          data.sheet_twin_in || 0,
+          data.sheet_king_in || 0,
+          data.duvet_twin_in || 0,
+          data.duvet_king_in || 0,
+          data.bath_towel_in || 0,
+          data.hand_towel_in || 0,
+          data.bath_mat_in || 0,
+          data.pillow_case_in || 0
+        ];
 
-        const valJ = data.duvet_twin_in || 0;
-        sheet.getCell('J' + baris).value = valJ;
-        sheet.getCell('J' + baris).alignment = { horizontal: 'center' };
-        sheet.getCell('J' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+        // IN row (baris ini)
+        const inCells = ['H', 'I', 'J', 'K', 'L', 'M', 'N', 'O'];
+        inCells.forEach((col, idx) => {
+          const cell = sheet.getCell(col + baris);
+          cell.value = linenValues[idx];
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+        });
 
-        const valK = data.duvet_king_in || 0;
-        sheet.getCell('K' + baris).value = valK;
-        sheet.getCell('K' + baris).alignment = { horizontal: 'center' };
-        sheet.getCell('K' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+        // OUT row (baris berikutnya)
+        const outBaris = baris + 1;
+        inCells.forEach((col, idx) => {
+          const cell = sheet.getCell(col + outBaris);
+          cell.value = linenValues[idx];  // Sama persis dengan IN
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+        });
 
-        const valL = data.bath_towel_in || 0;
-        sheet.getCell('L' + baris).value = valL;
-        sheet.getCell('L' + baris).alignment = { horizontal: 'center' };
-        sheet.getCell('L' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
-
-        const valM = data.hand_towel_in || 0;
-        sheet.getCell('M' + baris).value = valM;
-        sheet.getCell('M' + baris).alignment = { horizontal: 'center' };
-        sheet.getCell('M' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
-
-        const valN = data.bath_mat_in || 0;
-        sheet.getCell('N' + baris).value = valN;
-        sheet.getCell('N' + baris).alignment = { horizontal: 'center' };
-        sheet.getCell('N' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
-
-        const valO = data.pillow_case_in || 0;
-        sheet.getCell('O' + baris).value = valO;
-        sheet.getCell('O' + baris).alignment = { horizontal: 'center' };
-        sheet.getCell('O' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
-
-        // === GUEST SUPPLIES & AMENITIES ===
+        // === GUEST SUPPLIES & AMENITIES (1 baris saja, di baris IN) ===
         const guestCells = [
           { col: 'P', val: data.shower_cap || 0 },
           { col: 'Q', val: data.dental_kit || 0 },
@@ -1128,9 +1120,33 @@ app.get('/unduh-excel', async (req, res) => {
           cell.value = g.val;
           cell.alignment = { horizontal: 'center', vertical: 'middle' };
           cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+
+          // Merge dengan baris OUT
+          try {
+            sheet.mergeCells(g.col + baris + ':' + g.col + outBaris);
+          } catch(e) {}
         });
 
-        baris++;
+        // Merge NO dan ROOM untuk 2 baris
+        try {
+          sheet.mergeCells('A' + baris + ':A' + outBaris);
+          sheet.mergeCells('B' + baris + ':B' + outBaris);
+        } catch(e) {}
+
+        // Merge ROOM STATUS untuk 2 baris
+        try {
+          sheet.mergeCells('C' + baris + ':C' + outBaris);
+          sheet.mergeCells('D' + baris + ':D' + outBaris);
+          sheet.mergeCells('E' + baris + ':E' + outBaris);
+        } catch(e) {}
+
+        // Merge TIME untuk 2 baris
+        try {
+          sheet.mergeCells('F' + baris + ':F' + outBaris);
+          sheet.mergeCells('G' + baris + ':G' + outBaris);
+        } catch(e) {}
+
+        baris += 2;  // Lewati 2 baris (IN dan OUT)
       });
 
       // === TOTAL SOILED ROW ===
