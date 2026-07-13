@@ -18,7 +18,7 @@
       font-size: 14px; background: #003a7a; padding: 4px 10px; border-radius: 4px;
       font-variant-numeric: tabular-nums;
     }
-    .container { max-width: 1200px; margin: 0 auto; padding: 20px 16px; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px 16px; }
     .pesan {
       padding: 10px; border-radius: 4px; margin-bottom: 16px; font-size: 14px;
       text-align: center;
@@ -35,7 +35,15 @@
       display: flex; justify-content: space-between; align-items: center;
     }
     .form-grid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px; margin-bottom: 15px;
+    }
+    .form-grid-3 {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 12px; margin-bottom: 15px;
+    }
+    .form-grid-4 {
+      display: grid; grid-template-columns: repeat(4, 1fr);
       gap: 12px; margin-bottom: 15px;
     }
     input, select, textarea {
@@ -45,7 +53,7 @@
     textarea { resize: vertical; min-height: 70px; }
     label {
       font-size: 13px; color: #444; margin-bottom: 5px;
-      display: inline-block;
+      display: inline-block; font-weight: 500;
     }
     .btn {
       padding: 9px 16px; border: none; border-radius: 4px; cursor: pointer;
@@ -56,21 +64,44 @@
     .btn-hijau { background: #28a745; color: white; }
     .btn-kuning { background: #f59e0b; color: white; }
     .btn-merah { background: #dc2626; color: white; }
+    .btn-ungu { background: #7c3aed; color: white; }
+    .btn-cyan { background: #0891b2; color: white; }
     table {
-      width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 12px;
+      width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px;
     }
     th, td {
-      padding: 11px 10px; text-align: left; border: 1px solid #e2e8f0;
+      padding: 10px 8px; text-align: center; border: 1px solid #e2e8f0;
       vertical-align: middle;
     }
     th { background-color: #f1f5f9; font-weight: 600; color: #333; }
     .status-badge {
-      padding: 5px 10px; border-radius: 12px; font-size: 12px; font-weight: bold;
+      padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold;
+      display: inline-block;
     }
     .status-pinjam { background: #fff3cd; color: #856404; }
     .status-kembali { background: #d4edda; color: #155724; }
-    .aksi { display: flex; gap: 6px; flex-wrap: wrap; }
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-approved { background: #d4edda; color: #155724; }
+    .status-received { background: #cce5ff; color: #004085; }
+    .aksi { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
     .aksi button, .aksi a { padding: 5px 8px; font-size: 12px; }
+    .section-divider {
+      border-top: 2px solid #004b97; margin: 30px 0; padding-top: 10px;
+    }
+    .section-title {
+      font-size: 18px; color: #004b97; font-weight: 700; margin-bottom: 16px;
+    }
+    .input-number {
+      text-align: center;
+    }
+    .total-box {
+      background: #f1f5f9; padding: 10px; border-radius: 4px;
+      font-weight: 600; text-align: right;
+    }
+    .category-header {
+      background: #004b97; color: white; padding: 8px 12px;
+      border-radius: 4px; margin-bottom: 10px; font-weight: 600;
+    }
   </style>
 </head>
 <body>
@@ -87,7 +118,11 @@
       <div class="pesan <%= pesan.tipe %>"><%= pesan.teks %></div>
     <% } %>
 
-    <!-- Form Tambah Permintaan -->
+    <!-- ============================================ -->
+    <!-- SECTION 1: LOAN ITEM (PERMINTAAN TAMU)       -->
+    <!-- ============================================ -->
+    <div class="section-title">📦 SECTION 1: LOAN ITEM (PERMINTAAN TAMU)</div>
+
     <div class="card">
       <h3>📝 Tambah Permintaan Tamu</h3>
       <form action="/tambah-permintaan" method="POST">
@@ -125,11 +160,10 @@
       </form>
     </div>
 
-    <!-- Daftar Permintaan -->
     <div class="card">
       <h3>
         📋 Daftar Permintaan Hari Ini - <%= tanggal %>
-        <a href="/unduh-pdf-ot?tanggal=<%= tanggal %>" class="btn btn-hijau">📄 Unduh Laporan PDF</a>
+        <a href="/unduh-pdf-ot?tanggal=<%= tanggal %>" class="btn btn-hijau">📄 Unduh PDF</a>
       </h3>
 
       <% if (daftarPermintaan.length === 0) { %>
@@ -169,6 +203,266 @@
               </form>
               <% } %>
               <form action="/hapus-permintaan" method="POST" style="display:inline;" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
+                <input type="hidden" name="id" value="<%= item.id %>">
+                <button type="submit" class="btn btn-merah">Hapus</button>
+              </form>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+      <% } %>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- SECTION 2: DAILY LAUNDRY                       -->
+    <!-- ============================================ -->
+    <div class="section-divider"></div>
+    <div class="section-title">🧺 SECTION 2: DAILY LAUNDRY</div>
+
+    <div class="card">
+      <h3>📝 Input Daily Laundry</h3>
+      <form action="/tambah-laundry" method="POST">
+        <div class="form-grid">
+          <div>
+            <label>Nama Petugas:</label>
+            <input type="text" name="petugas" placeholder="Nama Petugas" required>
+          </div>
+        </div>
+        <div style="margin-bottom: 10px; font-weight: 600; color: #004b97;">LINEN HOTEL:</div>
+        <div class="form-grid-4">
+          <div>
+            <label>Sheet Twin:</label>
+            <input type="number" name="sheet_twin" class="input-number" value="0" min="0">
+          </div>
+          <div>
+            <label>Sheet King:</label>
+            <input type="number" name="sheet_king" class="input-number" value="0" min="0">
+          </div>
+          <div>
+            <label>Duvet Twin:</label>
+            <input type="number" name="duvet_twin" class="input-number" value="0" min="0">
+          </div>
+          <div>
+            <label>Duvet King:</label>
+            <input type="number" name="duvet_king" class="input-number" value="0" min="0">
+          </div>
+          <div>
+            <label>Pillow Case:</label>
+            <input type="number" name="pillow_case" class="input-number" value="0" min="0">
+          </div>
+          <div>
+            <label>Bath Towel:</label>
+            <input type="number" name="bath_towel" class="input-number" value="0" min="0">
+          </div>
+          <div>
+            <label>Hand Towel:</label>
+            <input type="number" name="hand_towel" class="input-number" value="0" min="0">
+          </div>
+          <div>
+            <label>Bath Mat:</label>
+            <input type="number" name="bath_mat" class="input-number" value="0" min="0">
+          </div>
+        </div>
+        <div style="margin-bottom: 10px; font-weight: 600; color: #004b97;">LINEN TAMBAHAN:</div>
+        <div class="form-grid-4">
+          <div>
+            <label>Inner Duvet Twin:</label>
+            <input type="number" name="inner_duvet_twin" class="input-number" value="0" min="0">
+          </div>
+          <div>
+            <label>Inner Duvet King:</label>
+            <input type="number" name="inner_duvet_king" class="input-number" value="0" min="0">
+          </div>
+          <div>
+            <label>Bed Pad Twin:</label>
+            <input type="number" name="bed_pad_twin" class="input-number" value="0" min="0">
+          </div>
+          <div>
+            <label>Bed Pad King:</label>
+            <input type="number" name="bed_pad_king" class="input-number" value="0" min="0">
+          </div>
+          <div>
+            <label>Pillow:</label>
+            <input type="number" name="pillow" class="input-number" value="0" min="0">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-ungu">💾 Simpan Daily Laundry</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3>
+        📋 Daftar Daily Laundry Hari Ini - <%= tanggal %>
+        <div>
+          <a href="/unduh-pdf-laundry?tanggal=<%= tanggal %>" class="btn btn-hijau">📄 PDF</a>
+          <a href="/unduh-excel-laundry?tanggal=<%= tanggal %>" class="btn btn-kuning">📊 Excel</a>
+        </div>
+      </h3>
+
+      <% if (daftarLaundry.length === 0) { %>
+        <p style="text-align:center; padding:40px; color:#777;">Belum ada data laundry hari ini</p>
+      <% } else { %>
+      <div style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Petugas</th>
+            <th>S.Twin</th>
+            <th>S.King</th>
+            <th>D.Twin</th>
+            <th>D.King</th>
+            <th>P.Case</th>
+            <th>B.Towel</th>
+            <th>H.Towel</th>
+            <th>B.Mat</th>
+            <th>I.D.Twin</th>
+            <th>I.D.King</th>
+            <th>B.P.Twin</th>
+            <th>B.P.King</th>
+            <th>Pillow</th>
+            <th>Waktu</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% daftarLaundry.forEach((item, index) => { %>
+          <tr>
+            <td><%= index + 1 %></td>
+            <td><strong><%= item.petugas || '-' %></strong></td>
+            <td><%= item.sheet_twin || 0 %></td>
+            <td><%= item.sheet_king || 0 %></td>
+            <td><%= item.duvet_twin || 0 %></td>
+            <td><%= item.duvet_king || 0 %></td>
+            <td><%= item.pillow_case || 0 %></td>
+            <td><%= item.bath_towel || 0 %></td>
+            <td><%= item.hand_towel || 0 %></td>
+            <td><%= item.bath_mat || 0 %></td>
+            <td><%= item.inner_duvet_twin || 0 %></td>
+            <td><%= item.inner_duvet_king || 0 %></td>
+            <td><%= item.bed_pad_twin || 0 %></td>
+            <td><%= item.bed_pad_king || 0 %></td>
+            <td><%= item.pillow || 0 %></td>
+            <td><%= item.waktu_input || '-' %></td>
+            <td class="aksi">
+              <form action="/hapus-laundry" method="POST" style="display:inline;" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
+                <input type="hidden" name="id" value="<%= item.id %>">
+                <button type="submit" class="btn btn-merah">Hapus</button>
+              </form>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+      </div>
+      <% } %>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- SECTION 3: STORE REQUEST                       -->
+    <!-- ============================================ -->
+    <div class="section-divider"></div>
+    <div class="section-title">📦 SECTION 3: STORE REQUEST</div>
+
+    <div class="card">
+      <h3>📝 Input Store Request</h3>
+      <form action="/tambah-store-request" method="POST">
+        <div class="form-grid-3">
+          <div>
+            <label>Kategori:</label>
+            <select name="kategori" required>
+              <option value="">-- Pilih Kategori --</option>
+              <option value="AMINITIES">AMINITIES</option>
+              <option value="GRATUITIES">GRATUITIES</option>
+              <option value="MINI BAR">MINI BAR</option>
+              <option value="ROOM PRINTING">ROOM PRINTING</option>
+              <option value="CLEANING SUPPLIES">CLEANING SUPPLIES</option>
+              <option value="CHEMICAL">CHEMICAL</option>
+              <option value="PRINTING AND STATIONARY">PRINTING AND STATIONARY</option>
+            </select>
+          </div>
+          <div>
+            <label>Nama Barang:</label>
+            <input type="text" name="nama_barang" placeholder="Contoh: Dental Kit" required>
+          </div>
+          <div>
+            <label>Harga (Rp):</label>
+            <input type="number" name="harga" placeholder="Contoh: 1953" min="0" required>
+          </div>
+          <div>
+            <label>Unit:</label>
+            <input type="text" name="unit" placeholder="Contoh: Pcs, Pack, Rim" required>
+          </div>
+          <div>
+            <label>Jumlah:</label>
+            <input type="number" name="jumlah" placeholder="Contoh: 100" min="1" required>
+          </div>
+          <div style="display: flex; align-items: flex-end;">
+            <button type="submit" class="btn btn-cyan" style="width: 100%;">💾 Simpan Store Request</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3>
+        📋 Daftar Store Request Hari Ini - <%= tanggal %>
+        <div>
+          <a href="/unduh-pdf-store?tanggal=<%= tanggal %>" class="btn btn-hijau">📄 PDF</a>
+          <a href="/unduh-excel-store?tanggal=<%= tanggal %>" class="btn btn-kuning">📊 Excel</a>
+        </div>
+      </h3>
+
+      <% if (daftarStore.length === 0) { %>
+        <p style="text-align:center; padding:40px; color:#777;">Belum ada store request hari ini</p>
+      <% } else { %>
+      <table>
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Kategori</th>
+            <th>Nama Barang</th>
+            <th>Harga</th>
+            <th>Unit</th>
+            <th>Jumlah</th>
+            <th>Total Harga</th>
+            <th>Status</th>
+            <th>Waktu</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% daftarStore.forEach((item, index) => { %>
+          <tr>
+            <td><%= index + 1 %></td>
+            <td><span style="background:#e0e7ff; padding:3px 8px; border-radius:4px; font-size:12px;"><%= item.kategori %></span></td>
+            <td><strong><%= item.nama_barang %></strong></td>
+            <td>Rp <%= (item.harga || 0).toLocaleString('id-ID') %></td>
+            <td><%= item.unit %></td>
+            <td><%= item.jumlah %></td>
+            <td><strong>Rp <%= (item.total_harga || 0).toLocaleString('id-ID') %></strong></td>
+            <td>
+              <span class="status-badge status-<%= item.status.toLowerCase() %>">
+                <%= item.status %>
+              </span>
+            </td>
+            <td><%= item.waktu_input || '-' %></td>
+            <td class="aksi">
+              <% if (item.status === 'Pending') { %>
+              <form action="/ubah-status-store" method="POST" style="display:inline;">
+                <input type="hidden" name="id" value="<%= item.id %>">
+                <input type="hidden" name="status" value="Approved">
+                <button type="submit" class="btn btn-hijau">Approve</button>
+              </form>
+              <% } else if (item.status === 'Approved') { %>
+              <form action="/ubah-status-store" method="POST" style="display:inline;">
+                <input type="hidden" name="id" value="<%= item.id %>">
+                <input type="hidden" name="status" value="Received">
+                <button type="submit" class="btn btn-biru">Receive</button>
+              </form>
+              <% } %>
+              <form action="/hapus-store-request" method="POST" style="display:inline;" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
                 <input type="hidden" name="id" value="<%= item.id %>">
                 <button type="submit" class="btn btn-merah">Hapus</button>
               </form>
