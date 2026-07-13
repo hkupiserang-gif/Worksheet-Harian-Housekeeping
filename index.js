@@ -812,7 +812,7 @@ app.get('/unduh-excel', async (req, res) => {
 
     const workbook = new ExcelJS.Workbook();
 
-    // Build SQL selects - LINEN items (8 items, IN only from DB, OUT same as IN)
+    // Build SQL selects - LINEN items (8 items)
     const linenFields = [
       'sheet_king', 'sheet_twin', 'duvet_king', 'duvet_twin',
       'bath_towel', 'hand_towel', 'bath_mat', 'pillow_case'
@@ -834,33 +834,34 @@ app.get('/unduh-excel', async (req, res) => {
       const ra = daftarRA[i];
       const sheet = workbook.addWorksheet(ra);
 
-      // === SET ROW HEIGHTS ===
-      sheet.getRow(6).height = 35; // Row 6 = 35 pixels
+      // === SET ROW HEIGHTS (exact from template) ===
+      sheet.getRow(1).height = 18.75;
+      sheet.getRow(6).height = 33.75;
+      sheet.getRow(7).height = 24;
 
-      // === SET COLUMN WIDTHS ===
-      // D, E = 42 pixels (~3.0 width in ExcelJS)
-      // LINEN IN/OUT columns (H-W) = 38 pixels (~5.5 width in ExcelJS)
+      // === SET COLUMN WIDTHS (exact from template) ===
       const colWidths = {
-        'A': 4, 'B': 10, 'C': 6, 'D': 3.0, 'E': 3.0, 'F': 13, 'G': 13,
-        'H': 5.5, 'I': 5.5, 'J': 5.5, 'K': 5.5, 'L': 5.5, 'M': 5.5, 'N': 5.5, 'O': 5.5,
-        'P': 5.5, 'Q': 5.5, 'R': 5.5, 'S': 5.5, 'T': 5.5, 'U': 5.5, 'V': 5.5, 'W': 5.5,
-        'X': 12, 'Y': 13, 'Z': 13, 'AA': 13, 'AB': 13, 'AC': 13, 'AD': 13,
-        'AE': 13, 'AF': 13, 'AG': 13, 'AH': 13, 'AI': 13, 'AJ': 13, 'AK': 13,
-        'AL': 13, 'AM': 13, 'AN': 13, 'AO': 13, 'AP': 13, 'AQ': 13, 'AR': 13
+        'A': 8.140625, 'B': 10, 'C': 6.7109375, 'D': 13, 'E': 7.7109375,
+        'F': 6, 'G': 13, 'H': 13, 'I': 13, 'J': 13, 'K': 13, 'L': 13,
+        'M': 13, 'N': 13, 'O': 13, 'P': 13, 'Q': 13, 'R': 13, 'S': 13,
+        'T': 13, 'U': 13, 'V': 13, 'W': 13, 'X': 12, 'Y': 13, 'Z': 13,
+        'AA': 13, 'AB': 13, 'AC': 13, 'AD': 13, 'AE': 13, 'AF': 13,
+        'AG': 13, 'AH': 13, 'AI': 13, 'AJ': 13, 'AK': 13, 'AL': 13,
+        'AM': 13, 'AN': 13, 'AO': 13, 'AP': 13, 'AQ': 13, 'AR': 13
       };
       Object.keys(colWidths).forEach(col => {
         sheet.getColumn(col).width = colWidths[col];
       });
 
       // === LOGO HOTEL (POJOK KIRI ATAS) ===
-      const LOGO_URL = '<img src="https://www.image2url.com/r2/default/images/1783906749722-699e9760-3deb-4dfc-97e3-8026e5fbac63.jpeg" alt="image" />';
+      const LOGO_URL = 'https://www.image2url.com/r2/default/images/1783906749722-699e9760-3deb-4dfc-97e3-8026e5fbac63.jpeg';
       if (axios) {
         try {
-          const logoResponse = await axios.get(LOGO_URL, { responseType: 'arraybuffer', timeout: 5000 });
+          const logoResponse = await axios.get(LOGO_URL, { responseType: 'arraybuffer', timeout: 10000 });
           const logoBuffer = Buffer.from(logoResponse.data, 'binary');
           const imageId = workbook.addImage({
             buffer: logoBuffer,
-            extension: 'png',
+            extension: 'jpeg',
           });
           sheet.addImage(imageId, {
             tl: { col: 0, row: 0 },
@@ -872,65 +873,74 @@ app.get('/unduh-excel', async (req, res) => {
       }
 
       // === ROW 1: TITLE ===
-      sheet.getCell('C1').value = 'Room Attendant Control Sheet';
-      sheet.getCell('C1').font = { bold: true, size: 26 };
-      sheet.getCell('C1').alignment = { horizontal: 'center', vertical: 'middle' };
+      sheet.getCell('A1').value = 'ROOMBOY CONTROL SHEET';
+      sheet.getCell('A1').font = { name: 'Calibri', bold: true, size: 14 };
+      sheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'center' };
       sheet.mergeCells('A1:AR1');
-      sheet.getRow(1).height = 40; // Extra height for large font
 
       // === ROW 2: EMPTY ===
 
       // === ROW 3: INFO HEADER ===
       sheet.getCell('A3').value = 'DATE:';
-      sheet.getCell('A3').font = { bold: true };
+      sheet.getCell('A3').font = { name: 'Calibri', bold: true, size: 11 };
       sheet.getCell('B3').value = tanggal;
+      sheet.getCell('B3').font = { name: 'Calibri', size: 11 };
 
       sheet.getCell('D3').value = 'SHIFT:';
-      sheet.getCell('D3').font = { bold: true };
+      sheet.getCell('D3').font = { name: 'Calibri', bold: true, size: 11 };
       sheet.getCell('E3').value = 'Morning';
+      sheet.getCell('E3').font = { name: 'Calibri', size: 11 };
 
-      sheet.getCell('G3').value = 'FLOOR/SECTION:';
-      sheet.getCell('G3').font = { bold: true };
-      // I3 will be filled after data query
+      sheet.getCell('I3').value = 'FLOOR/SECTION:';
+      sheet.getCell('I3').font = { name: 'Calibri', bold: true, size: 11 };
+      // L3 will be filled after data query
+
+      // === COMMON STYLES ===
+      const thinBorder = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+      const headerFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
+      const subHeaderFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2EFDA' } };
 
       // === ROW 4: MAIN HEADER ===
-      const headerStyle = {
-        font: { bold: true, size: 9 },
-        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } },
-        alignment: { horizontal: 'center', vertical: 'middle', wrapText: true },
-        border: { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } }
-      };
-
-      const headersR4 = [
-        { col: 'A', text: 'NO', merge: 'A4:A6' },
-        { col: 'B', text: 'NO OF ROOM', merge: 'B4:B6' },
-        { col: 'C', text: 'ROOM STATUS', merge: 'C4:E5' },
-        { col: 'F', text: 'TIME', merge: 'F4:G5' },
-        { col: 'H', text: 'LINEN', merge: 'H4:W5' },
-        { col: 'X', text: 'GUEST SUPPLIES & AMENITIES', merge: 'X4:AR5' }
+      const r4Headers = [
+        { col: 'A', text: 'NO' },
+        { col: 'B', text: 'NO OF ROOM' },
+        { col: 'C', text: 'ROOM STATUS' },
+        { col: 'F', text: 'TIME' },
+        { col: 'H', text: 'LINEN' },
+        { col: 'X', text: 'GUEST SUPPLIES & AMENITIES' }
       ];
 
-      headersR4.forEach(h => {
+      r4Headers.forEach(h => {
         const cell = sheet.getCell(h.col + '4');
         cell.value = h.text;
-        Object.assign(cell, headerStyle);
-        if (h.merge) sheet.mergeCells(h.merge);
+        cell.font = { name: 'Calibri', bold: true, size: 9 };
+        cell.fill = headerFill;
+        cell.alignment = { horizontal: 'center', vertical: 'center', wrapText: true };
+        cell.border = thinBorder;
       });
+
+      // Merge row 4
+      sheet.mergeCells('A4:A6');
+      sheet.mergeCells('B4:B6');
+      sheet.mergeCells('C4:E5');
+      sheet.mergeCells('F4:G5');
+      sheet.mergeCells('H4:W5');
+      sheet.mergeCells('X4:AR5');
+
+      // === ROW 5: (empty, part of merged cells) ===
 
       // === ROW 6: SUB-HEADERS ===
-      const subHeadersR6 = [
-        { col: 'C', text: 'FO' },
-        { col: 'D', text: 'HK' },
-        { col: 'E', text: 'HK' },
-        { col: 'F', text: 'IN' },
-        { col: 'G', text: 'OUT' }
-      ];
-
-      subHeadersR6.forEach(h => {
-        const cell = sheet.getCell(h.col + '6');
-        cell.value = h.text;
-        Object.assign(cell, headerStyle);
+      // FO/HK/HK, IN/OUT
+      ['C', 'D', 'E', 'F', 'G'].forEach(col => {
+        const cell = sheet.getCell(col + '6');
+        cell.font = { name: 'Calibri', size: 11 };
+        cell.border = thinBorder;
       });
+      sheet.getCell('C6').value = 'FO';
+      sheet.getCell('D6').value = 'HK';
+      sheet.getCell('E6').value = 'HK';
+      sheet.getCell('F6').value = 'IN';
+      sheet.getCell('G6').value = 'OUT';
 
       // LINEN sub-headers (merged pairs)
       const linenSubHeaders = [
@@ -947,7 +957,10 @@ app.get('/unduh-excel', async (req, res) => {
       linenSubHeaders.forEach(h => {
         const cell = sheet.getCell(h.col + '6');
         cell.value = h.text;
-        Object.assign(cell, headerStyle);
+        cell.font = { name: 'Calibri', bold: true, size: 8 };
+        cell.fill = headerFill;
+        cell.alignment = { horizontal: 'center', vertical: 'center', wrapText: true };
+        cell.border = thinBorder;
         if (h.merge) sheet.mergeCells(h.merge);
       });
 
@@ -961,18 +974,14 @@ app.get('/unduh-excel', async (req, res) => {
       guestSubHeaders.forEach(h => {
         const cell = sheet.getCell(h.col + '6');
         cell.value = h.text;
-        Object.assign(cell, headerStyle);
+        cell.font = { name: 'Calibri', bold: true, size: 8 };
+        cell.fill = headerFill;
+        cell.alignment = { horizontal: 'center', vertical: 'center' };
+        cell.border = thinBorder;
         if (h.merge) sheet.mergeCells(h.merge);
       });
 
       // === ROW 7: IN/OUT labels for LINEN + item names for GUEST SUPPLIES ===
-      const r7Style = {
-        font: { bold: true, size: 9 },
-        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2EFDA' } },
-        alignment: { horizontal: 'center', vertical: 'middle', wrapText: true },
-        border: { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } }
-      };
-
       // LINEN IN/OUT labels
       const linenInOut = [
         { col: 'H', text: 'IN' }, { col: 'I', text: 'OUT' },
@@ -988,7 +997,9 @@ app.get('/unduh-excel', async (req, res) => {
       linenInOut.forEach(h => {
         const cell = sheet.getCell(h.col + '7');
         cell.value = h.text;
-        Object.assign(cell, r7Style);
+        cell.font = { name: 'Calibri', size: 11 };
+        cell.alignment = { horizontal: 'center', vertical: 'center' };
+        cell.border = thinBorder;
       });
 
       // GUEST SUPPLIES item names
@@ -1019,18 +1030,11 @@ app.get('/unduh-excel', async (req, res) => {
       guestItems.forEach(item => {
         const cell = sheet.getCell(item.col + '7');
         cell.value = item.text;
-        Object.assign(cell, r7Style);
+        cell.font = { name: 'Calibri', bold: true, size: 9 };
+        cell.fill = subHeaderFill;
+        cell.alignment = { horizontal: 'center', vertical: 'center', wrapText: true };
+        cell.border = thinBorder;
       });
-
-      // Apply borders to all header cells in rows 4-7
-      for (let row = 4; row <= 7; row++) {
-        for (let colCode = 'A'.charCodeAt(0); colCode <= 'W'.charCodeAt(0); colCode++) {
-          const cell = sheet.getCell(String.fromCharCode(colCode) + row);
-          if (!cell.border || !cell.border.top) {
-            cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
-          }
-        }
-      }
 
       // Query data kamar untuk RA ini
       const dataRA = await new Promise((resolve, reject) => {
@@ -1061,32 +1065,37 @@ app.get('/unduh-excel', async (req, res) => {
         });
       });
 
-      if (dataRA.length === 0) continue;
-
       // Update lantai
-      sheet.getCell('I3').value = (dataRA[0] && dataRA[0].lantai) ? dataRA[0].lantai : '-';
+      sheet.getCell('L3').value = (dataRA[0] && dataRA[0].lantai) ? dataRA[0].lantai : '-';
+      sheet.getCell('L3').font = { name: 'Calibri', size: 11 };
 
-      // === DATA ROWS (mulai baris 8) ===
+      // === DATA ROWS (mulai baris 8, max 28 rows = baris 8-35) ===
       let baris = 8;
       let no = 1;
+      const maxDataRow = 35; // Row 35 = last data row before TOTAL SOILED at row 36
 
       dataRA.forEach((data) => {
-        const dataStyle = {
-          alignment: { horizontal: 'center', vertical: 'middle' },
-          border: { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } }
-        };
+        if (baris > maxDataRow) return; // Safety limit
+
+        const dataFont = { name: 'Calibri', size: 11 };
 
         // NO
         sheet.getCell('A' + baris).value = no++;
-        Object.assign(sheet.getCell('A' + baris), dataStyle);
+        sheet.getCell('A' + baris).font = dataFont;
+        sheet.getCell('A' + baris).alignment = { horizontal: 'center', vertical: 'center' };
+        sheet.getCell('A' + baris).border = thinBorder;
 
         // ROOM
         sheet.getCell('B' + baris).value = data.kamar || '';
-        Object.assign(sheet.getCell('B' + baris), dataStyle);
+        sheet.getCell('B' + baris).font = dataFont;
+        sheet.getCell('B' + baris).alignment = { horizontal: 'center', vertical: 'center' };
+        sheet.getCell('B' + baris).border = thinBorder;
 
         // FO
         sheet.getCell('C' + baris).value = data.status_fo || '';
-        Object.assign(sheet.getCell('C' + baris), dataStyle);
+        sheet.getCell('C' + baris).font = dataFont;
+        sheet.getCell('C' + baris).alignment = { horizontal: 'center', vertical: 'center' };
+        sheet.getCell('C' + baris).border = thinBorder;
 
         // HK IN
         let statusHKin = data.status_hk_in || '';
@@ -1096,7 +1105,9 @@ app.get('/unduh-excel', async (req, res) => {
           else if (data.status_fo === 'OD') statusHKin = 'OD';
         }
         sheet.getCell('D' + baris).value = statusHKin;
-        Object.assign(sheet.getCell('D' + baris), dataStyle);
+        sheet.getCell('D' + baris).font = dataFont;
+        sheet.getCell('D' + baris).alignment = { horizontal: 'center', vertical: 'center' };
+        sheet.getCell('D' + baris).border = thinBorder;
 
         // HK OUT
         let statusHKout = data.status_hk_out || '';
@@ -1105,16 +1116,21 @@ app.get('/unduh-excel', async (req, res) => {
           else if (statusHKin === 'OD') statusHKout = 'OC';
         }
         sheet.getCell('E' + baris).value = statusHKout;
-        Object.assign(sheet.getCell('E' + baris), dataStyle);
+        sheet.getCell('E' + baris).font = dataFont;
+        sheet.getCell('E' + baris).alignment = { horizontal: 'center', vertical: 'center' };
+        sheet.getCell('E' + baris).border = thinBorder;
 
         // TIME IN / TIME OUT
         sheet.getCell('F' + baris).value = data.waktu_masuk !== '-' ? data.waktu_masuk : '';
-        Object.assign(sheet.getCell('F' + baris), dataStyle);
+        sheet.getCell('F' + baris).font = dataFont;
+        sheet.getCell('F' + baris).alignment = { horizontal: 'center', vertical: 'center' };
+        sheet.getCell('F' + baris).border = thinBorder;
         sheet.getCell('G' + baris).value = data.waktu_keluar !== '-' ? data.waktu_keluar : '';
-        Object.assign(sheet.getCell('G' + baris), dataStyle);
+        sheet.getCell('G' + baris).font = dataFont;
+        sheet.getCell('G' + baris).alignment = { horizontal: 'center', vertical: 'center' };
+        sheet.getCell('G' + baris).border = thinBorder;
 
         // === LINEN (IN/OUT pairs) ===
-        // IN = quantity from DB, OUT = same quantity (soiled = what was used)
         const linenValues = [
           { db: 'sheet_king', inCol: 'H', outCol: 'I' },
           { db: 'sheet_twin', inCol: 'J', outCol: 'K' },
@@ -1131,11 +1147,15 @@ app.get('/unduh-excel', async (req, res) => {
           // IN value
           const inCell = sheet.getCell(item.inCol + baris);
           inCell.value = val;
-          Object.assign(inCell, dataStyle);
-          // OUT value (same as IN for now - soiled = used)
+          inCell.font = dataFont;
+          inCell.alignment = { horizontal: 'center', vertical: 'center' };
+          inCell.border = thinBorder;
+          // OUT value (same as IN)
           const outCell = sheet.getCell(item.outCol + baris);
           outCell.value = val;
-          Object.assign(outCell, dataStyle);
+          outCell.font = dataFont;
+          outCell.alignment = { horizontal: 'center', vertical: 'center' };
+          outCell.border = thinBorder;
         });
 
         // === GUEST SUPPLIES & AMENITIES ===
@@ -1148,17 +1168,17 @@ app.get('/unduh-excel', async (req, res) => {
           { col: 'AC', db: 'pensil' },
           { col: 'AD', db: '' }, // GUEST COMMENT - no DB field
           { col: 'AE', db: 'tissue_roll' },
-          { col: 'AF', db: 'tissue_facial' }, // HAND SOAP - closest match
-          { col: 'AG', db: 'cotton_bud' }, // SHAMPOO - no exact match
-          { col: 'AH', db: 'slipper' }, // SHOWER GEL - no exact match
-          { col: 'AI', db: 'comb' }, // TOOTH BRUSH - no exact match
+          { col: 'AF', db: 'tissue_facial' }, // HAND SOAP
+          { col: 'AG', db: 'cotton_bud' }, // SHAMPOO
+          { col: 'AH', db: 'slipper' }, // SHOWER GEL
+          { col: 'AI', db: 'comb' }, // TOOTH BRUSH
           { col: 'AJ', db: 'stirer' }, // STERER
-          { col: 'AK', db: 'slipper' },
+          { col: 'AK', db: 'slipper' }, // SLIPPER
           { col: 'AL', db: 'coffee' },
           { col: 'AM', db: 'sugar' },
           { col: 'AN', db: 'tea' },
           { col: 'AO', db: 'creamer' },
-          { col: 'AP', db: 'mineral' },
+          { col: 'AP', db: 'mineral' }, // MINERAL WATER
           { col: 'AQ', db: 'poly_bag_kecil' }, // PLASTIC BIN
           { col: 'AR', db: 'tissue_facial' } // TISUE
         ];
@@ -1170,44 +1190,54 @@ app.get('/unduh-excel', async (req, res) => {
           } else {
             cell.value = '';
           }
-          Object.assign(cell, dataStyle);
+          cell.font = dataFont;
+          cell.alignment = { horizontal: 'center', vertical: 'center' };
+          cell.border = thinBorder;
         });
 
         baris++;
       });
 
-      // === TOTAL SOILED ROW ===
-      const totalRow = baris + 1;
-      sheet.getCell('A' + totalRow).value = 'TOTAL SOILED:';
-      sheet.getCell('A' + totalRow).font = { bold: true };
-      sheet.mergeCells('A' + totalRow + ':G' + totalRow);
-
-      // SUM formulas for LINEN columns (H to W) - IN and OUT
-      const sumCols = ['H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W'];
-      const firstDataRow = 8;
-      const lastDataRow = baris - 1;
-
-      sumCols.forEach(col => {
-        const cell = sheet.getCell(col + totalRow);
-        // Formula: =SUM(H8:H{last}) untuk setiap kolom
-        cell.value = { formula: `SUM(${col}${firstDataRow}:${col}${lastDataRow})` };
-        cell.font = { bold: true };
-        cell.alignment = { horizontal: 'center' };
-        cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
-      });
-
-      // Border for total row cells A-G
-      for (let colCode = 'A'.charCodeAt(0); colCode <= 'G'.charCodeAt(0); colCode++) {
-        const cell = sheet.getCell(String.fromCharCode(colCode) + totalRow);
-        if (!cell.border || !cell.border.top) {
-          cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+      // Fill empty rows (8-35) with borders if no data
+      while (baris <= maxDataRow) {
+        for (let colCode = 'A'.charCodeAt(0); colCode <= 'R'.charCodeAt(0); colCode++) {
+          const c = String.fromCharCode(colCode);
+          const cell = sheet.getCell(c + baris);
+          cell.border = thinBorder;
         }
+        // NO column
+        sheet.getCell('A' + baris).value = no++;
+        sheet.getCell('A' + baris).font = { name: 'Calibri', size: 11 };
+        sheet.getCell('A' + baris).alignment = { horizontal: 'center', vertical: 'center' };
+        baris++;
       }
 
-      // === REMARKS ROW ===
-      const remarksRow = totalRow + 1;
+      // === TOTAL SOILED ROW (Row 36) ===
+      const totalRow = 36;
+      sheet.getCell('A' + totalRow).value = 'TOTAL SOILED:';
+      sheet.getCell('A' + totalRow).font = { name: 'Calibri', bold: true, size: 11 };
+      sheet.mergeCells('A' + totalRow + ':G' + totalRow);
+
+      // SUM formulas for LINEN columns (H to W)
+      const sumCols = ['H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W'];
+      sumCols.forEach(col => {
+        const cell = sheet.getCell(col + totalRow);
+        cell.value = { formula: `SUM(${col}8:${col}35)` };
+        cell.font = { name: 'Calibri', size: 11 };
+        cell.alignment = { horizontal: 'center', vertical: 'center' };
+        cell.border = thinBorder;
+      });
+
+      // Border for A-G in total row
+      for (let colCode = 'A'.charCodeAt(0); colCode <= 'G'.charCodeAt(0); colCode++) {
+        const cell = sheet.getCell(String.fromCharCode(colCode) + totalRow);
+        cell.border = thinBorder;
+      }
+
+      // === REMARKS ROW (Row 37) ===
+      const remarksRow = 37;
       sheet.getCell('A' + remarksRow).value = 'REMARKS';
-      sheet.getCell('A' + remarksRow).font = { bold: true };
+      sheet.getCell('A' + remarksRow).font = { name: 'Calibri', bold: true, size: 11 };
       sheet.mergeCells('A' + remarksRow + ':B' + (remarksRow + 2));
       sheet.mergeCells('C' + remarksRow + ':AR' + (remarksRow + 2));
 
@@ -1216,12 +1246,12 @@ app.get('/unduh-excel', async (req, res) => {
         const c = String.fromCharCode(colCode);
         for (let r = remarksRow; r <= remarksRow + 2; r++) {
           const cell = sheet.getCell(c + r);
-          cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+          cell.border = thinBorder;
         }
       }
 
       // === LEGEND ROWS ===
-      const legendStart = remarksRow + 3;
+      const legendStart = remarksRow + 3; // Row 40
       const legends = [
         ['ED', 'EXPECTED DEPARTURE', 'VC', 'VACANT CLEAN', 'DND', 'DO NOT DISTURB'],
         ['EA', 'EXPECTING ARRIVAL', 'OD', 'OCCUPIED DIRTY', 'HU', 'HOUSE USE'],
@@ -1233,22 +1263,25 @@ app.get('/unduh-excel', async (req, res) => {
       legends.forEach((legend, idx) => {
         const row = legendStart + idx;
         sheet.getCell('C' + row).value = legend[0];
-        sheet.getCell('C' + row).font = { bold: true };
+        sheet.getCell('C' + row).font = { name: 'Calibri', bold: true, size: 11 };
         sheet.getCell('D' + row).value = legend[1];
+        sheet.getCell('D' + row).font = { name: 'Calibri', size: 11 };
         sheet.getCell('F' + row).value = legend[2];
-        sheet.getCell('F' + row).font = { bold: true };
+        sheet.getCell('F' + row).font = { name: 'Calibri', bold: true, size: 11 };
         sheet.getCell('G' + row).value = legend[3];
+        sheet.getCell('G' + row).font = { name: 'Calibri', size: 11 };
         sheet.getCell('I' + row).value = legend[4];
-        sheet.getCell('I' + row).font = { bold: true };
+        sheet.getCell('I' + row).font = { name: 'Calibri', bold: true, size: 11 };
         sheet.getCell('J' + row).value = legend[5];
+        sheet.getCell('J' + row).font = { name: 'Calibri', size: 11 };
       });
 
       // === PREPARED BY / CHECKED BY ===
-      const signRow = legendStart + legends.length + 1;
-      sheet.getCell('A' + signRow).value = 'PREPARED BY:';
-      sheet.getCell('A' + signRow).font = { bold: true };
-      sheet.getCell('H' + signRow).value = 'CHECKED BY';
-      sheet.getCell('H' + signRow).font = { bold: true };
+      const signRow = legendStart + legends.length + 1; // Row 46
+      sheet.getCell('C' + signRow).value = 'PREPARED BY:';
+      sheet.getCell('C' + signRow).font = { name: 'Calibri', bold: true, size: 11 };
+      sheet.getCell('X' + signRow).value = 'CHECKED BY';
+      sheet.getCell('X' + signRow).font = { name: 'Calibri', bold: true, size: 11 };
     }
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
