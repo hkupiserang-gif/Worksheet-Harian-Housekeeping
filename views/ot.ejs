@@ -47,13 +47,21 @@
       border-bottom: 1px solid #eee;
     }
     .item-row:hover { background: #f8fafc; }
-    .item-row.header-row {
+    .item-row-header {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr 80px;
+      gap: 10px;
+      padding: 8px;
       background: #f1f5f9;
       font-weight: 600;
       font-size: 12px;
       color: #555;
       border-radius: 4px;
+      margin-bottom: 4px;
     }
+    .item-row-header span { text-align: center; }
+    .item-row-header span:first-child { text-align: left; }
+    .item-row-header span:nth-child(4) { text-align: right; }
     input, select, textarea {
       padding: 9px 12px; border: 1px solid #ddd; border-radius: 4px;
       font-size: 14px; width: 100%;
@@ -133,23 +141,7 @@
     }
     .grand-total .label { font-size: 14px; }
     .grand-total .value { font-size: 22px; font-weight: 700; }
-    .item-row-header {
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr 1fr 80px;
-      gap: 10px;
-      padding: 8px;
-      background: #f1f5f9;
-      font-weight: 600;
-      font-size: 12px;
-      color: #555;
-      border-radius: 4px;
-      margin-bottom: 4px;
-    }
-    .item-row-header span { text-align: center; }
-    .item-row-header span:first-child { text-align: left; }
-    .item-row-header span:nth-child(4) { text-align: right; }
   </style>
-<base target="_blank">
 </head>
 <body>
   <div class="header">
@@ -330,7 +322,7 @@
           <tr>
             <td><%= index + 1 %></td>
             <td><strong><%= item.petugas || '-' %></strong></td>
-            <td><%= item.nama_item %></td>
+            <td><%= item.nama_item || '-' %></td>
             <td><%= item.qty || 0 %></td>
             <td>Rp <%= (item.harga || 0).toLocaleString('id-ID') %></td>
             <td><strong>Rp <%= (item.total_harga || 0).toLocaleString('id-ID') %></strong></td>
@@ -418,7 +410,7 @@
           <tr>
             <td><%= index + 1 %></td>
             <td><strong><%= item.petugas || '-' %></strong></td>
-            <td><%= item.nama_item %></td>
+            <td><%= item.nama_item || '-' %></td>
             <td><%= item.qty || 0 %></td>
             <td>Rp <%= (item.harga || 0).toLocaleString('id-ID') %></td>
             <td><strong>Rp <%= (item.total_harga || 0).toLocaleString('id-ID') %></strong></td>
@@ -508,10 +500,10 @@
           <tr>
             <td><%= index + 1 %></td>
             <td><strong><%= item.petugas || '-' %></strong></td>
-            <td><span style="background:#e0e7ff; padding:3px 8px; border-radius:4px; font-size:12px;"><%= item.kategori %></span></td>
-            <td><strong><%= item.nama_barang %></strong></td>
-            <td><%= item.unit %></td>
-            <td><%= item.jumlah %></td>
+            <td><span style="background:#e0e7ff; padding:3px 8px; border-radius:4px; font-size:12px;"><%= item.kategori || '-' %></span></td>
+            <td><strong><%= item.nama_barang || '-' %></strong></td>
+            <td><%= item.unit || '-' %></td>
+            <td><%= item.jumlah || 0 %></td>
             <td>Rp <%= (item.harga || 0).toLocaleString('id-ID') %></td>
             <td><strong>Rp <%= (item.total_harga || 0).toLocaleString('id-ID') %></strong></td>
             <td>
@@ -712,29 +704,27 @@
         categoryOptions += `<option value="${cat}">${cat}</option>`;
       }
 
-      row.innerHTML = `
-        <div>
-          <select class="laundry-cat" data-row="${laundryRowCount}" onchange="updateLaundryItems(${laundryRowCount})" required>
-            ${categoryOptions}
-          </select>
-        </div>
-        <div>
-          <select class="laundry-item" name="items[${laundryRowCount}][nama]" data-row="${laundryRowCount}" onchange="updateLaundryPrice(${laundryRowCount})" required>
-            <option value="">-- Pilih Item --</option>
-          </select>
-        </div>
-        <div>
-          <input type="number" class="laundry-qty" name="items[${laundryRowCount}][qty]" data-row="${laundryRowCount}" placeholder="QTY" min="0" value="0" onchange="calculateLaundryTotal()" required>
-        </div>
-        <div class="price-display">
-          <span class="laundry-price" data-row="${laundryRowCount}">Rp 0</span>
-          <input type="hidden" class="laundry-price-input" name="items[${laundryRowCount}][harga]" data-row="${laundryRowCount}">
-          <input type="hidden" class="laundry-unit-input" name="items[${laundryRowCount}][unit]" data-row="${laundryRowCount}">
-        </div>
-        <div>
-          <button type="button" class="remove-row-btn" onclick="removeLaundryRow(${laundryRowCount})">✕</button>
-        </div>
-      `;
+      row.innerHTML = '<div>' +
+          '<select class="laundry-cat" data-row="' + laundryRowCount + '" onchange="updateLaundryItems(' + laundryRowCount + ')" required>' +
+            categoryOptions +
+          '</select>' +
+        '</div>' +
+        '<div>' +
+          '<select class="laundry-item" name="items[' + laundryRowCount + '][nama]" data-row="' + laundryRowCount + '" onchange="updateLaundryPrice(' + laundryRowCount + ')" required>' +
+            '<option value="">-- Pilih Item --</option>' +
+          '</select>' +
+        '</div>' +
+        '<div>' +
+          '<input type="number" class="laundry-qty" name="items[' + laundryRowCount + '][qty]" data-row="' + laundryRowCount + '" placeholder="QTY" min="0" value="0" oninput="calculateLaundryTotal()" required>' +
+        '</div>' +
+        '<div class="price-display">' +
+          '<span class="laundry-price" data-row="' + laundryRowCount + '">Rp 0</span>' +
+          '<input type="hidden" class="laundry-price-input" name="items[' + laundryRowCount + '][harga]" data-row="' + laundryRowCount + '">' +
+          '<input type="hidden" class="laundry-unit-input" name="items[' + laundryRowCount + '][unit]" data-row="' + laundryRowCount + '">' +
+        '</div>' +
+        '<div>' +
+          '<button type="button" class="remove-row-btn" onclick="removeLaundryRow(' + laundryRowCount + ')">✕</button>' +
+        '</div>';
       container.appendChild(row);
     }
 
@@ -804,29 +794,27 @@
         categoryOptions += `<option value="${cat}">${cat}</option>`;
       }
 
-      row.innerHTML = `
-        <div>
-          <select class="fnb-cat" data-row="${fnbRowCount}" onchange="updateFnbItems(${fnbRowCount})" required>
-            ${categoryOptions}
-          </select>
-        </div>
-        <div>
-          <select class="fnb-item" name="items_fnb[${fnbRowCount}][nama]" data-row="${fnbRowCount}" onchange="updateFnbPrice(${fnbRowCount})" required>
-            <option value="">-- Pilih Item --</option>
-          </select>
-        </div>
-        <div>
-          <input type="number" class="fnb-qty" name="items_fnb[${fnbRowCount}][qty]" data-row="${fnbRowCount}" placeholder="QTY" min="0" value="0" onchange="calculateFnbTotal()" required>
-        </div>
-        <div class="price-display">
-          <span class="fnb-price" data-row="${fnbRowCount}">Rp 0</span>
-          <input type="hidden" class="fnb-price-input" name="items_fnb[${fnbRowCount}][harga]" data-row="${fnbRowCount}">
-          <input type="hidden" class="fnb-unit-input" name="items_fnb[${fnbRowCount}][unit]" data-row="${fnbRowCount}">
-        </div>
-        <div>
-          <button type="button" class="remove-row-btn" onclick="removeFnbRow(${fnbRowCount})">✕</button>
-        </div>
-      `;
+      row.innerHTML = '<div>' +
+          '<select class="fnb-cat" data-row="' + fnbRowCount + '" onchange="updateFnbItems(' + fnbRowCount + ')" required>' +
+            categoryOptions +
+          '</select>' +
+        '</div>' +
+        '<div>' +
+          '<select class="fnb-item" name="items_fnb[' + fnbRowCount + '][nama]" data-row="' + fnbRowCount + '" onchange="updateFnbPrice(' + fnbRowCount + ')" required>' +
+            '<option value="">-- Pilih Item --</option>' +
+          '</select>' +
+        '</div>' +
+        '<div>' +
+          '<input type="number" class="fnb-qty" name="items_fnb[' + fnbRowCount + '][qty]" data-row="' + fnbRowCount + '" placeholder="QTY" min="0" value="0" oninput="calculateFnbTotal()" required>' +
+        '</div>' +
+        '<div class="price-display">' +
+          '<span class="fnb-price" data-row="' + fnbRowCount + '">Rp 0</span>' +
+          '<input type="hidden" class="fnb-price-input" name="items_fnb[' + fnbRowCount + '][harga]" data-row="' + fnbRowCount + '">' +
+          '<input type="hidden" class="fnb-unit-input" name="items_fnb[' + fnbRowCount + '][unit]" data-row="' + fnbRowCount + '">' +
+        '</div>' +
+        '<div>' +
+          '<button type="button" class="remove-row-btn" onclick="removeFnbRow(' + fnbRowCount + ')">✕</button>' +
+        '</div>';
       container.appendChild(row);
     }
 
@@ -896,29 +884,27 @@
         categoryOptions += `<option value="${cat}">${cat}</option>`;
       }
 
-      row.innerHTML = `
-        <div>
-          <select class="store-cat" data-row="${storeRowCount}" onchange="updateStoreItems(${storeRowCount})" required>
-            ${categoryOptions}
-          </select>
-        </div>
-        <div>
-          <select class="store-item" name="items_store[${storeRowCount}][nama]" data-row="${storeRowCount}" onchange="updateStorePrice(${storeRowCount})" required>
-            <option value="">-- Pilih Item --</option>
-          </select>
-        </div>
-        <div>
-          <input type="number" class="store-qty" name="items_store[${storeRowCount}][qty]" data-row="${storeRowCount}" placeholder="QTY" min="0" value="0" onchange="calculateStoreTotal()" required>
-        </div>
-        <div class="price-display">
-          <span class="store-price" data-row="${storeRowCount}">Rp 0</span>
-          <input type="hidden" class="store-price-input" name="items_store[${storeRowCount}][harga]" data-row="${storeRowCount}">
-          <input type="hidden" class="store-unit-input" name="items_store[${storeRowCount}][unit]" data-row="${storeRowCount}">
-        </div>
-        <div>
-          <button type="button" class="remove-row-btn" onclick="removeStoreRow(${storeRowCount})">✕</button>
-        </div>
-      `;
+      row.innerHTML = '<div>' +
+          '<select class="store-cat" data-row="' + storeRowCount + '" onchange="updateStoreItems(' + storeRowCount + ')" required>' +
+            categoryOptions +
+          '</select>' +
+        '</div>' +
+        '<div>' +
+          '<select class="store-item" name="items_store[' + storeRowCount + '][nama]" data-row="' + storeRowCount + '" onchange="updateStorePrice(' + storeRowCount + ')" required>' +
+            '<option value="">-- Pilih Item --</option>' +
+          '</select>' +
+        '</div>' +
+        '<div>' +
+          '<input type="number" class="store-qty" name="items_store[' + storeRowCount + '][qty]" data-row="' + storeRowCount + '" placeholder="QTY" min="0" value="0" oninput="calculateStoreTotal()" required>' +
+        '</div>' +
+        '<div class="price-display">' +
+          '<span class="store-price" data-row="' + storeRowCount + '">Rp 0</span>' +
+          '<input type="hidden" class="store-price-input" name="items_store[' + storeRowCount + '][harga]" data-row="' + storeRowCount + '">' +
+          '<input type="hidden" class="store-unit-input" name="items_store[' + storeRowCount + '][unit]" data-row="' + storeRowCount + '">' +
+        '</div>' +
+        '<div>' +
+          '<button type="button" class="remove-row-btn" onclick="removeStoreRow(' + storeRowCount + ')">✕</button>' +
+        '</div>';
       container.appendChild(row);
     }
 
