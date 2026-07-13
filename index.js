@@ -6,7 +6,14 @@ const { parse } = require('json2csv');
 const PDFDocument = require('pdfkit');
 const cron = require('node-cron');
 const ExcelJS = require('exceljs');
-const axios = require('axios');
+
+// axios optional — tidak wajib, server tetap jalan tanpa logo
+let axios;
+try {
+  axios = require('axios');
+} catch (e) {
+  console.log('⚠️ axios belum terinstall, fitur logo dinonaktifkan. Jalankan: npm install axios');
+}
 
 const app = express();
 const PORT = process.env.PORT || 8888;
@@ -843,20 +850,22 @@ app.get('/unduh-excel', async (req, res) => {
       // === LOGO HOTEL (POJOK KIRI ATAS) ===
       // ⬇️ GANTI URL INI DENGAN LINK IMGUR ANDA YANG BENAR
       const LOGO_URL = 'https://imgur.com/F3uMFwH';
-      try {
-        const logoResponse = await axios.get(LOGO_URL, { responseType: 'arraybuffer', timeout: 5000 });
-        const logoBuffer = Buffer.from(logoResponse.data, 'binary');
-        const imageId = workbook.addImage({
-          buffer: logoBuffer,
-          extension: 'png',
-        });
-        // Logo di pojok kiri atas (A1:B3)
-        sheet.addImage(imageId, {
-          tl: { col: 0, row: 0 },
-          br: { col: 2, row: 3 }
-        });
-      } catch (e) {
-        console.log('⚠️ Logo tidak terpasang:', e.message);
+      if (axios) {
+        try {
+          const logoResponse = await axios.get(LOGO_URL, { responseType: 'arraybuffer', timeout: 5000 });
+          const logoBuffer = Buffer.from(logoResponse.data, 'binary');
+          const imageId = workbook.addImage({
+            buffer: logoBuffer,
+            extension: 'png',
+          });
+          // Logo di pojok kiri atas (A1:B3)
+          sheet.addImage(imageId, {
+            tl: { col: 0, row: 0 },
+            br: { col: 2, row: 3 }
+          });
+        } catch (e) {
+          console.log('⚠️ Logo tidak terpasang:', e.message);
+        }
       }
 
       // === ROW 1: TITLE ===
