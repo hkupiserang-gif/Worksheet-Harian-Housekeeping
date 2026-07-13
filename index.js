@@ -835,10 +835,11 @@ app.get('/unduh-excel', async (req, res) => {
       const sheet = workbook.addWorksheet(ra);
 
       // === SET COLUMN WIDTHS ===
+      // LINEN IN/OUT columns (H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W) = 38 pixels (~5.5 width in ExcelJS)
       const colWidths = {
         'A': 4, 'B': 10, 'C': 6, 'D': 13, 'E': 13, 'F': 13, 'G': 13,
-        'H': 13, 'I': 13, 'J': 13, 'K': 13, 'L': 13, 'M': 13, 'N': 13, 'O': 13,
-        'P': 13, 'Q': 13, 'R': 13, 'S': 13, 'T': 13, 'U': 13, 'V': 13, 'W': 13,
+        'H': 5.5, 'I': 5.5, 'J': 5.5, 'K': 5.5, 'L': 5.5, 'M': 5.5, 'N': 5.5, 'O': 5.5,
+        'P': 5.5, 'Q': 5.5, 'R': 5.5, 'S': 5.5, 'T': 5.5, 'U': 5.5, 'V': 5.5, 'W': 5.5,
         'X': 12, 'Y': 13, 'Z': 13, 'AA': 13, 'AB': 13, 'AC': 13, 'AD': 13,
         'AE': 13, 'AF': 13, 'AG': 13, 'AH': 13, 'AI': 13, 'AJ': 13, 'AK': 13,
         'AL': 13, 'AM': 13, 'AN': 13, 'AO': 13, 'AP': 13, 'AQ': 13, 'AR': 13
