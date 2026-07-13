@@ -834,10 +834,14 @@ app.get('/unduh-excel', async (req, res) => {
       const ra = daftarRA[i];
       const sheet = workbook.addWorksheet(ra);
 
+      // === SET ROW HEIGHTS ===
+      sheet.getRow(6).height = 35; // Row 6 = 35 pixels
+
       // === SET COLUMN WIDTHS ===
-      // LINEN IN/OUT columns (H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W) = 38 pixels (~5.5 width in ExcelJS)
+      // D, E = 42 pixels (~3.0 width in ExcelJS)
+      // LINEN IN/OUT columns (H-W) = 38 pixels (~5.5 width in ExcelJS)
       const colWidths = {
-        'A': 4, 'B': 10, 'C': 6, 'D': 13, 'E': 13, 'F': 13, 'G': 13,
+        'A': 4, 'B': 10, 'C': 6, 'D': 3.0, 'E': 3.0, 'F': 13, 'G': 13,
         'H': 5.5, 'I': 5.5, 'J': 5.5, 'K': 5.5, 'L': 5.5, 'M': 5.5, 'N': 5.5, 'O': 5.5,
         'P': 5.5, 'Q': 5.5, 'R': 5.5, 'S': 5.5, 'T': 5.5, 'U': 5.5, 'V': 5.5, 'W': 5.5,
         'X': 12, 'Y': 13, 'Z': 13, 'AA': 13, 'AB': 13, 'AC': 13, 'AD': 13,
@@ -849,7 +853,7 @@ app.get('/unduh-excel', async (req, res) => {
       });
 
       // === LOGO HOTEL (POJOK KIRI ATAS) ===
-      const LOGO_URL = 'https://imgur.com/KbZo1Mk';
+      const LOGO_URL = 'https://i.imgur.com/XXXXXXX.png';
       if (axios) {
         try {
           const logoResponse = await axios.get(LOGO_URL, { responseType: 'arraybuffer', timeout: 5000 });
@@ -868,10 +872,11 @@ app.get('/unduh-excel', async (req, res) => {
       }
 
       // === ROW 1: TITLE ===
-      sheet.getCell('C1').value = 'ROOMBOY CONTROL SHEET';
-      sheet.getCell('C1').font = { bold: true, size: 14 };
-      sheet.getCell('C1').alignment = { horizontal: 'center' };
+      sheet.getCell('C1').value = 'Room Attendant Control Sheet';
+      sheet.getCell('C1').font = { bold: true, size: 26 };
+      sheet.getCell('C1').alignment = { horizontal: 'center', vertical: 'middle' };
       sheet.mergeCells('A1:AR1');
+      sheet.getRow(1).height = 40; // Extra height for large font
 
       // === ROW 2: EMPTY ===
 
@@ -1065,12 +1070,6 @@ app.get('/unduh-excel', async (req, res) => {
       let baris = 8;
       let no = 1;
 
-      // Track totals for TOTAL SOILED
-      let totalSoiled = {
-        sheet_king: 0, sheet_twin: 0, duvet_king: 0, duvet_twin: 0,
-        bath_towel: 0, hand_towel: 0, bath_mat: 0, pillow_case: 0
-      };
-
       dataRA.forEach((data) => {
         const dataStyle = {
           alignment: { horizontal: 'center', vertical: 'middle' },
@@ -1137,8 +1136,6 @@ app.get('/unduh-excel', async (req, res) => {
           const outCell = sheet.getCell(item.outCol + baris);
           outCell.value = val;
           Object.assign(outCell, dataStyle);
-          // Accumulate total soiled
-          totalSoiled[item.db] += parseInt(val) || 0;
         });
 
         // === GUEST SUPPLIES & AMENITIES ===
@@ -1185,21 +1182,15 @@ app.get('/unduh-excel', async (req, res) => {
       sheet.getCell('A' + totalRow).font = { bold: true };
       sheet.mergeCells('A' + totalRow + ':G' + totalRow);
 
-      // Fill total soiled values for LINEN OUT columns
-      const totalSoiledCols = [
-        { db: 'sheet_king', col: 'I' },
-        { db: 'sheet_twin', col: 'K' },
-        { db: 'duvet_king', col: 'M' },
-        { db: 'duvet_twin', col: 'O' },
-        { db: 'bath_towel', col: 'Q' },
-        { db: 'hand_towel', col: 'S' },
-        { db: 'bath_mat', col: 'U' },
-        { db: 'pillow_case', col: 'W' }
-      ];
+      // SUM formulas for LINEN columns (H to W) - IN and OUT
+      const sumCols = ['H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W'];
+      const firstDataRow = 8;
+      const lastDataRow = baris - 1;
 
-      totalSoiledCols.forEach(item => {
-        const cell = sheet.getCell(item.col + totalRow);
-        cell.value = totalSoiled[item.db];
+      sumCols.forEach(col => {
+        const cell = sheet.getCell(col + totalRow);
+        // Formula: =SUM(H8:H{last}) untuk setiap kolom
+        cell.value = { formula: `SUM(${col}${firstDataRow}:${col}${lastDataRow})` };
         cell.font = { bold: true };
         cell.alignment = { horizontal: 'center' };
         cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
