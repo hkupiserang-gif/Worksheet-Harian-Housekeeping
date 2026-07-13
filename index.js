@@ -812,44 +812,43 @@ app.get('/unduh-excel', async (req, res) => {
 
     const workbook = new ExcelJS.Workbook();
 
-    // Build SQL selects
-    const bathRoomFields = [
-      'sheet_twin', 'sheet_king', 'duvet_twin', 'duvet_king',
+    // Build SQL selects - LINEN items (8 items, IN only from DB, OUT same as IN)
+    const linenFields = [
+      'sheet_king', 'sheet_twin', 'duvet_king', 'duvet_twin',
       'bath_towel', 'hand_towel', 'bath_mat', 'pillow_case'
     ];
-    const bathRoomSelects = bathRoomFields.map(f => 'IFNULL(l.' + f + ', 0) AS ' + f + '_in').join(', ');
+    const linenSelects = linenFields.map(f => 'IFNULL(l.' + f + ', 0) AS ' + f).join(', ');
 
-    const guestSuppliesFields = [
+    // Guest supplies fields
+    const guestFields = [
       'shower_cap', 'dental_kit', 'laundry_bag', 'laundry_list',
-      'note_pad', 'pensil', 'tissue_facial', 'tissue_roll',
+      'note_pad', 'pensil', 'tissue_roll', 'tissue_facial',
+      'cotton_bud', 'slipper', 'comb', 'stirer',
       'coffee', 'sugar', 'tea', 'creamer', 'mineral',
-      'cotton_bud', 'slipper', 'comb', 'shaving_kit',
-      'stirer', 'coster', 'poly_bag_kecil', 'poly_bag_besar'
+      'poly_bag_kecil', 'poly_bag_besar'
     ];
-    const guestSuppliesSelects = guestSuppliesFields.map(f => 'IFNULL(l.' + f + ', 0) AS ' + f).join(', ');
+    const guestSelects = guestFields.map(f => 'IFNULL(l.' + f + ', 0) AS ' + f).join(', ');
 
     // Proses setiap RA
     for (let i = 0; i < daftarRA.length; i++) {
       const ra = daftarRA[i];
-
-      // Buat sheet baru dengan nama RA
       const sheet = workbook.addWorksheet(ra);
 
       // === SET COLUMN WIDTHS ===
       const colWidths = {
-        'A': 4, 'B': 10, 'C': 6, 'D': 6, 'E': 6, 'F': 6, 'G': 6,
-        'H': 8, 'I': 8, 'J': 8, 'K': 8, 'L': 8, 'M': 8, 'N': 8, 'O': 8,
-        'P': 12, 'Q': 12, 'R': 12, 'S': 12, 'T': 12, 'U': 12, 'V': 12,
-        'W': 12, 'X': 12, 'Y': 12, 'Z': 12, 'AA': 12, 'AB': 12, 'AC': 12,
-        'AD': 12, 'AE': 12, 'AF': 12, 'AG': 12, 'AH': 12, 'AI': 12, 'AJ': 12
+        'A': 4, 'B': 10, 'C': 6, 'D': 13, 'E': 13, 'F': 13, 'G': 13,
+        'H': 13, 'I': 13, 'J': 13, 'K': 13, 'L': 13, 'M': 13, 'N': 13, 'O': 13,
+        'P': 13, 'Q': 13, 'R': 13, 'S': 13, 'T': 13, 'U': 13, 'V': 13, 'W': 13,
+        'X': 12, 'Y': 13, 'Z': 13, 'AA': 13, 'AB': 13, 'AC': 13, 'AD': 13,
+        'AE': 13, 'AF': 13, 'AG': 13, 'AH': 13, 'AI': 13, 'AJ': 13, 'AK': 13,
+        'AL': 13, 'AM': 13, 'AN': 13, 'AO': 13, 'AP': 13, 'AQ': 13, 'AR': 13
       };
       Object.keys(colWidths).forEach(col => {
         sheet.getColumn(col).width = colWidths[col];
       });
 
       // === LOGO HOTEL (POJOK KIRI ATAS) ===
-      // ⬇️ GANTI URL INI DENGAN LINK IMGUR ANDA YANG BENAR
-      const LOGO_URL = 'https://imgur.com/KbZo1Mk';
+      const LOGO_URL = 'https://i.imgur.com/XXXXXXX.png';
       if (axios) {
         try {
           const logoResponse = await axios.get(LOGO_URL, { responseType: 'arraybuffer', timeout: 5000 });
@@ -858,7 +857,6 @@ app.get('/unduh-excel', async (req, res) => {
             buffer: logoBuffer,
             extension: 'png',
           });
-          // Logo di pojok kiri atas (A1:B3)
           sheet.addImage(imageId, {
             tl: { col: 0, row: 0 },
             br: { col: 2, row: 3 }
@@ -872,7 +870,7 @@ app.get('/unduh-excel', async (req, res) => {
       sheet.getCell('C1').value = 'ROOMBOY CONTROL SHEET';
       sheet.getCell('C1').font = { bold: true, size: 14 };
       sheet.getCell('C1').alignment = { horizontal: 'center' };
-      sheet.mergeCells('C1:AJ1');
+      sheet.mergeCells('A1:AR1');
 
       // === ROW 2: EMPTY ===
 
@@ -887,118 +885,140 @@ app.get('/unduh-excel', async (req, res) => {
 
       sheet.getCell('G3').value = 'FLOOR/SECTION:';
       sheet.getCell('G3').font = { bold: true };
+      // I3 will be filled after data query
 
       // === ROW 4: MAIN HEADER ===
-      const row4Headers = [
-        { col: 'A', text: 'NO' },
-        { col: 'B', text: 'NO OF ROOM' },
-        { col: 'C', text: 'ROOM STATUS' },
-        { col: 'F', text: 'TIME' },
-        { col: 'H', text: 'LINEN' },
-        { col: 'P', text: 'GUEST SUPPLIES & AMENITIES' }
+      const headerStyle = {
+        font: { bold: true, size: 9 },
+        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } },
+        alignment: { horizontal: 'center', vertical: 'middle', wrapText: true },
+        border: { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } }
+      };
+
+      const headersR4 = [
+        { col: 'A', text: 'NO', merge: 'A4:A6' },
+        { col: 'B', text: 'NO OF ROOM', merge: 'B4:B6' },
+        { col: 'C', text: 'ROOM STATUS', merge: 'C4:E5' },
+        { col: 'F', text: 'TIME', merge: 'F4:G5' },
+        { col: 'H', text: 'LINEN', merge: 'H4:W5' },
+        { col: 'X', text: 'GUEST SUPPLIES & AMENITIES', merge: 'X4:AR5' }
       ];
 
-      row4Headers.forEach(h => {
+      headersR4.forEach(h => {
         const cell = sheet.getCell(h.col + '4');
         cell.value = h.text;
-        cell.font = { bold: true, size: 9 };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
-        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-        cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+        Object.assign(cell, headerStyle);
+        if (h.merge) sheet.mergeCells(h.merge);
       });
 
-      // Merge row 4
-      sheet.mergeCells('A4:A6');
-      sheet.mergeCells('B4:B6');
-      sheet.mergeCells('C4:E5');
-      sheet.mergeCells('F4:G5');
-      sheet.mergeCells('H4:O5');
-      sheet.mergeCells('P4:AJ5');
-
-      // === ROW 5: SUB-HEADERS ===
-      // ROOM STATUS sub-headers
-      sheet.getCell('C6').value = 'FO';
-      sheet.getCell('D6').value = 'HK';
-      sheet.getCell('E6').value = 'HK';
-
-      // TIME sub-headers
-      sheet.getCell('F6').value = 'IN';
-      sheet.getCell('G6').value = 'OUT';
-
-      // LINEN sub-headers - tanpa IN/OUT label
-      const linenSub = [
-        { col: 'H', text: 'SHEET\nDOUBLE' },
-        { col: 'I', text: 'SHEET\nSINGLE' },
-        { col: 'J', text: 'DUVET\nCOVER' },
-        { col: 'K', text: 'DUVET\nSINGLE' },
-        { col: 'L', text: 'BATH\nTOWEL' },
-        { col: 'M', text: 'HAND\nTOWEL' },
-        { col: 'N', text: 'BATH\nMAT' },
-        { col: 'O', text: 'PILLOW\nCASE' }
+      // === ROW 6: SUB-HEADERS ===
+      const subHeadersR6 = [
+        { col: 'C', text: 'FO' },
+        { col: 'D', text: 'HK' },
+        { col: 'E', text: 'HK' },
+        { col: 'F', text: 'IN' },
+        { col: 'G', text: 'OUT' }
       ];
-      linenSub.forEach(h => {
+
+      subHeadersR6.forEach(h => {
         const cell = sheet.getCell(h.col + '6');
         cell.value = h.text;
-        cell.font = { bold: true, size: 8 };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
-        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-        cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+        Object.assign(cell, headerStyle);
+      });
+
+      // LINEN sub-headers (merged pairs)
+      const linenSubHeaders = [
+        { col: 'H', text: 'SHEET\nDOUBLE', merge: 'H6:I6' },
+        { col: 'J', text: 'SHEET\nSINGLE', merge: 'J6:K6' },
+        { col: 'L', text: 'DUVET\nCOVER', merge: 'L6:M6' },
+        { col: 'N', text: 'DUVET\nSINGLE', merge: 'N6:O6' },
+        { col: 'P', text: 'BATH\nTOWEL', merge: 'P6:Q6' },
+        { col: 'R', text: 'HAND\nTOWEL', merge: 'R6:S6' },
+        { col: 'T', text: 'BATH\nMAT', merge: 'T6:U6' },
+        { col: 'V', text: 'PILLOW\nCASE', merge: 'V6:W6' }
+      ];
+
+      linenSubHeaders.forEach(h => {
+        const cell = sheet.getCell(h.col + '6');
+        cell.value = h.text;
+        Object.assign(cell, headerStyle);
+        if (h.merge) sheet.mergeCells(h.merge);
       });
 
       // GUEST SUPPLIES sub-headers
-      sheet.mergeCells('P6:Q6');  // BATH ROOM
-      sheet.mergeCells('R6:V6');  // BED ROOM
-      sheet.mergeCells('W6:AJ6'); // CONDIMEN
-
-      sheet.getCell('P6').value = 'BATH ROOM';
-      sheet.getCell('R6').value = 'BED ROOM';
-      sheet.getCell('W6').value = 'CONDIMEN';
-
-      ['P6', 'R6', 'W6'].forEach(cellRef => {
-        const cell = sheet.getCell(cellRef);
-        cell.font = { bold: true, size: 8 };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
-        cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
-      });
-
-      // === ROW 7: ITEM NAMES ===
-      const row7Items = [
-        { col: 'P', text: 'SHOWER CAP' },
-        { col: 'Q', text: 'DENTAL KIT' },
-        { col: 'R', text: 'LAUNDRY BAG' },
-        { col: 'S', text: 'LAUNDRY LIST' },
-        { col: 'T', text: 'MEMO PAD' },
-        { col: 'U', text: 'PENCIL' },
-        { col: 'V', text: 'GUEST COMMENT' },
-        { col: 'W', text: 'TISSUE ROLL' },
-        { col: 'X', text: 'HAND SOAP' },
-        { col: 'Y', text: 'SHAMPOO' },
-        { col: 'Z', text: 'SHOWER GEL' },
-        { col: 'AA', text: 'TOOTH BRUSH' },
-        { col: 'AB', text: 'STERER' },
-        { col: 'AC', text: 'SLIPPER' },
-        { col: 'AD', text: 'COFFEE' },
-        { col: 'AE', text: 'SUGAR' },
-        { col: 'AF', text: 'TEA' },
-        { col: 'AG', text: 'CREAMER' },
-        { col: 'AH', text: 'MINERAL WATER' },
-        { col: 'AI', text: 'PLASTIC BIN' },
-        { col: 'AJ', text: 'TISUE' }
+      const guestSubHeaders = [
+        { col: 'X', text: 'BATH ROOM', merge: 'X6:Y6' },
+        { col: 'Z', text: 'BED ROOM', merge: 'Z6:AD6' },
+        { col: 'AE', text: 'CONDIMEN', merge: 'AE6:AR6' }
       ];
 
-      row7Items.forEach(item => {
-        const cell = sheet.getCell(item.col + '7');
-        cell.value = item.text;
-        cell.font = { bold: true, size: 9 };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2EFDA' } };
-        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-        cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+      guestSubHeaders.forEach(h => {
+        const cell = sheet.getCell(h.col + '6');
+        cell.value = h.text;
+        Object.assign(cell, headerStyle);
+        if (h.merge) sheet.mergeCells(h.merge);
       });
 
-      // Apply borders to all header cells in row 4-7
+      // === ROW 7: IN/OUT labels for LINEN + item names for GUEST SUPPLIES ===
+      const r7Style = {
+        font: { bold: true, size: 9 },
+        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2EFDA' } },
+        alignment: { horizontal: 'center', vertical: 'middle', wrapText: true },
+        border: { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } }
+      };
+
+      // LINEN IN/OUT labels
+      const linenInOut = [
+        { col: 'H', text: 'IN' }, { col: 'I', text: 'OUT' },
+        { col: 'J', text: 'IN' }, { col: 'K', text: 'OUT' },
+        { col: 'L', text: 'IN' }, { col: 'M', text: 'OUT' },
+        { col: 'N', text: 'IN' }, { col: 'O', text: 'OUT' },
+        { col: 'P', text: 'IN' }, { col: 'Q', text: 'OUT' },
+        { col: 'R', text: 'IN' }, { col: 'S', text: 'OUT' },
+        { col: 'T', text: 'IN' }, { col: 'U', text: 'OUT' },
+        { col: 'V', text: 'IN' }, { col: 'W', text: 'OUT' }
+      ];
+
+      linenInOut.forEach(h => {
+        const cell = sheet.getCell(h.col + '7');
+        cell.value = h.text;
+        Object.assign(cell, r7Style);
+      });
+
+      // GUEST SUPPLIES item names
+      const guestItems = [
+        { col: 'X', text: 'SHOWER CAP' },
+        { col: 'Y', text: 'DENTAL KIT' },
+        { col: 'Z', text: 'LAUNDRY BAG' },
+        { col: 'AA', text: 'LAUNDRY LIST' },
+        { col: 'AB', text: 'MEMO PAD' },
+        { col: 'AC', text: 'PENCIL' },
+        { col: 'AD', text: 'GUEST COMMENT' },
+        { col: 'AE', text: 'TISSUE ROLL' },
+        { col: 'AF', text: 'HAND SOAP' },
+        { col: 'AG', text: 'SHAMPOO' },
+        { col: 'AH', text: 'SHOWER GEL' },
+        { col: 'AI', text: 'TOOTH BRUSH' },
+        { col: 'AJ', text: 'STERER' },
+        { col: 'AK', text: 'SLIPPER' },
+        { col: 'AL', text: 'COFFEE' },
+        { col: 'AM', text: 'SUGAR' },
+        { col: 'AN', text: 'TEA' },
+        { col: 'AO', text: 'CREAMER' },
+        { col: 'AP', text: 'MINERAL WATER' },
+        { col: 'AQ', text: 'PLASTIC BIN' },
+        { col: 'AR', text: 'TISUE' }
+      ];
+
+      guestItems.forEach(item => {
+        const cell = sheet.getCell(item.col + '7');
+        cell.value = item.text;
+        Object.assign(cell, r7Style);
+      });
+
+      // Apply borders to all header cells in rows 4-7
       for (let row = 4; row <= 7; row++) {
-        for (let colCode = 'A'.charCodeAt(0); colCode <= 'J'.charCodeAt(0); colCode++) {
+        for (let colCode = 'A'.charCodeAt(0); colCode <= 'W'.charCodeAt(0); colCode++) {
           const cell = sheet.getCell(String.fromCharCode(colCode) + row);
           if (!cell.border || !cell.border.top) {
             cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
@@ -1017,8 +1037,8 @@ app.get('/unduh-excel', async (req, res) => {
                  k.lantai,
                  IFNULL(l.waktu_masuk, '-') AS waktu_masuk,
                  IFNULL(l.waktu_keluar, '-') AS waktu_keluar,
-                 ${bathRoomSelects},
-                 ${guestSuppliesSelects}
+                 ${linenSelects},
+                 ${guestSelects}
           FROM tugas t
           JOIN kamar k ON t.kamar = k.nomor_kamar
           LEFT JOIN laporan l ON t.tanggal = l.tanggal AND t.kamar = l.nomor_kamar
@@ -1040,24 +1060,33 @@ app.get('/unduh-excel', async (req, res) => {
       // Update lantai
       sheet.getCell('I3').value = (dataRA[0] && dataRA[0].lantai) ? dataRA[0].lantai : '-';
 
-      // === DATA ROWS (mulai baris 8) - 1 BARIS PER KAMAR ===
+      // === DATA ROWS (mulai baris 8) ===
       let baris = 8;
       let no = 1;
+
+      // Track totals for TOTAL SOILED
+      let totalSoiled = {
+        sheet_king: 0, sheet_twin: 0, duvet_king: 0, duvet_twin: 0,
+        bath_towel: 0, hand_towel: 0, bath_mat: 0, pillow_case: 0
+      };
+
       dataRA.forEach((data) => {
+        const dataStyle = {
+          alignment: { horizontal: 'center', vertical: 'middle' },
+          border: { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } }
+        };
+
         // NO
         sheet.getCell('A' + baris).value = no++;
-        sheet.getCell('A' + baris).alignment = { horizontal: 'center' };
-        sheet.getCell('A' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+        Object.assign(sheet.getCell('A' + baris), dataStyle);
 
         // ROOM
         sheet.getCell('B' + baris).value = data.kamar || '';
-        sheet.getCell('B' + baris).alignment = { horizontal: 'center' };
-        sheet.getCell('B' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+        Object.assign(sheet.getCell('B' + baris), dataStyle);
 
         // FO
         sheet.getCell('C' + baris).value = data.status_fo || '';
-        sheet.getCell('C' + baris).alignment = { horizontal: 'center' };
-        sheet.getCell('C' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+        Object.assign(sheet.getCell('C' + baris), dataStyle);
 
         // HK IN
         let statusHKin = data.status_hk_in || '';
@@ -1067,8 +1096,7 @@ app.get('/unduh-excel', async (req, res) => {
           else if (data.status_fo === 'OD') statusHKin = 'OD';
         }
         sheet.getCell('D' + baris).value = statusHKin;
-        sheet.getCell('D' + baris).alignment = { horizontal: 'center' };
-        sheet.getCell('D' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+        Object.assign(sheet.getCell('D' + baris), dataStyle);
 
         // HK OUT
         let statusHKout = data.status_hk_out || '';
@@ -1077,67 +1105,74 @@ app.get('/unduh-excel', async (req, res) => {
           else if (statusHKin === 'OD') statusHKout = 'OC';
         }
         sheet.getCell('E' + baris).value = statusHKout;
-        sheet.getCell('E' + baris).alignment = { horizontal: 'center' };
-        sheet.getCell('E' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+        Object.assign(sheet.getCell('E' + baris), dataStyle);
 
         // TIME IN / TIME OUT
         sheet.getCell('F' + baris).value = data.waktu_masuk !== '-' ? data.waktu_masuk : '';
-        sheet.getCell('F' + baris).alignment = { horizontal: 'center' };
-        sheet.getCell('F' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+        Object.assign(sheet.getCell('F' + baris), dataStyle);
         sheet.getCell('G' + baris).value = data.waktu_keluar !== '-' ? data.waktu_keluar : '';
-        sheet.getCell('G' + baris).alignment = { horizontal: 'center' };
-        sheet.getCell('G' + baris).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+        Object.assign(sheet.getCell('G' + baris), dataStyle);
 
-        // === LINEN (1 baris saja, angka = IN = OUT) ===
+        // === LINEN (IN/OUT pairs) ===
+        // IN = quantity from DB, OUT = same quantity (soiled = what was used)
         const linenValues = [
-          data.sheet_twin_in || 0,
-          data.sheet_king_in || 0,
-          data.duvet_twin_in || 0,
-          data.duvet_king_in || 0,
-          data.bath_towel_in || 0,
-          data.hand_towel_in || 0,
-          data.bath_mat_in || 0,
-          data.pillow_case_in || 0
+          { db: 'sheet_king', inCol: 'H', outCol: 'I' },
+          { db: 'sheet_twin', inCol: 'J', outCol: 'K' },
+          { db: 'duvet_king', inCol: 'L', outCol: 'M' },
+          { db: 'duvet_twin', inCol: 'N', outCol: 'O' },
+          { db: 'bath_towel', inCol: 'P', outCol: 'Q' },
+          { db: 'hand_towel', inCol: 'R', outCol: 'S' },
+          { db: 'bath_mat', inCol: 'T', outCol: 'U' },
+          { db: 'pillow_case', inCol: 'V', outCol: 'W' }
         ];
 
-        const linenCols = ['H', 'I', 'J', 'K', 'L', 'M', 'N', 'O'];
-        linenCols.forEach((col, idx) => {
-          const cell = sheet.getCell(col + baris);
-          cell.value = linenValues[idx];
-          cell.alignment = { horizontal: 'center', vertical: 'middle' };
-          cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+        linenValues.forEach(item => {
+          const val = data[item.db] || 0;
+          // IN value
+          const inCell = sheet.getCell(item.inCol + baris);
+          inCell.value = val;
+          Object.assign(inCell, dataStyle);
+          // OUT value (same as IN for now - soiled = used)
+          const outCell = sheet.getCell(item.outCol + baris);
+          outCell.value = val;
+          Object.assign(outCell, dataStyle);
+          // Accumulate total soiled
+          totalSoiled[item.db] += parseInt(val) || 0;
         });
 
         // === GUEST SUPPLIES & AMENITIES ===
-        const guestCells = [
-          { col: 'P', val: data.shower_cap || 0 },
-          { col: 'Q', val: data.dental_kit || 0 },
-          { col: 'R', val: data.laundry_bag || 0 },
-          { col: 'S', val: data.laundry_list || 0 },
-          { col: 'T', val: data.note_pad || 0 },
-          { col: 'U', val: data.pensil || 0 },
-          { col: 'V', val: '' },
-          { col: 'W', val: data.tissue_roll || 0 },
-          { col: 'X', val: data.tissue_facial || 0 },
-          { col: 'Y', val: data.cotton_bud || 0 },
-          { col: 'Z', val: data.shower_cap || 0 },
-          { col: 'AA', val: data.dental_kit || 0 },
-          { col: 'AB', val: data.stirer || 0 },
-          { col: 'AC', val: data.slipper || 0 },
-          { col: 'AD', val: data.coffee || 0 },
-          { col: 'AE', val: data.sugar || 0 },
-          { col: 'AF', val: data.tea || 0 },
-          { col: 'AG', val: data.creamer || 0 },
-          { col: 'AH', val: data.mineral || 0 },
-          { col: 'AI', val: data.poly_bag_kecil || 0 },
-          { col: 'AJ', val: data.tissue_facial || 0 }
+        const guestValues = [
+          { col: 'X', db: 'shower_cap' },
+          { col: 'Y', db: 'dental_kit' },
+          { col: 'Z', db: 'laundry_bag' },
+          { col: 'AA', db: 'laundry_list' },
+          { col: 'AB', db: 'note_pad' },
+          { col: 'AC', db: 'pensil' },
+          { col: 'AD', db: '' }, // GUEST COMMENT - no DB field
+          { col: 'AE', db: 'tissue_roll' },
+          { col: 'AF', db: 'tissue_facial' }, // HAND SOAP - closest match
+          { col: 'AG', db: 'cotton_bud' }, // SHAMPOO - no exact match
+          { col: 'AH', db: 'slipper' }, // SHOWER GEL - no exact match
+          { col: 'AI', db: 'comb' }, // TOOTH BRUSH - no exact match
+          { col: 'AJ', db: 'stirer' }, // STERER
+          { col: 'AK', db: 'slipper' },
+          { col: 'AL', db: 'coffee' },
+          { col: 'AM', db: 'sugar' },
+          { col: 'AN', db: 'tea' },
+          { col: 'AO', db: 'creamer' },
+          { col: 'AP', db: 'mineral' },
+          { col: 'AQ', db: 'poly_bag_kecil' }, // PLASTIC BIN
+          { col: 'AR', db: 'tissue_facial' } // TISUE
         ];
 
-        guestCells.forEach(g => {
+        guestValues.forEach(g => {
           const cell = sheet.getCell(g.col + baris);
-          cell.value = g.val;
-          cell.alignment = { horizontal: 'center', vertical: 'middle' };
-          cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+          if (g.db) {
+            cell.value = data[g.db] || 0;
+          } else {
+            cell.value = '';
+          }
+          Object.assign(cell, dataStyle);
         });
 
         baris++;
@@ -1147,18 +1182,50 @@ app.get('/unduh-excel', async (req, res) => {
       const totalRow = baris + 1;
       sheet.getCell('A' + totalRow).value = 'TOTAL SOILED:';
       sheet.getCell('A' + totalRow).font = { bold: true };
-      sheet.mergeCells('A' + totalRow + ':B' + totalRow);
-      for (let colCode = 'A'.charCodeAt(0); colCode <= 'J'.charCodeAt(0); colCode++) {
-        sheet.getCell(String.fromCharCode(colCode) + totalRow).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+      sheet.mergeCells('A' + totalRow + ':G' + totalRow);
+
+      // Fill total soiled values for LINEN OUT columns
+      const totalSoiledCols = [
+        { db: 'sheet_king', col: 'I' },
+        { db: 'sheet_twin', col: 'K' },
+        { db: 'duvet_king', col: 'M' },
+        { db: 'duvet_twin', col: 'O' },
+        { db: 'bath_towel', col: 'Q' },
+        { db: 'hand_towel', col: 'S' },
+        { db: 'bath_mat', col: 'U' },
+        { db: 'pillow_case', col: 'W' }
+      ];
+
+      totalSoiledCols.forEach(item => {
+        const cell = sheet.getCell(item.col + totalRow);
+        cell.value = totalSoiled[item.db];
+        cell.font = { bold: true };
+        cell.alignment = { horizontal: 'center' };
+        cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+      });
+
+      // Border for total row cells A-G
+      for (let colCode = 'A'.charCodeAt(0); colCode <= 'G'.charCodeAt(0); colCode++) {
+        const cell = sheet.getCell(String.fromCharCode(colCode) + totalRow);
+        if (!cell.border || !cell.border.top) {
+          cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+        }
       }
 
       // === REMARKS ROW ===
       const remarksRow = totalRow + 1;
       sheet.getCell('A' + remarksRow).value = 'REMARKS';
       sheet.getCell('A' + remarksRow).font = { bold: true };
-      sheet.mergeCells('A' + remarksRow + ':AJ' + (remarksRow + 2));
-      for (let colCode = 'A'.charCodeAt(0); colCode <= 'J'.charCodeAt(0); colCode++) {
-        sheet.getCell(String.fromCharCode(colCode) + remarksRow).border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+      sheet.mergeCells('A' + remarksRow + ':B' + (remarksRow + 2));
+      sheet.mergeCells('C' + remarksRow + ':AR' + (remarksRow + 2));
+
+      // Borders for remarks
+      for (let colCode = 'A'.charCodeAt(0); colCode <= 'R'.charCodeAt(0); colCode++) {
+        const c = String.fromCharCode(colCode);
+        for (let r = remarksRow; r <= remarksRow + 2; r++) {
+          const cell = sheet.getCell(c + r);
+          cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+        }
       }
 
       // === LEGEND ROWS ===
@@ -1203,6 +1270,7 @@ app.get('/unduh-excel', async (req, res) => {
     res.send('❌ Gagal membuat file Excel: ' + err.message);
   }
 });
+
 
 app.get('/logout', (req, res) => {
   req.session.destroy(() => {
