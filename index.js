@@ -6,6 +6,7 @@ const { parse } = require('json2csv');
 const PDFDocument = require('pdfkit');
 const cron = require('node-cron');
 const ExcelJS = require('exceljs');
+const axios = require('axios');
 
 const app = express();
 const PORT = process.env.PORT || 8888;
@@ -197,19 +198,21 @@ db.serialize(() => {
   db.run(`ALTER TABLE tugas ADD COLUMN status_hk_in TEXT DEFAULT ''`, () => {});
   db.run(`ALTER TABLE tugas ADD COLUMN status_hk_out TEXT DEFAULT ''`, () => {});
 
-  // HAPUS tabel laporan lama dan buat ulang dengan struktur baru
-  db.run(`DROP TABLE IF EXISTS laporan`, () => {
-    const amenityCols = AMENITY_FIELDS.map(f => `${f} INTEGER DEFAULT 0`).join(',\n      ');
-    db.run(`CREATE TABLE IF NOT EXISTS laporan (
-      tanggal TEXT,
-      nomor_kamar TEXT,
-      waktu_masuk TEXT,
-      waktu_keluar TEXT,
-      ${amenityCols},
-      petugas TEXT,
-      PRIMARY KEY (tanggal, nomor_kamar),
-      FOREIGN KEY (nomor_kamar) REFERENCES kamar(nomor_kamar) ON DELETE CASCADE
-    )`);
+  // ✅ FIX: Data laporan aman, tidak terhapus saat restart server
+  db.get(`SELECT name FROM sqlite_master WHERE type='table' AND name='laporan'`, (err, row) => {
+    if (!row) {
+      const amenityCols = AMENITY_FIELDS.map(f => `${f} INTEGER DEFAULT 0`).join(',\n      ');
+      db.run(`CREATE TABLE laporan (
+        tanggal TEXT,
+        nomor_kamar TEXT,
+        waktu_masuk TEXT,
+        waktu_keluar TEXT,
+        ${amenityCols},
+        petugas TEXT,
+        PRIMARY KEY (tanggal, nomor_kamar),
+        FOREIGN KEY (nomor_kamar) REFERENCES kamar(nomor_kamar) ON DELETE CASCADE
+      )`);
+    }
   });
 
   db.run(`CREATE TABLE IF NOT EXISTS permintaan_tamu (
@@ -837,11 +840,30 @@ app.get('/unduh-excel', async (req, res) => {
         sheet.getColumn(col).width = colWidths[col];
       });
 
+      // === LOGO HOTEL (POJOK KIRI ATAS) ===
+      // ⬇️ GANTI URL INI DENGAN LINK IMGUR ANDA YANG BENAR
+      const LOGO_URL = 'https://imgur.com/F3uMFwH';
+      try {
+        const logoResponse = await axios.get(LOGO_URL, { responseType: 'arraybuffer', timeout: 5000 });
+        const logoBuffer = Buffer.from(logoResponse.data, 'binary');
+        const imageId = workbook.addImage({
+          buffer: logoBuffer,
+          extension: 'png',
+        });
+        // Logo di pojok kiri atas (A1:B3)
+        sheet.addImage(imageId, {
+          tl: { col: 0, row: 0 },
+          br: { col: 2, row: 3 }
+        });
+      } catch (e) {
+        console.log('⚠️ Logo tidak terpasang:', e.message);
+      }
+
       // === ROW 1: TITLE ===
-      sheet.getCell('A1').value = 'ROOMBOY CONTROL SHEET';
-      sheet.getCell('A1').font = { bold: true, size: 14 };
-      sheet.getCell('A1').alignment = { horizontal: 'center' };
-      sheet.mergeCells('A1:AJ1');
+      sheet.getCell('C1').value = 'ROOMBOY CONTROL SHEET';
+      sheet.getCell('C1').font = { bold: true, size: 14 };
+      sheet.getCell('C1').alignment = { horizontal: 'center' };
+      sheet.mergeCells('C1:AJ1');
 
       // === ROW 2: EMPTY ===
 
