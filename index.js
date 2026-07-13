@@ -60,6 +60,75 @@ const db = new sqlite3.Database(dbPath, (err) => {
   else console.log("Terhubung ke SQLite di:", dbPath);
 });
 
+// =====================================================
+// HELPER: Fix table columns (add missing columns safely)
+// =====================================================
+function addColumnIfMissing(tableName, columnName, columnDef) {
+  return new Promise((resolve) => {
+    db.all(`PRAGMA table_info(${tableName})`, [], (err, columns) => {
+      if (err || !columns) {
+        console.log(`  Could not check ${tableName}:`, err?.message);
+        return resolve(false);
+      }
+      const hasCol = columns.some(c => c.name === columnName);
+      if (hasCol) {
+        return resolve(true); // already exists
+      }
+      db.run(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnDef}`, (err) => {
+        if (err) {
+          console.log(`  Failed to add ${columnName} to ${tableName}:`, err.message);
+          return resolve(false);
+        }
+        console.log(`  Added column ${columnName} to ${tableName}`);
+        resolve(true);
+      });
+    });
+  });
+}
+
+// =====================================================
+// HELPER: Recreate table with correct schema, preserving data
+// =====================================================
+function recreateTable(tableName, createSQL, columnMap) {
+  return new Promise((resolve) => {
+    console.log(`Recreating table ${tableName}...`);
+    db.all(`SELECT * FROM ${tableName}`, [], (err, oldData) => {
+      const dataCount = oldData ? oldData.length : 0;
+      console.log(`  Backing up ${dataCount} rows...`);
+
+      db.run(`DROP TABLE ${tableName}`, () => {
+        db.run(createSQL, () => {
+          if (oldData && oldData.length > 0) {
+            const cols = Object.keys(columnMap);
+            const placeholders = cols.map(() => '?').join(',');
+            const insertSQL = `INSERT INTO ${tableName} (${cols.join(',')}) VALUES (${placeholders})`;
+
+            let restored = 0;
+            oldData.forEach(row => {
+              const values = cols.map(col => {
+                const sourceCol = columnMap[col];
+                if (typeof sourceCol === 'function') return sourceCol(row);
+                return row[sourceCol] !== undefined ? row[sourceCol] : (sourceCol === '' ? '' : sourceCol);
+              });
+              db.run(insertSQL, values, () => {
+                restored++;
+                if (restored === oldData.length) {
+                  console.log(`  Restored ${restored} rows`);
+                  resolve(restored);
+                }
+              });
+            });
+          } else {
+            console.log(`  Table recreated (no data to restore)`);
+            resolve(0);
+          }
+        });
+      });
+    });
+  });
+}
+
+
 db.serialize(() => {
   db.run(`CREATE TABLE IF NOT EXISTS pengguna (
     id INTEGER PRIMARY KEY AUTOINCREMENT, nama TEXT NOT NULL, username TEXT UNIQUE NOT NULL,
@@ -157,6 +226,46 @@ db.serialize(() => {
     status TEXT DEFAULT 'Pending', dibuat_oleh TEXT, waktu_input TEXT)`);
 });
 
+// =====================================================
+// AUTO-FIX DATABASE ON STARTUP (after initial create)
+// =====================================================
+setTimeout(async () => {
+  console.log('\nChecking database schema...');
+
+  // Fix daily_laundry: ensure nama_item column exists
+  const dailyLaundryFixed = await addColumnIfMissing('daily_laundry', 'nama_item', 'TEXT');
+  await addColumnIfMissing('daily_laundry', 'kategori', 'TEXT');
+  await addColumnIfMissing('daily_laundry', 'harga', 'INTEGER DEFAULT 0');
+  await addColumnIfMissing('daily_laundry', 'unit', 'TEXT');
+  await addColumnIfMissing('daily_laundry', 'qty', 'INTEGER DEFAULT 0');
+  await addColumnIfMissing('daily_laundry', 'total_harga', 'INTEGER DEFAULT 0');
+  await addColumnIfMissing('daily_laundry', 'dibuat_oleh', 'TEXT');
+  await addColumnIfMissing('daily_laundry', 'waktu_input', 'TEXT');
+
+  // Fix fnb_linen: ensure nama_item column exists
+  await addColumnIfMissing('fnb_linen', 'nama_item', 'TEXT');
+  await addColumnIfMissing('fnb_linen', 'kategori', 'TEXT');
+  await addColumnIfMissing('fnb_linen', 'harga', 'INTEGER DEFAULT 0');
+  await addColumnIfMissing('fnb_linen', 'unit', 'TEXT');
+  await addColumnIfMissing('fnb_linen', 'qty', 'INTEGER DEFAULT 0');
+  await addColumnIfMissing('fnb_linen', 'total_harga', 'INTEGER DEFAULT 0');
+  await addColumnIfMissing('fnb_linen', 'dibuat_oleh', 'TEXT');
+  await addColumnIfMissing('fnb_linen', 'waktu_input', 'TEXT');
+
+  // Fix store_request: ensure nama_barang column exists
+  await addColumnIfMissing('store_request', 'nama_barang', 'TEXT');
+  await addColumnIfMissing('store_request', 'kategori', 'TEXT');
+  await addColumnIfMissing('store_request', 'harga', 'INTEGER DEFAULT 0');
+  await addColumnIfMissing('store_request', 'unit', 'TEXT');
+  await addColumnIfMissing('store_request', 'jumlah', 'INTEGER DEFAULT 0');
+  await addColumnIfMissing('store_request', 'total_harga', 'INTEGER DEFAULT 0');
+  await addColumnIfMissing('store_request', 'status', 'TEXT DEFAULT "Pending"');
+  await addColumnIfMissing('store_request', 'dibuat_oleh', 'TEXT');
+  await addColumnIfMissing('store_request', 'waktu_input', 'TEXT');
+
+  console.log('Database schema check complete!\n');
+}, 2000); // Wait 2 seconds for tables to be created first
+
 const buatTugasBaruHariIni = () => {
   const tanggalSekarang = getTanggalWIB();
   db.get(`SELECT 1 FROM tugas WHERE tanggal = ? LIMIT 1`, [tanggalSekarang], (err, ada) => {
@@ -190,6 +299,7 @@ app.use((req, res, next) => {
   if (req.query.pesan === 'gagal') res.locals.pesan = { tipe: 'error', teks: 'Terjadi kesalahan' };
   next();
 });
+
 
 app.get('/', (req, res) => {
   if (req.session.user) {
@@ -369,6 +479,7 @@ app.post('/ubah-status-permintaan', (req, res) => {
 app.post('/hapus-permintaan', (req, res) => {
   db.run(`DELETE FROM permintaan_tamu WHERE id = ?`, [req.body.id], err => err ? res.redirect('/ot?pesan=gagal') : res.redirect('/ot?pesan=berhasil'));
 });
+
 
 // =====================================================
 // DAILY LAUNDRY (FORMAT BARU)
@@ -990,7 +1101,7 @@ app.get('/cleanup-old-data', (req, res) => {
     db.run(`DELETE FROM store_request WHERE nama_barang IS NULL OR nama_barang = '' OR jumlah = 0`, function(err) {
       if (!err) deletedStore = this.changes;
       res.send(`
-        <h2>✅ Cleanup Selesai</h2>
+        <h2>Cleanup Selesai</h2>
         <p>Data laundry dihapus: ${deletedLaundry} baris</p>
         <p>Data store dihapus: ${deletedStore} baris</p>
         <p><a href="/ot">Kembali ke Panel OT</a></p>
