@@ -1,19 +1,20 @@
 {
-  "name": "Sistem Laporan Kamar Hotel",
-  "short_name": "Laporan HK",
-  "description": "Aplikasi manajemen tugas dan laporan kebersihan kamar",
-  "start_url": "/",
+  "name": "Horison Hotel - Order Taker",
+  "short_name": "Horison OT",
+  "description": "Panel Order Taker untuk Housekeeping Horison Hotel",
+  "start_url": "/ot",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#0F2B48",
+  "background_color": "#004b97",
+  "theme_color": "#004b97",
+  "orientation": "portrait",
   "icons": [
     {
-      "src": "https://i.imgur.com/xQDZfY0.png",
+      "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "https://i.imgur.com/xQDZfY0.png",
+      "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
