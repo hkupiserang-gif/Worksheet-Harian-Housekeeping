@@ -625,5 +625,266 @@ app.get('/unduh-pdf', (req, res) => {
   });
 });
 
+
+// =====================================================
+// EXCEL GENERATORS
+// =====================================================
+app.get('/unduh-excel', async (req, res) => {
+  try {
+    const tanggal = req.query.tanggal || getTanggalWIB();
+    const raFilter = req.query.ra || null;
+    console.log('Download Excel request:', { tanggal, raFilter });
+
+    const daftarRA = await new Promise((resolve, reject) => {
+      let query = `SELECT DISTINCT petugas FROM tugas WHERE tanggal = ? AND petugas != '' AND sudah_dibagikan = 1`;
+      const params = [tanggal];
+      if (raFilter) { query += ` AND petugas = ?`; params.push(raFilter); }
+      query += ` ORDER BY petugas`;
+      db.all(query, params, (err, rows) => {
+        if (err) { console.error('Error ambil daftar RA:', err.message); return reject(err); }
+        resolve(rows.map(r => r.petugas));
+      });
+    });
+
+    if (daftarRA.length === 0) return res.send('Tidak ada RA yang memiliki tugas untuk tanggal ini');
+
+    const workbook = new ExcelJS.Workbook();
+    const linenFields = ['sheet_king','sheet_twin','duvet_king','duvet_twin','bath_towel','hand_towel','bath_mat','pillow_case'];
+    const linenSelects = linenFields.map(f => 'IFNULL(l.' + f + ', 0) AS ' + f).join(', ');
+    const guestFields = ['shower_cap','dental_kit','laundry_bag','laundry_list','note_pad','pensil','tissue_roll','tissue_facial','cotton_bud','slipper','comb','stirer','coffee','sugar','tea','creamer','mineral','poly_bag_kecil','poly_bag_besar'];
+    const guestSelects = guestFields.map(f => 'IFNULL(l.' + f + ', 0) AS ' + f).join(', ');
+
+    for (let i = 0; i < daftarRA.length; i++) {
+      const ra = daftarRA[i];
+      const sheet = workbook.addWorksheet(ra);
+      sheet.getRow(1).height = 18.75; sheet.getRow(6).height = 33.75; sheet.getRow(7).height = 24;
+      const colList = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','AA','AB','AC','AD','AE','AF','AG','AH','AI','AJ','AK','AL','AM','AN','AO','AP','AQ','AR'];
+      colList.forEach(col => { sheet.getColumn(col).width = 4.0; });
+      const allBorder = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+      const headerFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
+      const subHeaderFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2EFDA' } };
+
+      const LOGO_URL = 'https://www.image2url.com/r2/default/images/1783906749722-699e9760-3deb-4dfc-97e3-8026e5fbac63.jpeg';
+      if (axios) {
+        try {
+          const logoResponse = await axios.get(LOGO_URL, { responseType: 'arraybuffer', timeout: 10000 });
+          const logoBuffer = Buffer.from(logoResponse.data, 'binary');
+          const imageId = workbook.addImage({ buffer: logoBuffer, extension: 'jpeg' });
+          sheet.addImage(imageId, { tl: { col: 40, row: 0 }, br: { col: 44, row: 3 } });
+        } catch (e) { console.log('Logo tidak terpasang:', e.message); }
+      }
+
+      sheet.getCell('A1').value = 'ROOMBOY CONTROL SHEET';
+      sheet.getCell('A1').font = { name: 'Calibri', bold: true, size: 14 };
+      sheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'center' };
+      sheet.mergeCells('A1:AR1');
+
+      sheet.getCell('A3').value = 'DATE:'; sheet.getCell('A3').font = { name: 'Calibri', bold: true, size: 11 };
+      sheet.getCell('B3').value = tanggal; sheet.getCell('B3').font = { name: 'Calibri', size: 11 };
+      sheet.getCell('D3').value = 'SHIFT:'; sheet.getCell('D3').font = { name: 'Calibri', bold: true, size: 11 };
+      sheet.getCell('E3').value = 'Morning'; sheet.getCell('E3').font = { name: 'Calibri', size: 11 };
+      sheet.getCell('I3').value = 'FLOOR/SECTION:'; sheet.getCell('I3').font = { name: 'Calibri', bold: true, size: 11 };
+
+      const r4Headers = [{ col: 'A', text: 'NO' },{ col: 'B', text: 'NO OF ROOM' },{ col: 'C', text: 'ROOM STATUS' },{ col: 'F', text: 'TIME' },{ col: 'H', text: 'LINEN' },{ col: 'X', text: 'GUEST SUPPLIES & AMENITIES' }];
+      r4Headers.forEach(h => {
+        const cell = sheet.getCell(h.col + '4'); cell.value = h.text;
+        cell.font = { name: 'Calibri', bold: true, size: 9 }; cell.fill = headerFill;
+        cell.alignment = { horizontal: 'center', vertical: 'center', wrapText: true }; cell.border = allBorder;
+      });
+      sheet.mergeCells('A4:A6'); sheet.mergeCells('B4:B6'); sheet.mergeCells('C4:E5'); sheet.mergeCells('F4:G5'); sheet.mergeCells('H4:W5'); sheet.mergeCells('X4:AR5');
+
+      ['C','D','E','F','G'].forEach(col => { const cell = sheet.getCell(col + '6'); cell.font = { name: 'Calibri', size: 11 }; cell.border = allBorder; });
+      sheet.getCell('C6').value = 'FO'; sheet.getCell('D6').value = 'HK'; sheet.getCell('E6').value = 'HK';
+      sheet.getCell('F6').value = 'IN'; sheet.getCell('G6').value = 'OUT';
+
+      const linenSubHeaders = [{ col: 'H', text: 'SHEET\nDOUBLE', merge: 'H6:I6' },{ col: 'J', text: 'SHEET\nSINGLE', merge: 'J6:K6' },{ col: 'L', text: 'DUVET\nCOVER', merge: 'L6:M6' },{ col: 'N', text: 'DUVET\nSINGLE', merge: 'N6:O6' },{ col: 'P', text: 'BATH\nTOWEL', merge: 'P6:Q6' },{ col: 'R', text: 'HAND\nTOWEL', merge: 'R6:S6' },{ col: 'T', text: 'BATH\nMAT', merge: 'T6:U6' },{ col: 'V', text: 'PILLOW\nCASE', merge: 'V6:W6' }];
+      linenSubHeaders.forEach(h => {
+        const cell = sheet.getCell(h.col + '6'); cell.value = h.text;
+        cell.font = { name: 'Calibri', bold: true, size: 8 }; cell.fill = headerFill;
+        cell.alignment = { horizontal: 'center', vertical: 'center', wrapText: true }; cell.border = allBorder;
+        if (h.merge) sheet.mergeCells(h.merge);
+      });
+
+      const guestSubHeaders = [{ col: 'X', text: 'BATH ROOM', merge: 'X6:Y6' },{ col: 'Z', text: 'BED ROOM', merge: 'Z6:AD6' },{ col: 'AE', text: 'CONDIMEN', merge: 'AE6:AR6' }];
+      guestSubHeaders.forEach(h => {
+        const cell = sheet.getCell(h.col + '6'); cell.value = h.text;
+        cell.font = { name: 'Calibri', bold: true, size: 8 }; cell.fill = headerFill;
+        cell.alignment = { horizontal: 'center', vertical: 'center' }; cell.border = allBorder;
+        if (h.merge) sheet.mergeCells(h.merge);
+      });
+
+      const linenInOut = ['H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W'];
+      linenInOut.forEach((col, idx) => {
+        const cell = sheet.getCell(col + '7'); cell.value = idx % 2 === 0 ? 'IN' : 'OUT';
+        cell.font = { name: 'Calibri', size: 8 }; cell.alignment = { horizontal: 'center', vertical: 'center' }; cell.border = allBorder;
+      });
+
+      const guestItems = [{ col: 'X', text: 'SHOWER CAP' },{ col: 'Y', text: 'DENTAL KIT' },{ col: 'Z', text: 'LAUNDRY BAG' },{ col: 'AA', text: 'LAUNDRY LIST' },{ col: 'AB', text: 'MEMO PAD' },{ col: 'AC', text: 'PENCIL' },{ col: 'AD', text: 'GUEST COMMENT' },{ col: 'AE', text: 'TISSUE ROLL' },{ col: 'AF', text: 'HAND SOAP' },{ col: 'AG', text: 'SHAMPOO' },{ col: 'AH', text: 'SHOWER GEL' },{ col: 'AI', text: 'TOOTH BRUSH' },{ col: 'AJ', text: 'STERER' },{ col: 'AK', text: 'SLIPPER' },{ col: 'AL', text: 'COFFEE' },{ col: 'AM', text: 'SUGAR' },{ col: 'AN', text: 'TEA' },{ col: 'AO', text: 'CREAMER' },{ col: 'AP', text: 'MINERAL WATER' },{ col: 'AQ', text: 'PLASTIC BIN' },{ col: 'AR', text: 'TISUE' }];
+      guestItems.forEach(item => {
+        const cell = sheet.getCell(item.col + '7'); cell.value = item.text;
+        cell.font = { name: 'Calibri', bold: true, size: 8 }; cell.fill = subHeaderFill;
+        cell.alignment = { horizontal: 'center', vertical: 'center', wrapText: true }; cell.border = allBorder;
+      });
+
+      for (let row = 4; row <= 7; row++) {
+        colList.forEach(col => { const cell = sheet.getCell(col + row); if (!cell.border || !cell.border.top) cell.border = allBorder; });
+      }
+
+      const dataRA = await new Promise((resolve, reject) => {
+        const query = `SELECT t.petugas, t.kamar, t.status_awal AS status_fo, t.status_hk_in, t.status_hk_out, t.selesai, k.lantai, IFNULL(l.waktu_masuk, '-') AS waktu_masuk, IFNULL(l.waktu_keluar, '-') AS waktu_keluar, ${linenSelects}, ${guestSelects} FROM tugas t JOIN kamar k ON t.kamar = k.nomor_kamar LEFT JOIN laporan l ON t.tanggal = l.tanggal AND t.kamar = l.nomor_kamar WHERE t.tanggal = ? AND t.petugas = ? AND t.sudah_dibagikan = 1 ORDER BY t.kamar`;
+        db.all(query, [tanggal, ra], (err, rows) => { if (err) return reject(err); resolve(rows); });
+      });
+
+      sheet.getCell('L3').value = (dataRA[0] && dataRA[0].lantai) ? dataRA[0].lantai : '-';
+      sheet.getCell('L3').font = { name: 'Calibri', size: 11 };
+
+      let baris = 8, no = 1, maxDataRow = 35;
+      dataRA.forEach((data) => {
+        if (baris > maxDataRow) return;
+        const dataFont = { name: 'Calibri', size: 11 };
+        sheet.getCell('A' + baris).value = no++; sheet.getCell('A' + baris).font = dataFont; sheet.getCell('A' + baris).alignment = { horizontal: 'center', vertical: 'center' }; sheet.getCell('A' + baris).border = allBorder;
+        sheet.getCell('B' + baris).value = data.kamar || ''; sheet.getCell('B' + baris).font = dataFont; sheet.getCell('B' + baris).alignment = { horizontal: 'center', vertical: 'center' }; sheet.getCell('B' + baris).border = allBorder;
+        sheet.getCell('C' + baris).value = data.status_fo || ''; sheet.getCell('C' + baris).font = dataFont; sheet.getCell('C' + baris).alignment = { horizontal: 'center', vertical: 'center' }; sheet.getCell('C' + baris).border = allBorder;
+        let statusHKin = data.status_hk_in || ''; if (!statusHKin) { if (data.status_fo === 'VD' || data.status_fo === 'ED') statusHKin = 'VD'; else if (data.status_fo === 'VCU') statusHKin = 'VCU'; else if (data.status_fo === 'OD') statusHKin = 'OD'; }
+        sheet.getCell('D' + baris).value = statusHKin; sheet.getCell('D' + baris).font = dataFont; sheet.getCell('D' + baris).alignment = { horizontal: 'center', vertical: 'center' }; sheet.getCell('D' + baris).border = allBorder;
+        let statusHKout = data.status_hk_out || ''; if (!statusHKout && data.selesai === 1) { if (statusHKin === 'VD' || statusHKin === 'VCU' || data.status_fo === 'ED') statusHKout = 'VC'; else if (statusHKin === 'OD') statusHKout = 'OC'; }
+        sheet.getCell('E' + baris).value = statusHKout; sheet.getCell('E' + baris).font = dataFont; sheet.getCell('E' + baris).alignment = { horizontal: 'center', vertical: 'center' }; sheet.getCell('E' + baris).border = allBorder;
+        sheet.getCell('F' + baris).value = data.waktu_masuk !== '-' ? data.waktu_masuk : ''; sheet.getCell('F' + baris).font = dataFont; sheet.getCell('F' + baris).alignment = { horizontal: 'center', vertical: 'center' }; sheet.getCell('F' + baris).border = allBorder;
+        sheet.getCell('G' + baris).value = data.waktu_keluar !== '-' ? data.waktu_keluar : ''; sheet.getCell('G' + baris).font = dataFont; sheet.getCell('G' + baris).alignment = { horizontal: 'center', vertical: 'center' }; sheet.getCell('G' + baris).border = allBorder;
+
+        const linenValues = [{ db: 'sheet_king', inCol: 'H', outCol: 'I' },{ db: 'sheet_twin', inCol: 'J', outCol: 'K' },{ db: 'duvet_king', inCol: 'L', outCol: 'M' },{ db: 'duvet_twin', inCol: 'N', outCol: 'O' },{ db: 'bath_towel', inCol: 'P', outCol: 'Q' },{ db: 'hand_towel', inCol: 'R', outCol: 'S' },{ db: 'bath_mat', inCol: 'T', outCol: 'U' },{ db: 'pillow_case', inCol: 'V', outCol: 'W' }];
+        linenValues.forEach(item => {
+          const val = data[item.db] || 0;
+          const inCell = sheet.getCell(item.inCol + baris); inCell.value = val; inCell.font = dataFont; inCell.alignment = { horizontal: 'center', vertical: 'center' }; inCell.border = allBorder;
+          const outCell = sheet.getCell(item.outCol + baris); outCell.value = val; outCell.font = dataFont; outCell.alignment = { horizontal: 'center', vertical: 'center' }; outCell.border = allBorder;
+        });
+
+        const guestValues = [{ col: 'X', db: 'shower_cap' },{ col: 'Y', db: 'dental_kit' },{ col: 'Z', db: 'laundry_bag' },{ col: 'AA', db: 'laundry_list' },{ col: 'AB', db: 'note_pad' },{ col: 'AC', db: 'pensil' },{ col: 'AD', db: '' },{ col: 'AE', db: 'tissue_roll' },{ col: 'AF', db: 'tissue_facial' },{ col: 'AG', db: 'cotton_bud' },{ col: 'AH', db: 'slipper' },{ col: 'AI', db: 'comb' },{ col: 'AJ', db: 'stirer' },{ col: 'AK', db: 'slipper' },{ col: 'AL', db: 'coffee' },{ col: 'AM', db: 'sugar' },{ col: 'AN', db: 'tea' },{ col: 'AO', db: 'creamer' },{ col: 'AP', db: 'mineral' },{ col: 'AQ', db: 'poly_bag_kecil' },{ col: 'AR', db: 'tissue_facial' }];
+        guestValues.forEach(g => {
+          const cell = sheet.getCell(g.col + baris); if (g.db) cell.value = data[g.db] || 0; else cell.value = '';
+          cell.font = dataFont; cell.alignment = { horizontal: 'center', vertical: 'center' }; cell.border = allBorder;
+        });
+        baris++;
+      });
+
+      while (baris <= maxDataRow) {
+        colList.forEach(col => { const cell = sheet.getCell(col + baris); cell.border = allBorder; });
+        sheet.getCell('A' + baris).value = no++; sheet.getCell('A' + baris).font = { name: 'Calibri', size: 11 }; sheet.getCell('A' + baris).alignment = { horizontal: 'center', vertical: 'center' };
+        baris++;
+      }
+
+      const totalRow = 36;
+      sheet.getCell('A' + totalRow).value = 'TOTAL SOILED:'; sheet.getCell('A' + totalRow).font = { name: 'Calibri', bold: true, size: 11 }; sheet.mergeCells('A' + totalRow + ':G' + totalRow);
+      const sumCols = ['H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W'];
+      sumCols.forEach(col => { const cell = sheet.getCell(col + totalRow); cell.value = { formula: `SUM(${col}8:${col}35)` }; cell.font = { name: 'Calibri', size: 11 }; cell.alignment = { horizontal: 'center', vertical: 'center' }; cell.border = allBorder; });
+      colList.slice(0, 7).forEach(col => { const cell = sheet.getCell(col + totalRow); cell.border = allBorder; });
+
+      const remarksRow = 37;
+      sheet.getCell('A' + remarksRow).value = 'REMARKS'; sheet.getCell('A' + remarksRow).font = { name: 'Calibri', bold: true, size: 11 };
+      sheet.mergeCells('A' + remarksRow + ':B' + (remarksRow + 2)); sheet.mergeCells('C' + remarksRow + ':AR' + (remarksRow + 2));
+      colList.forEach(col => { for (let r = remarksRow; r <= remarksRow + 2; r++) { const cell = sheet.getCell(col + r); cell.border = allBorder; } });
+
+      const legendStart = remarksRow + 3;
+      const legends = [['ED','EXPECTED DEPARTURE','VC','VACANT CLEAN','DND','DO NOT DISTURB'],['EA','EXPECTING ARRIVAL','OD','OCCUPIED DIRTY','HU','HOUSE USE'],['VD','VACANT DIRTY','OC','OCCUPIED CLEAN','OO','OUT OF ORDER'],['VCU','VACAN CLEAN UNCHECK','ONL','OCCUPIED NO LUGAGE','SO','SLEEP OUT'],['DU','DAY USE','DL','DOUBLE LOCK','','']];
+      legends.forEach((legend, idx) => {
+        const row = legendStart + idx;
+        sheet.getCell('C' + row).value = legend[0]; sheet.getCell('C' + row).font = { name: 'Calibri', bold: true, size: 11 };
+        sheet.getCell('D' + row).value = legend[1]; sheet.getCell('D' + row).font = { name: 'Calibri', size: 11 };
+        sheet.getCell('F' + row).value = legend[2]; sheet.getCell('F' + row).font = { name: 'Calibri', bold: true, size: 11 };
+        sheet.getCell('G' + row).value = legend[3]; sheet.getCell('G' + row).font = { name: 'Calibri', size: 11 };
+        sheet.getCell('I' + row).value = legend[4]; sheet.getCell('I' + row).font = { name: 'Calibri', bold: true, size: 11 };
+        sheet.getCell('J' + row).value = legend[5]; sheet.getCell('J' + row).font = { name: 'Calibri', size: 11 };
+      });
+
+      const signRow = legendStart + legends.length + 1;
+      sheet.getCell('C' + signRow).value = 'PREPARED BY:'; sheet.getCell('C' + signRow).font = { name: 'Calibri', bold: true, size: 11 };
+      sheet.getCell('X' + signRow).value = 'CHECKED BY'; sheet.getCell('X' + signRow).font = { name: 'Calibri', bold: true, size: 11 };
+    }
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=Roomboy_Control_Sheet_' + tanggal + '.xlsx');
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (err) {
+    console.error('Error membuat Excel:', err);
+    res.send('Gagal membuat file Excel: ' + err.message);
+  }
+});
+
+app.get('/unduh-excel-laundry', async (req, res) => {
+  try {
+    const tanggal = req.query.tanggal || getTanggalWIB();
+    const data = await new Promise((resolve, reject) => {
+      db.all(`SELECT * FROM daily_laundry WHERE tanggal = ? ORDER BY waktu_input DESC`, [tanggal], (err, rows) => { if (err) return reject(err); resolve(rows); });
+    });
+    if (data.length === 0) return res.send('Tidak ada data laundry');
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Daily Laundry');
+    sheet.getCell('A1').value = 'DAILY LAUNDRY REPORT'; sheet.getCell('A1').font = { name: 'Calibri', bold: true, size: 14 }; sheet.mergeCells('A1:F1');
+    sheet.getCell('A2').value = `Tanggal: ${tanggal}`; sheet.getCell('A2').font = { name: 'Calibri', size: 11 };
+    const headers = ['No','Petugas','Item','QTY','Harga/Pcs','Total']; const allBorder = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } }; const headerFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
+    headers.forEach((h, i) => { const col = String.fromCharCode(65 + i); const cell = sheet.getCell(col + '4'); cell.value = h; cell.font = { name: 'Calibri', bold: true, size: 9 }; cell.fill = headerFill; cell.alignment = { horizontal: 'center', vertical: 'center' }; cell.border = allBorder; sheet.getColumn(col).width = 15; });
+    sheet.getColumn('B').width = 20; sheet.getColumn('C').width = 25;
+    data.forEach((row, i) => {
+      const r = i + 5;
+      const values = [i + 1, row.petugas || '', row.nama_item || '', row.qty || 0, row.harga || 0, row.total_harga || 0];
+      values.forEach((v, idx) => { const col = String.fromCharCode(65 + idx); const cell = sheet.getCell(col + r); cell.value = v; cell.font = { name: 'Calibri', size: 11 }; cell.alignment = { horizontal: 'center', vertical: 'center' }; cell.border = allBorder; });
+    });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=Daily_Laundry_${tanggal}.xlsx`);
+    await workbook.xlsx.write(res); res.end();
+  } catch (err) { console.error('Error:', err); res.send('Gagal membuat Excel: ' + err.message); }
+});
+
+app.get('/unduh-excel-fnb', async (req, res) => {
+  try {
+    const tanggal = req.query.tanggal || getTanggalWIB();
+    const data = await new Promise((resolve, reject) => {
+      db.all(`SELECT * FROM fnb_linen WHERE tanggal = ? ORDER BY waktu_input DESC`, [tanggal], (err, rows) => { if (err) return reject(err); resolve(rows); });
+    });
+    if (data.length === 0) return res.send('Tidak ada data Linen F&B');
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Linen F&B');
+    sheet.getCell('A1').value = 'LINEN F&B REPORT'; sheet.getCell('A1').font = { name: 'Calibri', bold: true, size: 14 }; sheet.mergeCells('A1:F1');
+    sheet.getCell('A2').value = `Tanggal: ${tanggal}`; sheet.getCell('A2').font = { name: 'Calibri', size: 11 };
+    const headers = ['No','Petugas','Item','QTY','Harga/Pcs','Total']; const allBorder = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } }; const headerFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
+    headers.forEach((h, i) => { const col = String.fromCharCode(65 + i); const cell = sheet.getCell(col + '4'); cell.value = h; cell.font = { name: 'Calibri', bold: true, size: 9 }; cell.fill = headerFill; cell.alignment = { horizontal: 'center', vertical: 'center' }; cell.border = allBorder; sheet.getColumn(col).width = 15; });
+    sheet.getColumn('B').width = 20; sheet.getColumn('C').width = 25;
+    data.forEach((row, i) => {
+      const r = i + 5;
+      const values = [i + 1, row.petugas || '', row.nama_item || '', row.qty || 0, row.harga || 0, row.total_harga || 0];
+      values.forEach((v, idx) => { const col = String.fromCharCode(65 + idx); const cell = sheet.getCell(col + r); cell.value = v; cell.font = { name: 'Calibri', size: 11 }; cell.alignment = { horizontal: 'center', vertical: 'center' }; cell.border = allBorder; });
+    });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=Linen_FnB_${tanggal}.xlsx`);
+    await workbook.xlsx.write(res); res.end();
+  } catch (err) { console.error('Error:', err); res.send('Gagal membuat Excel: ' + err.message); }
+});
+
+app.get('/unduh-excel-store', async (req, res) => {
+  try {
+    const tanggal = req.query.tanggal || getTanggalWIB();
+    const data = await new Promise((resolve, reject) => {
+      db.all(`SELECT * FROM store_request WHERE tanggal = ? ORDER BY kategori, nama_barang`, [tanggal], (err, rows) => { if (err) return reject(err); resolve(rows); });
+    });
+    if (data.length === 0) return res.send('Tidak ada data store request');
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Store Request');
+    sheet.getCell('A1').value = 'STORE REQUEST HOUSEKEEPING'; sheet.getCell('A1').font = { name: 'Calibri', bold: true, size: 14 }; sheet.mergeCells('A1:H1');
+    sheet.getCell('A2').value = `Tanggal: ${tanggal}`; sheet.getCell('A2').font = { name: 'Calibri', size: 11 };
+    const headers = ['No','Kategori','Nama Barang','Harga','Unit','Jumlah','Total Harga','Status']; const allBorder = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } }; const headerFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
+    headers.forEach((h, i) => { const col = String.fromCharCode(65 + i); const cell = sheet.getCell(col + '4'); cell.value = h; cell.font = { name: 'Calibri', bold: true, size: 9 }; cell.fill = headerFill; cell.alignment = { horizontal: 'center', vertical: 'center' }; cell.border = allBorder; });
+    sheet.getColumn('A').width = 6; sheet.getColumn('B').width = 20; sheet.getColumn('C').width = 30; sheet.getColumn('D').width = 15; sheet.getColumn('E').width = 10; sheet.getColumn('F').width = 10; sheet.getColumn('G').width = 15; sheet.getColumn('H').width = 12;
+    data.forEach((row, i) => {
+      const r = i + 5;
+      const values = [i + 1, row.kategori || '', row.nama_barang || '', row.harga || 0, row.unit || '', row.jumlah || 0, row.total_harga || 0, row.status || 'Pending'];
+      values.forEach((v, idx) => { const col = String.fromCharCode(65 + idx); const cell = sheet.getCell(col + r); cell.value = v; cell.font = { name: 'Calibri', size: 11 }; cell.alignment = { horizontal: 'center', vertical: 'center' }; cell.border = allBorder; });
+    });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=Store_Request_${tanggal}.xlsx`);
+    await workbook.xlsx.write(res); res.end();
+  } catch (err) { console.error('Error:', err); res.send('Gagal membuat Excel: ' + err.message); }
+});
+
 app.get('/logout', (req, res) => { req.session.destroy(() => { res.redirect('/'); }); });
 app.listen(PORT, () => console.log(`Server berjalan di port ${PORT}`));
