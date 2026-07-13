@@ -900,11 +900,19 @@ app.get('/unduh-excel-laundry', async (req, res) => {
     const headers = ['No','Petugas','Item','QTY','Harga/Pcs','Total']; const allBorder = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } }; const headerFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
     headers.forEach((h, i) => { const col = String.fromCharCode(65 + i); const cell = sheet.getCell(col + '4'); cell.value = h; cell.font = { name: 'Calibri', bold: true, size: 9 }; cell.fill = headerFill; cell.alignment = { horizontal: 'center', vertical: 'center' }; cell.border = allBorder; sheet.getColumn(col).width = 15; });
     sheet.getColumn('B').width = 20; sheet.getColumn('C').width = 25;
+    let grandTotal = 0;
     data.forEach((row, i) => {
       const r = i + 5;
-      const values = [i + 1, row.petugas || '', row.nama_item || '', row.qty || 0, row.harga || 0, row.total_harga || 0];
+      const total = (row.qty || 0) * (row.harga || 0); grandTotal += total;
+      const values = [i + 1, row.petugas || '', row.nama_item || '-', row.qty || 0, row.harga || 0, total];
       values.forEach((v, idx) => { const col = String.fromCharCode(65 + idx); const cell = sheet.getCell(col + r); cell.value = v; cell.font = { name: 'Calibri', size: 11 }; cell.alignment = { horizontal: 'center', vertical: 'center' }; cell.border = allBorder; });
     });
+    const totalRow = data.length + 5;
+    sheet.getCell('A' + totalRow).value = 'GRAND TOTAL:'; sheet.getCell('A' + totalRow).font = { name: 'Calibri', bold: true, size: 11 };
+    sheet.mergeCells('A' + totalRow + ':E' + totalRow);
+    sheet.getCell('F' + totalRow).value = grandTotal; sheet.getCell('F' + totalRow).font = { name: 'Calibri', bold: true, size: 11 };
+    sheet.getCell('F' + totalRow).alignment = { horizontal: 'center', vertical: 'center' };
+    ['A','B','C','D','E','F'].forEach(col => { sheet.getCell(col + totalRow).border = allBorder; });
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename=Daily_Laundry_${tanggal}.xlsx`);
     await workbook.xlsx.write(res); res.end();
@@ -925,11 +933,19 @@ app.get('/unduh-excel-fnb', async (req, res) => {
     const headers = ['No','Petugas','Item','QTY','Harga/Pcs','Total']; const allBorder = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } }; const headerFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
     headers.forEach((h, i) => { const col = String.fromCharCode(65 + i); const cell = sheet.getCell(col + '4'); cell.value = h; cell.font = { name: 'Calibri', bold: true, size: 9 }; cell.fill = headerFill; cell.alignment = { horizontal: 'center', vertical: 'center' }; cell.border = allBorder; sheet.getColumn(col).width = 15; });
     sheet.getColumn('B').width = 20; sheet.getColumn('C').width = 25;
+    let grandTotal = 0;
     data.forEach((row, i) => {
       const r = i + 5;
-      const values = [i + 1, row.petugas || '', row.nama_item || '', row.qty || 0, row.harga || 0, row.total_harga || 0];
+      const total = (row.qty || 0) * (row.harga || 0); grandTotal += total;
+      const values = [i + 1, row.petugas || '', row.nama_item || '-', row.qty || 0, row.harga || 0, total];
       values.forEach((v, idx) => { const col = String.fromCharCode(65 + idx); const cell = sheet.getCell(col + r); cell.value = v; cell.font = { name: 'Calibri', size: 11 }; cell.alignment = { horizontal: 'center', vertical: 'center' }; cell.border = allBorder; });
     });
+    const totalRow = data.length + 5;
+    sheet.getCell('A' + totalRow).value = 'GRAND TOTAL:'; sheet.getCell('A' + totalRow).font = { name: 'Calibri', bold: true, size: 11 };
+    sheet.mergeCells('A' + totalRow + ':E' + totalRow);
+    sheet.getCell('F' + totalRow).value = grandTotal; sheet.getCell('F' + totalRow).font = { name: 'Calibri', bold: true, size: 11 };
+    sheet.getCell('F' + totalRow).alignment = { horizontal: 'center', vertical: 'center' };
+    ['A','B','C','D','E','F'].forEach(col => { sheet.getCell(col + totalRow).border = allBorder; });
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename=Linen_FnB_${tanggal}.xlsx`);
     await workbook.xlsx.write(res); res.end();
@@ -959,6 +975,28 @@ app.get('/unduh-excel-store', async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename=Store_Request_${tanggal}.xlsx`);
     await workbook.xlsx.write(res); res.end();
   } catch (err) { console.error('Error:', err); res.send('Gagal membuat Excel: ' + err.message); }
+});
+
+// =====================================================
+// CLEANUP ROUTE - Hapus data lama yang corrupt
+// =====================================================
+app.get('/cleanup-old-data', (req, res) => {
+  if (!req.session.user || req.session.user.peran !== 'OT') return res.redirect('/');
+
+  let deletedLaundry = 0, deletedStore = 0;
+
+  db.run(`DELETE FROM daily_laundry WHERE nama_item IS NULL OR nama_item = '' OR qty = 0`, function(err) {
+    if (!err) deletedLaundry = this.changes;
+    db.run(`DELETE FROM store_request WHERE nama_barang IS NULL OR nama_barang = '' OR jumlah = 0`, function(err) {
+      if (!err) deletedStore = this.changes;
+      res.send(`
+        <h2>✅ Cleanup Selesai</h2>
+        <p>Data laundry dihapus: ${deletedLaundry} baris</p>
+        <p>Data store dihapus: ${deletedStore} baris</p>
+        <p><a href="/ot">Kembali ke Panel OT</a></p>
+      `);
+    });
+  });
 });
 
 app.get('/logout', (req, res) => { req.session.destroy(() => { res.redirect('/'); }); });
