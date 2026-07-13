@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Panel Room Attendant - Horison Hotel</title>
   <style>
     * {margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif;}
@@ -25,6 +25,99 @@
     .btn {padding:7px 14px; border:none; border-radius:4px; cursor:pointer; font-size:14px; font-weight:500;}
     .btn-biru {background:#004b97; color:white;}
     .btn-hijau {background:#28a745; color:white;}
+
+    /* ===== RESPONSIVE FIXES ===== */
+    @media (max-width: 767.98px) {
+      .header {
+        padding: 10px 12px;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .header h2 {
+        font-size: 15px;
+      }
+      .header > div {
+        width: 100%;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .waktu-live {
+        font-size: 12px;
+        padding: 3px 8px;
+      }
+      .header a {
+        margin-left: 0;
+        font-size: 13px;
+      }
+      .container {
+        padding: 12px 10px;
+      }
+      .card {
+        padding: 14px;
+        margin-bottom: 16px;
+      }
+      .card h3 {
+        font-size: 15px;
+      }
+      .kamar {
+        padding: 12px;
+        margin-bottom: 12px;
+      }
+      .kamar h4 {
+        font-size: 14px;
+        margin-bottom: 10px;
+      }
+      /* Form grid: 2 kolom di mobile */
+      .form-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+      input {
+        padding: 8px 6px;
+        font-size: 16px; /* Prevents zoom on iOS */
+      }
+      label {
+        font-size: 12px;
+      }
+      .btn {
+        width: 100%;
+        padding: 10px 14px;
+        font-size: 15px;
+      }
+      .pesan {
+        font-size: 13px;
+        padding: 8px;
+      }
+      p[style*="text-align:center"] {
+        padding: 20px 10px !important;
+        font-size: 14px;
+      }
+      p[style*="text-align:center"] small {
+        font-size: 12px;
+      }
+      p[style*="color:#157c38"] {
+        font-size: 13px;
+      }
+    }
+
+    /* Tablet: 3 kolom */
+    @media (min-width: 768px) and (max-width: 991.98px) {
+      .form-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    /* Very small phones */
+    @media (max-width: 359.98px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+      .header h2 {
+        font-size: 14px;
+      }
+    }
   </style>
 </head>
 <body>
