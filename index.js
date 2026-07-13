@@ -290,6 +290,20 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({ secret: 'horison2026hotel', resave: false, saveUninitialized: false, cookie: { maxAge: 86400000 } }));
 
+// PWA Files
+app.get('/manifest.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/manifest+json');
+  res.sendFile(path.join(__dirname, 'public', 'manifest.json'));
+});
+
+app.get('/sw.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.setHeader('Service-Worker-Allowed', '/');
+  res.sendFile(path.join(__dirname, 'public', 'sw.js'));
+});
+
+
+
 app.use((req, res, next) => {
   res.locals.waktuSekarang = getWaktuWIB();
   res.locals.waktuSekarangSingkat = getWaktuWIBJamMenit();
@@ -1077,11 +1091,19 @@ app.get('/unduh-excel-store', async (req, res) => {
     const headers = ['No','Kategori','Nama Barang','Harga','Unit','Jumlah','Total Harga','Status']; const allBorder = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } }; const headerFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
     headers.forEach((h, i) => { const col = String.fromCharCode(65 + i); const cell = sheet.getCell(col + '4'); cell.value = h; cell.font = { name: 'Calibri', bold: true, size: 9 }; cell.fill = headerFill; cell.alignment = { horizontal: 'center', vertical: 'center' }; cell.border = allBorder; });
     sheet.getColumn('A').width = 6; sheet.getColumn('B').width = 20; sheet.getColumn('C').width = 30; sheet.getColumn('D').width = 15; sheet.getColumn('E').width = 10; sheet.getColumn('F').width = 10; sheet.getColumn('G').width = 15; sheet.getColumn('H').width = 12;
+    let grandTotal = 0;
     data.forEach((row, i) => {
       const r = i + 5;
-      const values = [i + 1, row.kategori || '', row.nama_barang || '', row.harga || 0, row.unit || '', row.jumlah || 0, row.total_harga || 0, row.status || 'Pending'];
+      const total = (row.jumlah || 0) * (row.harga || 0); grandTotal += total;
+      const values = [i + 1, row.kategori || '', row.nama_barang || '', row.harga || 0, row.unit || '', row.jumlah || 0, total, row.status || 'Pending'];
       values.forEach((v, idx) => { const col = String.fromCharCode(65 + idx); const cell = sheet.getCell(col + r); cell.value = v; cell.font = { name: 'Calibri', size: 11 }; cell.alignment = { horizontal: 'center', vertical: 'center' }; cell.border = allBorder; });
     });
+    const totalRow = data.length + 5;
+    sheet.getCell('A' + totalRow).value = 'GRAND TOTAL:'; sheet.getCell('A' + totalRow).font = { name: 'Calibri', bold: true, size: 11 };
+    sheet.mergeCells('A' + totalRow + ':F' + totalRow);
+    sheet.getCell('G' + totalRow).value = grandTotal; sheet.getCell('G' + totalRow).font = { name: 'Calibri', bold: true, size: 11 };
+    sheet.getCell('G' + totalRow).alignment = { horizontal: 'center', vertical: 'center' };
+    ['A','B','C','D','E','F','G','H'].forEach(col => { sheet.getCell(col + totalRow).border = allBorder; });
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename=Store_Request_${tanggal}.xlsx`);
     await workbook.xlsx.write(res); res.end();
