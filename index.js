@@ -849,7 +849,7 @@ app.get('/unduh-excel', async (req, res) => {
       });
 
       // === LOGO HOTEL (POJOK KIRI ATAS) ===
-      const LOGO_URL = 'https://i.imgur.com/XXXXXXX.png';
+      const LOGO_URL = 'https://imgur.com/KbZo1Mk';
       if (axios) {
         try {
           const logoResponse = await axios.get(LOGO_URL, { responseType: 'arraybuffer', timeout: 5000 });
