@@ -35,16 +35,24 @@
       display: flex; justify-content: space-between; align-items: center;
     }
     .form-grid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 12px; margin-bottom: 15px;
     }
-    .form-grid-3 {
-      display: grid; grid-template-columns: repeat(3, 1fr);
-      gap: 12px; margin-bottom: 15px;
+    .item-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr 80px;
+      gap: 10px;
+      align-items: center;
+      padding: 8px;
+      border-bottom: 1px solid #eee;
     }
-    .form-grid-4 {
-      display: grid; grid-template-columns: repeat(4, 1fr);
-      gap: 12px; margin-bottom: 15px;
+    .item-row:hover { background: #f8fafc; }
+    .item-row.header-row {
+      background: #f1f5f9;
+      font-weight: 600;
+      font-size: 12px;
+      color: #555;
+      border-radius: 4px;
     }
     input, select, textarea {
       padding: 9px 12px; border: 1px solid #ddd; border-radius: 4px;
@@ -66,6 +74,7 @@
     .btn-merah { background: #dc2626; color: white; }
     .btn-ungu { background: #7c3aed; color: white; }
     .btn-cyan { background: #0891b2; color: white; }
+    .btn-abu { background: #6b7280; color: white; }
     table {
       width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px;
     }
@@ -91,18 +100,56 @@
     .section-title {
       font-size: 18px; color: #004b97; font-weight: 700; margin-bottom: 16px;
     }
-    .input-number {
-      text-align: center;
-    }
-    .total-box {
-      background: #f1f5f9; padding: 10px; border-radius: 4px;
-      font-weight: 600; text-align: right;
-    }
     .category-header {
       background: #004b97; color: white; padding: 8px 12px;
-      border-radius: 4px; margin-bottom: 10px; font-weight: 600;
+      border-radius: 4px; margin: 15px 0 10px 0; font-weight: 600;
+      font-size: 14px;
     }
+    .price-display {
+      background: #f1f5f9; padding: 8px 12px; border-radius: 4px;
+      font-size: 13px; color: #555; text-align: right;
+    }
+    .total-box {
+      background: #ecfdf5; padding: 12px; border-radius: 4px;
+      font-weight: 700; text-align: right; font-size: 16px;
+      color: #065f46; border: 2px solid #10b981;
+    }
+    .add-row-btn {
+      margin: 10px 0; padding: 8px 16px;
+      background: #e0e7ff; color: #3730a3; border: 1px dashed #6366f1;
+      border-radius: 4px; cursor: pointer; font-size: 13px;
+    }
+    .add-row-btn:hover { background: #c7d2fe; }
+    .remove-row-btn {
+      background: #fee2e2; color: #991b1b; border: none;
+      border-radius: 4px; cursor: pointer; padding: 6px 10px;
+      font-size: 12px;
+    }
+    .remove-row-btn:hover { background: #fecaca; }
+    .grand-total {
+      background: #004b97; color: white; padding: 15px;
+      border-radius: 6px; margin-top: 15px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .grand-total .label { font-size: 14px; }
+    .grand-total .value { font-size: 22px; font-weight: 700; }
+    .item-row-header {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr 80px;
+      gap: 10px;
+      padding: 8px;
+      background: #f1f5f9;
+      font-weight: 600;
+      font-size: 12px;
+      color: #555;
+      border-radius: 4px;
+      margin-bottom: 4px;
+    }
+    .item-row-header span { text-align: center; }
+    .item-row-header span:first-child { text-align: left; }
+    .item-row-header span:nth-child(4) { text-align: right; }
   </style>
+<base target="_blank">
 </head>
 <body>
   <div class="header">
@@ -215,79 +262,40 @@
     </div>
 
     <!-- ============================================ -->
-    <!-- SECTION 2: DAILY LAUNDRY                       -->
+    <!-- SECTION 2: DAILY LAUNDRY (DROPDOWN + QTY)    -->
     <!-- ============================================ -->
     <div class="section-divider"></div>
     <div class="section-title">🧺 SECTION 2: DAILY LAUNDRY</div>
 
     <div class="card">
       <h3>📝 Input Daily Laundry</h3>
-      <form action="/tambah-laundry" method="POST">
+      <form id="laundryForm" action="/tambah-laundry" method="POST">
         <div class="form-grid">
           <div>
             <label>Nama Petugas:</label>
             <input type="text" name="petugas" placeholder="Nama Petugas" required>
           </div>
         </div>
-        <div style="margin-bottom: 10px; font-weight: 600; color: #004b97;">LINEN HOTEL:</div>
-        <div class="form-grid-4">
-          <div>
-            <label>Sheet Twin:</label>
-            <input type="number" name="sheet_twin" class="input-number" value="0" min="0">
-          </div>
-          <div>
-            <label>Sheet King:</label>
-            <input type="number" name="sheet_king" class="input-number" value="0" min="0">
-          </div>
-          <div>
-            <label>Duvet Twin:</label>
-            <input type="number" name="duvet_twin" class="input-number" value="0" min="0">
-          </div>
-          <div>
-            <label>Duvet King:</label>
-            <input type="number" name="duvet_king" class="input-number" value="0" min="0">
-          </div>
-          <div>
-            <label>Pillow Case:</label>
-            <input type="number" name="pillow_case" class="input-number" value="0" min="0">
-          </div>
-          <div>
-            <label>Bath Towel:</label>
-            <input type="number" name="bath_towel" class="input-number" value="0" min="0">
-          </div>
-          <div>
-            <label>Hand Towel:</label>
-            <input type="number" name="hand_towel" class="input-number" value="0" min="0">
-          </div>
-          <div>
-            <label>Bath Mat:</label>
-            <input type="number" name="bath_mat" class="input-number" value="0" min="0">
-          </div>
+
+        <div class="item-row-header">
+          <span>Item Laundry</span>
+          <span>Harga/Pcs</span>
+          <span>QTY</span>
+          <span>Subtotal</span>
+          <span></span>
         </div>
-        <div style="margin-bottom: 10px; font-weight: 600; color: #004b97;">LINEN TAMBAHAN:</div>
-        <div class="form-grid-4">
-          <div>
-            <label>Inner Duvet Twin:</label>
-            <input type="number" name="inner_duvet_twin" class="input-number" value="0" min="0">
-          </div>
-          <div>
-            <label>Inner Duvet King:</label>
-            <input type="number" name="inner_duvet_king" class="input-number" value="0" min="0">
-          </div>
-          <div>
-            <label>Bed Pad Twin:</label>
-            <input type="number" name="bed_pad_twin" class="input-number" value="0" min="0">
-          </div>
-          <div>
-            <label>Bed Pad King:</label>
-            <input type="number" name="bed_pad_king" class="input-number" value="0" min="0">
-          </div>
-          <div>
-            <label>Pillow:</label>
-            <input type="number" name="pillow" class="input-number" value="0" min="0">
-          </div>
+        <div id="laundryRows"></div>
+
+        <button type="button" class="add-row-btn" onclick="addLaundryRow()">+ Tambah Item Laundry</button>
+
+        <div class="grand-total">
+          <div class="label">TOTAL BIAYA LAUNDRY:</div>
+          <div class="value" id="laundryGrandTotal">Rp 0</div>
         </div>
-        <button type="submit" class="btn btn-ungu">💾 Simpan Daily Laundry</button>
+
+        <div style="margin-top: 15px;">
+          <button type="submit" class="btn btn-ungu">💾 Simpan Daily Laundry</button>
+        </div>
       </form>
     </div>
 
@@ -309,19 +317,10 @@
           <tr>
             <th>No</th>
             <th>Petugas</th>
-            <th>S.Twin</th>
-            <th>S.King</th>
-            <th>D.Twin</th>
-            <th>D.King</th>
-            <th>P.Case</th>
-            <th>B.Towel</th>
-            <th>H.Towel</th>
-            <th>B.Mat</th>
-            <th>I.D.Twin</th>
-            <th>I.D.King</th>
-            <th>B.P.Twin</th>
-            <th>B.P.King</th>
-            <th>Pillow</th>
+            <th>Item</th>
+            <th>QTY</th>
+            <th>Harga/Pcs</th>
+            <th>Total</th>
             <th>Waktu</th>
             <th>Aksi</th>
           </tr>
@@ -331,19 +330,10 @@
           <tr>
             <td><%= index + 1 %></td>
             <td><strong><%= item.petugas || '-' %></strong></td>
-            <td><%= item.sheet_twin || 0 %></td>
-            <td><%= item.sheet_king || 0 %></td>
-            <td><%= item.duvet_twin || 0 %></td>
-            <td><%= item.duvet_king || 0 %></td>
-            <td><%= item.pillow_case || 0 %></td>
-            <td><%= item.bath_towel || 0 %></td>
-            <td><%= item.hand_towel || 0 %></td>
-            <td><%= item.bath_mat || 0 %></td>
-            <td><%= item.inner_duvet_twin || 0 %></td>
-            <td><%= item.inner_duvet_king || 0 %></td>
-            <td><%= item.bed_pad_twin || 0 %></td>
-            <td><%= item.bed_pad_king || 0 %></td>
-            <td><%= item.pillow || 0 %></td>
+            <td><%= item.nama_item %></td>
+            <td><%= item.qty || 0 %></td>
+            <td>Rp <%= (item.harga || 0).toLocaleString('id-ID') %></td>
+            <td><strong>Rp <%= (item.total_harga || 0).toLocaleString('id-ID') %></strong></td>
             <td><%= item.waktu_input || '-' %></td>
             <td class="aksi">
               <form action="/hapus-laundry" method="POST" style="display:inline;" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
@@ -360,47 +350,127 @@
     </div>
 
     <!-- ============================================ -->
-    <!-- SECTION 3: STORE REQUEST                       -->
+    <!-- SECTION 3: LINEN F&B (DROPDOWN + QTY)        -->
     <!-- ============================================ -->
     <div class="section-divider"></div>
-    <div class="section-title">📦 SECTION 3: STORE REQUEST</div>
+    <div class="section-title">🍽️ SECTION 3: LINEN F&B</div>
+
+    <div class="card">
+      <h3>📝 Input Linen F&B</h3>
+      <form id="fnbForm" action="/tambah-fnb" method="POST">
+        <div class="form-grid">
+          <div>
+            <label>Nama Petugas:</label>
+            <input type="text" name="petugas_fnb" placeholder="Nama Petugas" required>
+          </div>
+        </div>
+
+        <div class="item-row-header">
+          <span>Item F&B</span>
+          <span>Harga/Pcs</span>
+          <span>QTY</span>
+          <span>Subtotal</span>
+          <span></span>
+        </div>
+        <div id="fnbRows"></div>
+
+        <button type="button" class="add-row-btn" onclick="addFnbRow()">+ Tambah Item F&B</button>
+
+        <div class="grand-total">
+          <div class="label">TOTAL BIAYA LINEN F&B:</div>
+          <div class="value" id="fnbGrandTotal">Rp 0</div>
+        </div>
+
+        <div style="margin-top: 15px;">
+          <button type="submit" class="btn btn-cyan">💾 Simpan Linen F&B</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3>
+        📋 Daftar Linen F&B Hari Ini - <%= tanggal %>
+        <div>
+          <a href="/unduh-pdf-fnb?tanggal=<%= tanggal %>" class="btn btn-hijau">📄 PDF</a>
+          <a href="/unduh-excel-fnb?tanggal=<%= tanggal %>" class="btn btn-kuning">📊 Excel</a>
+        </div>
+      </h3>
+
+      <% if (daftarFnb.length === 0) { %>
+        <p style="text-align:center; padding:40px; color:#777;">Belum ada data linen F&B hari ini</p>
+      <% } else { %>
+      <div style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Petugas</th>
+            <th>Item</th>
+            <th>QTY</th>
+            <th>Harga/Pcs</th>
+            <th>Total</th>
+            <th>Waktu</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% daftarFnb.forEach((item, index) => { %>
+          <tr>
+            <td><%= index + 1 %></td>
+            <td><strong><%= item.petugas || '-' %></strong></td>
+            <td><%= item.nama_item %></td>
+            <td><%= item.qty || 0 %></td>
+            <td>Rp <%= (item.harga || 0).toLocaleString('id-ID') %></td>
+            <td><strong>Rp <%= (item.total_harga || 0).toLocaleString('id-ID') %></strong></td>
+            <td><%= item.waktu_input || '-' %></td>
+            <td class="aksi">
+              <form action="/hapus-fnb" method="POST" style="display:inline;" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
+                <input type="hidden" name="id" value="<%= item.id %>">
+                <button type="submit" class="btn btn-merah">Hapus</button>
+              </form>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+      </div>
+      <% } %>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- SECTION 4: STORE REQUEST (DROPDOWN + QTY)    -->
+    <!-- ============================================ -->
+    <div class="section-divider"></div>
+    <div class="section-title">📦 SECTION 4: STORE REQUEST</div>
 
     <div class="card">
       <h3>📝 Input Store Request</h3>
-      <form action="/tambah-store-request" method="POST">
-        <div class="form-grid-3">
+      <form id="storeForm" action="/tambah-store-request" method="POST">
+        <div class="form-grid">
           <div>
-            <label>Kategori:</label>
-            <select name="kategori" required>
-              <option value="">-- Pilih Kategori --</option>
-              <option value="AMINITIES">AMINITIES</option>
-              <option value="GRATUITIES">GRATUITIES</option>
-              <option value="MINI BAR">MINI BAR</option>
-              <option value="ROOM PRINTING">ROOM PRINTING</option>
-              <option value="CLEANING SUPPLIES">CLEANING SUPPLIES</option>
-              <option value="CHEMICAL">CHEMICAL</option>
-              <option value="PRINTING AND STATIONARY">PRINTING AND STATIONARY</option>
-            </select>
+            <label>Nama Petugas:</label>
+            <input type="text" name="petugas_store" placeholder="Nama Petugas" required>
           </div>
-          <div>
-            <label>Nama Barang:</label>
-            <input type="text" name="nama_barang" placeholder="Contoh: Dental Kit" required>
-          </div>
-          <div>
-            <label>Harga (Rp):</label>
-            <input type="number" name="harga" placeholder="Contoh: 1953" min="0" required>
-          </div>
-          <div>
-            <label>Unit:</label>
-            <input type="text" name="unit" placeholder="Contoh: Pcs, Pack, Rim" required>
-          </div>
-          <div>
-            <label>Jumlah:</label>
-            <input type="number" name="jumlah" placeholder="Contoh: 100" min="1" required>
-          </div>
-          <div style="display: flex; align-items: flex-end;">
-            <button type="submit" class="btn btn-cyan" style="width: 100%;">💾 Simpan Store Request</button>
-          </div>
+        </div>
+
+        <div class="item-row-header">
+          <span>Item Store</span>
+          <span>Harga/Unit</span>
+          <span>QTY</span>
+          <span>Subtotal</span>
+          <span></span>
+        </div>
+        <div id="storeRows"></div>
+
+        <button type="button" class="add-row-btn" onclick="addStoreRow()">+ Tambah Item Store</button>
+
+        <div class="grand-total">
+          <div class="label">TOTAL BIAYA STORE REQUEST:</div>
+          <div class="value" id="storeGrandTotal">Rp 0</div>
+        </div>
+
+        <div style="margin-top: 15px;">
+          <button type="submit" class="btn btn-cyan">💾 Simpan Store Request</button>
         </div>
       </form>
     </div>
@@ -421,11 +491,12 @@
         <thead>
           <tr>
             <th>No</th>
+            <th>Petugas</th>
             <th>Kategori</th>
             <th>Nama Barang</th>
-            <th>Harga</th>
             <th>Unit</th>
-            <th>Jumlah</th>
+            <th>QTY</th>
+            <th>Harga/Unit</th>
             <th>Total Harga</th>
             <th>Status</th>
             <th>Waktu</th>
@@ -436,11 +507,12 @@
           <% daftarStore.forEach((item, index) => { %>
           <tr>
             <td><%= index + 1 %></td>
+            <td><strong><%= item.petugas || '-' %></strong></td>
             <td><span style="background:#e0e7ff; padding:3px 8px; border-radius:4px; font-size:12px;"><%= item.kategori %></span></td>
             <td><strong><%= item.nama_barang %></strong></td>
-            <td>Rp <%= (item.harga || 0).toLocaleString('id-ID') %></td>
             <td><%= item.unit %></td>
             <td><%= item.jumlah %></td>
+            <td>Rp <%= (item.harga || 0).toLocaleString('id-ID') %></td>
             <td><strong>Rp <%= (item.total_harga || 0).toLocaleString('id-ID') %></strong></td>
             <td>
               <span class="status-badge status-<%= item.status.toLowerCase() %>">
@@ -475,8 +547,442 @@
     </div>
   </div>
 
-  <!-- Script Jam Berjalan -->
+  <!-- ============================================ -->
+  <!-- JAVASCRIPT: DYNAMIC ROWS & AUTO PRICE        -->
+  <!-- ============================================ -->
   <script>
+    // =====================================================
+    // DATA ITEMS (Harga dari file Excel/PDF)
+    // =====================================================
+
+    // LAUNDRY ITEMS
+    const laundryItems = {
+      "Bed Linen": [
+        { name: "Sheet Twin", price: 7500, unit: "Pcs" },
+        { name: "Sheet King", price: 3050, unit: "Pcs" },
+        { name: "Duvet Cover Twin", price: 3550, unit: "Pcs" },
+        { name: "Duvet Cover King", price: 3750, unit: "Pcs" },
+        { name: "Pillow Case", price: 4050, unit: "Pcs" },
+        { name: "Inner Duvet Twin", price: 1250, unit: "Pcs" },
+        { name: "Inner Duvet King", price: 5500, unit: "Pcs" },
+        { name: "Bed Pad Twin", price: 6250, unit: "Pcs" },
+        { name: "Bed Pad King", price: 0, unit: "Pcs" }
+      ],
+      "Bath Linen": [
+        { name: "Bath Towel", price: 3250, unit: "Pcs" },
+        { name: "Bath Mat", price: 2450, unit: "Pcs" },
+        { name: "Hand Towel", price: 1500, unit: "Pcs" },
+        { name: "Pillow", price: 6250, unit: "Pcs" }
+      ]
+    };
+
+    // LINEN F&B ITEMS
+    const fnbItems = {
+      "Table Cloth": [
+        { name: "Table Cloth Small", price: 5500, unit: "Pcs" },
+        { name: "Table Cloth Medium", price: 6500, unit: "Pcs" },
+        { name: "Table Cloth Long", price: 10000, unit: "Pcs" },
+        { name: "Round Table Cloth", price: 9000, unit: "Pcs" },
+        { name: "Table Cloth Skirting", price: 8000, unit: "Pcs" }
+      ],
+      "Linen F&B Lainnya": [
+        { name: "Napkin All Color", price: 0, unit: "Pcs" },
+        { name: "Cover Chair", price: 3000, unit: "Pcs" },
+        { name: "Satin", price: 0, unit: "Pcs" },
+        { name: "Apron", price: 5000, unit: "Pcs" },
+        { name: "Cooking Hat", price: 3500, unit: "Pcs" },
+        { name: "Runner Table", price: 3000, unit: "Pcs" },
+        { name: "Karpet", price: 32000, unit: "Pcs" }
+      ]
+    };
+
+    // STORE REQUEST ITEMS
+    const storeItems = {
+      "Amenities": [
+        { name: "Round soap", price: 969, unit: "Pcs" },
+        { name: "Dental Kit", price: 1953, unit: "Pcs" },
+        { name: "Shower Cap", price: 928, unit: "Pcs" },
+        { name: "Cotton Bud", price: 710, unit: "Pcs" },
+        { name: "Sanitary Bag", price: 842, unit: "Pcs" },
+        { name: "Slipper", price: 2636, unit: "Pcs" },
+        { name: "Mineral water", price: 2063, unit: "Pcs" },
+        { name: "Tissue Facial soft", price: 3500, unit: "Pack" },
+        { name: "Tissue Multifold", price: 7193, unit: "Pack" },
+        { name: "Tissue Roll", price: 1850, unit: "Pcs" },
+        { name: "Laundry Bag", price: 1052, unit: "Pcs" },
+        { name: "Comb", price: 864, unit: "Pcs" },
+        { name: "Shampoo Refil", price: 90000, unit: "Drigen" },
+        { name: "BathGel Refil", price: 179696, unit: "Drigen" },
+        { name: "Hand Soap", price: 85952, unit: "Drigen" },
+        { name: "Shaving kit", price: 2620, unit: "Pcs" },
+        { name: "Stirer", price: 708, unit: "Pcs" },
+        { name: "Coaster", price: 350, unit: "Pcs" }
+      ],
+      "Gratuities": [
+        { name: "White Sugar", price: 200, unit: "Pcs" },
+        { name: "Creamer", price: 263, unit: "Pcs" },
+        { name: "Coffee", price: 529, unit: "Pcs" },
+        { name: "Tea", price: 476, unit: "Pcs" }
+      ],
+      "Mini Bar": [
+        { name: "Beng-beng share it", price: 0, unit: "Pcs" },
+        { name: "Kusuka", price: 0, unit: "Pcs" },
+        { name: "Qtela", price: 0, unit: "Pcs" },
+        { name: "Fitbar", price: 0, unit: "Pcs" },
+        { name: "YouC1000", price: 0, unit: "Pcs" },
+        { name: "Nescafe", price: 0, unit: "Pcs" },
+        { name: "Nestle susu beruang", price: 0, unit: "Pcs" },
+        { name: "Kukubima", price: 0, unit: "Pcs" }
+      ],
+      "Room Printing": [
+        { name: "Laundry list", price: 33500, unit: "Rim" },
+        { name: "Pensil", price: 1203, unit: "Pcs" },
+        { name: "Note Pad", price: 708, unit: "Pcs" },
+        { name: "DND Sign", price: 0, unit: "Pcs" }
+      ],
+      "Cleaning Supplies": [
+        { name: "Poly bag besar", price: 20500, unit: "Pack" },
+        { name: "Poly bag kecil", price: 20500, unit: "Pack" },
+        { name: "Poly bag sedang", price: 14000, unit: "Pack" },
+        { name: "HIT (baigon)", price: 32000, unit: "Pcs" },
+        { name: "Power Clean", price: 70000, unit: "Pcs" },
+        { name: "Spons", price: 4500, unit: "Pcs" },
+        { name: "Stilwool", price: 18000, unit: "Pcs" },
+        { name: "Chif", price: 22000, unit: "Pcs" },
+        { name: "Canebo", price: 21500, unit: "Pcs" },
+        { name: "S.O.S", price: 45000, unit: "Pcs" },
+        { name: "Sunlight", price: 16500, unit: "Pcs" },
+        { name: "Hand soap", price: 130000, unit: "Pcs" },
+        { name: "Stella Big", price: 38000, unit: "Pcs" },
+        { name: "Stella Matic", price: 39500, unit: "Pcs" },
+        { name: "Micro fiber cloth", price: 9490, unit: "Pcs" },
+        { name: "Refill cutter", price: 7000, unit: "Pcs" },
+        { name: "Kanebo", price: 21500, unit: "Pcs" },
+        { name: "Hand Sanityzer", price: 130000, unit: "Pcs" },
+        { name: "Stella gantung", price: 11175, unit: "Pcs" },
+        { name: "Masker", price: 20000, unit: "Pcs" },
+        { name: "Hand glove", price: 20000, unit: "Pcs" }
+      ],
+      "Chemical": [
+        { name: "Durand 210", price: 148655, unit: "Dirigen" },
+        { name: "Durand 301", price: 142425, unit: "Dirigen" },
+        { name: "Durand 302", price: 108016, unit: "Dirigen" },
+        { name: "Durand 303", price: 152118, unit: "Dirigen" },
+        { name: "Durand 305", price: 150000, unit: "Dirigen" },
+        { name: "Durand 337", price: 112737, unit: "Dirigen" },
+        { name: "Durand 307", price: 131875, unit: "Dirigen" },
+        { name: "Durand 327", price: 119208, unit: "Dirigen" }
+      ],
+      "Printing & Stationary": [
+        { name: "Lost & found form", price: 20000, unit: "Pcs" },
+        { name: "Store request form", price: 22000, unit: "Pcs" },
+        { name: "Work order form", price: 22500, unit: "Pcs" },
+        { name: "Double tape", price: 15000, unit: "Pcs" },
+        { name: "Cellulose kape", price: 10000, unit: "Pcs" },
+        { name: "File bindex besar", price: 37000, unit: "Pcs" },
+        { name: "Ballpoint", price: 1458, unit: "Pcs" },
+        { name: "Tipe-x", price: 10000, unit: "Pcs" },
+        { name: "Kertas HVS", price: 45000, unit: "RIM" },
+        { name: "Stabilo", price: 4500, unit: "Pcs" }
+      ]
+    };
+
+    // Row counters
+    let laundryRowCount = 0;
+    let fnbRowCount = 0;
+    let storeRowCount = 0;
+
+    // Format Rupiah
+    function formatRupiah(angka) {
+      return 'Rp ' + angka.toLocaleString('id-ID');
+    }
+
+    // =====================================================
+    // LAUNDRY FUNCTIONS
+    // =====================================================
+    function addLaundryRow() {
+      laundryRowCount++;
+      const container = document.getElementById('laundryRows');
+      const row = document.createElement('div');
+      row.className = 'item-row';
+      row.id = 'laundry-row-' + laundryRowCount;
+
+      let categoryOptions = '<option value="">-- Pilih Kategori --</option>';
+      for (let cat in laundryItems) {
+        categoryOptions += `<option value="${cat}">${cat}</option>`;
+      }
+
+      row.innerHTML = `
+        <div>
+          <select class="laundry-cat" data-row="${laundryRowCount}" onchange="updateLaundryItems(${laundryRowCount})" required>
+            ${categoryOptions}
+          </select>
+        </div>
+        <div>
+          <select class="laundry-item" name="items[${laundryRowCount}][nama]" data-row="${laundryRowCount}" onchange="updateLaundryPrice(${laundryRowCount})" required>
+            <option value="">-- Pilih Item --</option>
+          </select>
+        </div>
+        <div>
+          <input type="number" class="laundry-qty" name="items[${laundryRowCount}][qty]" data-row="${laundryRowCount}" placeholder="QTY" min="0" value="0" onchange="calculateLaundryTotal()" required>
+        </div>
+        <div class="price-display">
+          <span class="laundry-price" data-row="${laundryRowCount}">Rp 0</span>
+          <input type="hidden" class="laundry-price-input" name="items[${laundryRowCount}][harga]" data-row="${laundryRowCount}">
+          <input type="hidden" class="laundry-unit-input" name="items[${laundryRowCount}][unit]" data-row="${laundryRowCount}">
+        </div>
+        <div>
+          <button type="button" class="remove-row-btn" onclick="removeLaundryRow(${laundryRowCount})">✕</button>
+        </div>
+      `;
+      container.appendChild(row);
+    }
+
+    function removeLaundryRow(id) {
+      const row = document.getElementById('laundry-row-' + id);
+      if (row) row.remove();
+      calculateLaundryTotal();
+    }
+
+    function updateLaundryItems(rowId) {
+      const catSelect = document.querySelector(`.laundry-cat[data-row="${rowId}"]`);
+      const itemSelect = document.querySelector(`.laundry-item[data-row="${rowId}"]`);
+      const category = catSelect.value;
+
+      itemSelect.innerHTML = '<option value="">-- Pilih Item --</option>';
+      if (category && laundryItems[category]) {
+        laundryItems[category].forEach(item => {
+          const priceText = item.price > 0 ? `Rp ${item.price.toLocaleString('id-ID')}` : 'Harga belum tersedia';
+          itemSelect.innerHTML += `<option value="${item.name}" data-price="${item.price}" data-unit="${item.unit}">${item.name} (${priceText})</option>`;
+        });
+      }
+      updateLaundryPrice(rowId);
+    }
+
+    function updateLaundryPrice(rowId) {
+      const itemSelect = document.querySelector(`.laundry-item[data-row="${rowId}"]`);
+      const priceDisplay = document.querySelector(`.laundry-price[data-row="${rowId}"]`);
+      const priceInput = document.querySelector(`.laundry-price-input[data-row="${rowId}"]`);
+      const unitInput = document.querySelector(`.laundry-unit-input[data-row="${rowId}"]`);
+
+      const selected = itemSelect.options[itemSelect.selectedIndex];
+      const price = selected ? parseInt(selected.dataset.price || 0) : 0;
+      const unit = selected ? selected.dataset.unit || 'Pcs' : 'Pcs';
+
+      priceDisplay.textContent = price > 0 ? formatRupiah(price) : '-';
+      priceInput.value = price;
+      unitInput.value = unit;
+      calculateLaundryTotal();
+    }
+
+    function calculateLaundryTotal() {
+      let total = 0;
+      document.querySelectorAll('.item-row').forEach(row => {
+        if (row.id && row.id.startsWith('laundry-row-')) {
+          const qtyInput = row.querySelector('.laundry-qty');
+          const priceInput = row.querySelector('.laundry-price-input');
+          const qty = parseInt(qtyInput?.value || 0);
+          const price = parseInt(priceInput?.value || 0);
+          total += qty * price;
+        }
+      });
+      document.getElementById('laundryGrandTotal').textContent = formatRupiah(total);
+    }
+
+    // =====================================================
+    // LINEN F&B FUNCTIONS
+    // =====================================================
+    function addFnbRow() {
+      fnbRowCount++;
+      const container = document.getElementById('fnbRows');
+      const row = document.createElement('div');
+      row.className = 'item-row';
+      row.id = 'fnb-row-' + fnbRowCount;
+
+      let categoryOptions = '<option value="">-- Pilih Kategori --</option>';
+      for (let cat in fnbItems) {
+        categoryOptions += `<option value="${cat}">${cat}</option>`;
+      }
+
+      row.innerHTML = `
+        <div>
+          <select class="fnb-cat" data-row="${fnbRowCount}" onchange="updateFnbItems(${fnbRowCount})" required>
+            ${categoryOptions}
+          </select>
+        </div>
+        <div>
+          <select class="fnb-item" name="items_fnb[${fnbRowCount}][nama]" data-row="${fnbRowCount}" onchange="updateFnbPrice(${fnbRowCount})" required>
+            <option value="">-- Pilih Item --</option>
+          </select>
+        </div>
+        <div>
+          <input type="number" class="fnb-qty" name="items_fnb[${fnbRowCount}][qty]" data-row="${fnbRowCount}" placeholder="QTY" min="0" value="0" onchange="calculateFnbTotal()" required>
+        </div>
+        <div class="price-display">
+          <span class="fnb-price" data-row="${fnbRowCount}">Rp 0</span>
+          <input type="hidden" class="fnb-price-input" name="items_fnb[${fnbRowCount}][harga]" data-row="${fnbRowCount}">
+          <input type="hidden" class="fnb-unit-input" name="items_fnb[${fnbRowCount}][unit]" data-row="${fnbRowCount}">
+        </div>
+        <div>
+          <button type="button" class="remove-row-btn" onclick="removeFnbRow(${fnbRowCount})">✕</button>
+        </div>
+      `;
+      container.appendChild(row);
+    }
+
+    function removeFnbRow(id) {
+      const row = document.getElementById('fnb-row-' + id);
+      if (row) row.remove();
+      calculateFnbTotal();
+    }
+
+    function updateFnbItems(rowId) {
+      const catSelect = document.querySelector(`.fnb-cat[data-row="${rowId}"]`);
+      const itemSelect = document.querySelector(`.fnb-item[data-row="${rowId}"]`);
+      const category = catSelect.value;
+
+      itemSelect.innerHTML = '<option value="">-- Pilih Item --</option>';
+      if (category && fnbItems[category]) {
+        fnbItems[category].forEach(item => {
+          const priceText = item.price > 0 ? `Rp ${item.price.toLocaleString('id-ID')}` : 'Harga belum tersedia';
+          itemSelect.innerHTML += `<option value="${item.name}" data-price="${item.price}" data-unit="${item.unit}">${item.name} (${priceText})</option>`;
+        });
+      }
+      updateFnbPrice(rowId);
+    }
+
+    function updateFnbPrice(rowId) {
+      const itemSelect = document.querySelector(`.fnb-item[data-row="${rowId}"]`);
+      const priceDisplay = document.querySelector(`.fnb-price[data-row="${rowId}"]`);
+      const priceInput = document.querySelector(`.fnb-price-input[data-row="${rowId}"]`);
+      const unitInput = document.querySelector(`.fnb-unit-input[data-row="${rowId}"]`);
+
+      const selected = itemSelect.options[itemSelect.selectedIndex];
+      const price = selected ? parseInt(selected.dataset.price || 0) : 0;
+      const unit = selected ? selected.dataset.unit || 'Pcs' : 'Pcs';
+
+      priceDisplay.textContent = price > 0 ? formatRupiah(price) : '-';
+      priceInput.value = price;
+      unitInput.value = unit;
+      calculateFnbTotal();
+    }
+
+    function calculateFnbTotal() {
+      let total = 0;
+      document.querySelectorAll('.item-row').forEach(row => {
+        if (row.id && row.id.startsWith('fnb-row-')) {
+          const qtyInput = row.querySelector('.fnb-qty');
+          const priceInput = row.querySelector('.fnb-price-input');
+          const qty = parseInt(qtyInput?.value || 0);
+          const price = parseInt(priceInput?.value || 0);
+          total += qty * price;
+        }
+      });
+      document.getElementById('fnbGrandTotal').textContent = formatRupiah(total);
+    }
+
+    // =====================================================
+    // STORE REQUEST FUNCTIONS
+    // =====================================================
+    function addStoreRow() {
+      storeRowCount++;
+      const container = document.getElementById('storeRows');
+      const row = document.createElement('div');
+      row.className = 'item-row';
+      row.id = 'store-row-' + storeRowCount;
+
+      let categoryOptions = '<option value="">-- Pilih Kategori --</option>';
+      for (let cat in storeItems) {
+        categoryOptions += `<option value="${cat}">${cat}</option>`;
+      }
+
+      row.innerHTML = `
+        <div>
+          <select class="store-cat" data-row="${storeRowCount}" onchange="updateStoreItems(${storeRowCount})" required>
+            ${categoryOptions}
+          </select>
+        </div>
+        <div>
+          <select class="store-item" name="items_store[${storeRowCount}][nama]" data-row="${storeRowCount}" onchange="updateStorePrice(${storeRowCount})" required>
+            <option value="">-- Pilih Item --</option>
+          </select>
+        </div>
+        <div>
+          <input type="number" class="store-qty" name="items_store[${storeRowCount}][qty]" data-row="${storeRowCount}" placeholder="QTY" min="0" value="0" onchange="calculateStoreTotal()" required>
+        </div>
+        <div class="price-display">
+          <span class="store-price" data-row="${storeRowCount}">Rp 0</span>
+          <input type="hidden" class="store-price-input" name="items_store[${storeRowCount}][harga]" data-row="${storeRowCount}">
+          <input type="hidden" class="store-unit-input" name="items_store[${storeRowCount}][unit]" data-row="${storeRowCount}">
+        </div>
+        <div>
+          <button type="button" class="remove-row-btn" onclick="removeStoreRow(${storeRowCount})">✕</button>
+        </div>
+      `;
+      container.appendChild(row);
+    }
+
+    function removeStoreRow(id) {
+      const row = document.getElementById('store-row-' + id);
+      if (row) row.remove();
+      calculateStoreTotal();
+    }
+
+    function updateStoreItems(rowId) {
+      const catSelect = document.querySelector(`.store-cat[data-row="${rowId}"]`);
+      const itemSelect = document.querySelector(`.store-item[data-row="${rowId}"]`);
+      const category = catSelect.value;
+
+      itemSelect.innerHTML = '<option value="">-- Pilih Item --</option>';
+      if (category && storeItems[category]) {
+        storeItems[category].forEach(item => {
+          const priceText = item.price > 0 ? `Rp ${item.price.toLocaleString('id-ID')}` : 'Harga belum tersedia';
+          itemSelect.innerHTML += `<option value="${item.name}" data-price="${item.price}" data-unit="${item.unit}">${item.name} (${priceText})</option>`;
+        });
+      }
+      updateStorePrice(rowId);
+    }
+
+    function updateStorePrice(rowId) {
+      const itemSelect = document.querySelector(`.store-item[data-row="${rowId}"]`);
+      const priceDisplay = document.querySelector(`.store-price[data-row="${rowId}"]`);
+      const priceInput = document.querySelector(`.store-price-input[data-row="${rowId}"]`);
+      const unitInput = document.querySelector(`.store-unit-input[data-row="${rowId}"]`);
+
+      const selected = itemSelect.options[itemSelect.selectedIndex];
+      const price = selected ? parseInt(selected.dataset.price || 0) : 0;
+      const unit = selected ? selected.dataset.unit || 'Pcs' : 'Pcs';
+
+      priceDisplay.textContent = price > 0 ? formatRupiah(price) : '-';
+      priceInput.value = price;
+      unitInput.value = unit;
+      calculateStoreTotal();
+    }
+
+    function calculateStoreTotal() {
+      let total = 0;
+      document.querySelectorAll('.item-row').forEach(row => {
+        if (row.id && row.id.startsWith('store-row-')) {
+          const qtyInput = row.querySelector('.store-qty');
+          const priceInput = row.querySelector('.store-price-input');
+          const qty = parseInt(qtyInput?.value || 0);
+          const price = parseInt(priceInput?.value || 0);
+          total += qty * price;
+        }
+      });
+      document.getElementById('storeGrandTotal').textContent = formatRupiah(total);
+    }
+
+    // =====================================================
+    // INITIALIZATION
+    // =====================================================
+    document.addEventListener('DOMContentLoaded', function() {
+      addLaundryRow();
+      addFnbRow();
+      addStoreRow();
+    });
+
+    // Script Jam Berjalan
     setInterval(() => {
       const jakartaTime = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
       const jam = String(jakartaTime.getHours()).padStart(2, '0');
