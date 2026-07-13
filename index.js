@@ -377,21 +377,46 @@ app.post('/tambah-laundry', (req, res) => {
   const hariIni = getTanggalWIB();
   const waktuInput = getWaktuWIBJamMenit();
   const { petugas, items } = req.body;
-  if (!petugas || !items || typeof items !== 'object') return res.redirect('/ot?pesan=gagal');
+
+  console.log('DEBUG tambah-laundry body:', JSON.stringify(req.body, null, 2));
+
+  if (!petugas || !items) {
+    console.log('Missing petugas or items');
+    return res.redirect('/ot?pesan=gagal');
+  }
+
+  // Convert items to array (Express parses items[1][nama] into { '1': { nama: '...' } })
+  const itemsArray = Object.values(items);
+  console.log('Items array:', JSON.stringify(itemsArray, null, 2));
+
+  const validItems = itemsArray.filter(item => item && item.nama && item.nama !== '' && parseInt(item.qty) > 0);
+  console.log('Valid items:', validItems.length);
+
+  if (validItems.length === 0) {
+    console.log('No valid items found');
+    return res.redirect('/ot?pesan=gagal');
+  }
+
   let completed = 0;
-  const itemKeys = Object.keys(items);
-  const total = itemKeys.length;
-  if (total === 0) return res.redirect('/ot?pesan=gagal');
-  itemKeys.forEach(key => {
-    const item = items[key];
+  const total = validItems.length;
+
+  validItems.forEach(item => {
     const qty = parseInt(item.qty) || 0;
     const harga = parseInt(item.harga) || 0;
     const totalHarga = qty * harga;
-    if (qty > 0) {
-      db.run(`INSERT INTO daily_laundry (tanggal, petugas, nama_item, kategori, harga, unit, qty, total_harga, dibuat_oleh, waktu_input) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [hariIni, petugas, item.nama, '', harga, item.unit || 'Pcs', qty, totalHarga, req.session.user.nama, waktuInput],
-        err => { if (err) console.error('Error insert laundry:', err.message); if (++completed === total) res.redirect('/ot?pesan=berhasil'); });
-    } else { if (++completed === total) res.redirect('/ot?pesan=berhasil'); }
+    const unit = item.unit || 'Pcs';
+
+    console.log('Inserting:', { nama: item.nama, qty, harga, unit, totalHarga });
+
+    db.run(`INSERT INTO daily_laundry (tanggal, petugas, nama_item, kategori, harga, unit, qty, total_harga, dibuat_oleh, waktu_input) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [hariIni, petugas, item.nama, '', harga, unit, qty, totalHarga, req.session.user.nama, waktuInput],
+      err => { 
+        if (err) console.error('Error insert laundry:', err.message); 
+        if (++completed === total) {
+          console.log('All laundry items inserted successfully');
+          res.redirect('/ot?pesan=berhasil');
+        }
+      });
   });
 });
 
@@ -406,21 +431,45 @@ app.post('/tambah-fnb', (req, res) => {
   const hariIni = getTanggalWIB();
   const waktuInput = getWaktuWIBJamMenit();
   const { petugas_fnb, items_fnb } = req.body;
-  if (!petugas_fnb || !items_fnb || typeof items_fnb !== 'object') return res.redirect('/ot?pesan=gagal');
+
+  console.log('DEBUG tambah-fnb body:', JSON.stringify(req.body, null, 2));
+
+  if (!petugas_fnb || !items_fnb) {
+    console.log('Missing petugas_fnb or items_fnb');
+    return res.redirect('/ot?pesan=gagal');
+  }
+
+  const itemsArray = Object.values(items_fnb);
+  console.log('F&B items array:', JSON.stringify(itemsArray, null, 2));
+
+  const validItems = itemsArray.filter(item => item && item.nama && item.nama !== '' && parseInt(item.qty) > 0);
+  console.log('Valid F&B items:', validItems.length);
+
+  if (validItems.length === 0) {
+    console.log('No valid F&B items found');
+    return res.redirect('/ot?pesan=gagal');
+  }
+
   let completed = 0;
-  const itemKeys = Object.keys(items_fnb);
-  const total = itemKeys.length;
-  if (total === 0) return res.redirect('/ot?pesan=gagal');
-  itemKeys.forEach(key => {
-    const item = items_fnb[key];
+  const total = validItems.length;
+
+  validItems.forEach(item => {
     const qty = parseInt(item.qty) || 0;
     const harga = parseInt(item.harga) || 0;
     const totalHarga = qty * harga;
-    if (qty > 0) {
-      db.run(`INSERT INTO fnb_linen (tanggal, petugas, nama_item, kategori, harga, unit, qty, total_harga, dibuat_oleh, waktu_input) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [hariIni, petugas_fnb, item.nama, '', harga, item.unit || 'Pcs', qty, totalHarga, req.session.user.nama, waktuInput],
-        err => { if (err) console.error('Error insert F&B:', err.message); if (++completed === total) res.redirect('/ot?pesan=berhasil'); });
-    } else { if (++completed === total) res.redirect('/ot?pesan=berhasil'); }
+    const unit = item.unit || 'Pcs';
+
+    console.log('Inserting F&B:', { nama: item.nama, qty, harga, unit, totalHarga });
+
+    db.run(`INSERT INTO fnb_linen (tanggal, petugas, nama_item, kategori, harga, unit, qty, total_harga, dibuat_oleh, waktu_input) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [hariIni, petugas_fnb, item.nama, '', harga, unit, qty, totalHarga, req.session.user.nama, waktuInput],
+      err => { 
+        if (err) console.error('Error insert F&B:', err.message); 
+        if (++completed === total) {
+          console.log('All F&B items inserted successfully');
+          res.redirect('/ot?pesan=berhasil');
+        }
+      });
   });
 });
 
@@ -435,21 +484,45 @@ app.post('/tambah-store-request', (req, res) => {
   const hariIni = getTanggalWIB();
   const waktuInput = getWaktuWIBJamMenit();
   const { petugas_store, items_store } = req.body;
-  if (!petugas_store || !items_store || typeof items_store !== 'object') return res.redirect('/ot?pesan=gagal');
+
+  console.log('DEBUG tambah-store body:', JSON.stringify(req.body, null, 2));
+
+  if (!petugas_store || !items_store) {
+    console.log('Missing petugas_store or items_store');
+    return res.redirect('/ot?pesan=gagal');
+  }
+
+  const itemsArray = Object.values(items_store);
+  console.log('Store items array:', JSON.stringify(itemsArray, null, 2));
+
+  const validItems = itemsArray.filter(item => item && item.nama && item.nama !== '' && parseInt(item.qty) > 0);
+  console.log('Valid store items:', validItems.length);
+
+  if (validItems.length === 0) {
+    console.log('No valid store items found');
+    return res.redirect('/ot?pesan=gagal');
+  }
+
   let completed = 0;
-  const itemKeys = Object.keys(items_store);
-  const total = itemKeys.length;
-  if (total === 0) return res.redirect('/ot?pesan=gagal');
-  itemKeys.forEach(key => {
-    const item = items_store[key];
+  const total = validItems.length;
+
+  validItems.forEach(item => {
     const qty = parseInt(item.qty) || 0;
     const harga = parseInt(item.harga) || 0;
     const totalHarga = qty * harga;
-    if (qty > 0) {
-      db.run(`INSERT INTO store_request (tanggal, petugas, kategori, nama_barang, harga, unit, jumlah, total_harga, status, dibuat_oleh, waktu_input) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [hariIni, petugas_store, '', item.nama, harga, item.unit || 'Pcs', qty, totalHarga, 'Pending', req.session.user.nama, waktuInput],
-        err => { if (err) console.error('Error insert store:', err.message); if (++completed === total) res.redirect('/ot?pesan=berhasil'); });
-    } else { if (++completed === total) res.redirect('/ot?pesan=berhasil'); }
+    const unit = item.unit || 'Pcs';
+
+    console.log('Inserting store:', { nama: item.nama, qty, harga, unit, totalHarga });
+
+    db.run(`INSERT INTO store_request (tanggal, petugas, kategori, nama_barang, harga, unit, jumlah, total_harga, status, dibuat_oleh, waktu_input) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [hariIni, petugas_store, '', item.nama, harga, unit, qty, totalHarga, 'Pending', req.session.user.nama, waktuInput],
+      err => { 
+        if (err) console.error('Error insert store:', err.message); 
+        if (++completed === total) {
+          console.log('All store items inserted successfully');
+          res.redirect('/ot?pesan=berhasil');
+        }
+      });
   });
 });
 
@@ -511,7 +584,7 @@ app.get('/unduh-pdf-laundry', (req, res) => {
     doc.fontSize(9).font('Helvetica'); let grandTotal = 0;
     data.forEach((row, i) => {
       if (y > 720) { doc.addPage(); y = 40; } x = 25;
-      const total = row.total_harga || 0; grandTotal += total;
+      const total = (row.qty || 0) * (row.harga || 0); grandTotal += total;
       const values = [String(i+1), row.petugas || '-', row.nama_item || '-', row.qty || 0, `Rp ${(row.harga || 0).toLocaleString('id-ID')}`, `Rp ${total.toLocaleString('id-ID')}`];
       values.forEach((v, idx) => { doc.text(String(v), x, y, { width: colWidths[idx], align: idx === 2 ? 'left' : 'center' }); x += colWidths[idx]; });
       y += 14;
@@ -539,7 +612,7 @@ app.get('/unduh-pdf-fnb', (req, res) => {
     doc.fontSize(9).font('Helvetica'); let grandTotal = 0;
     data.forEach((row, i) => {
       if (y > 720) { doc.addPage(); y = 40; } x = 25;
-      const total = row.total_harga || 0; grandTotal += total;
+      const total = (row.qty || 0) * (row.harga || 0); grandTotal += total;
       const values = [String(i+1), row.petugas || '-', row.nama_item || '-', row.qty || 0, `Rp ${(row.harga || 0).toLocaleString('id-ID')}`, `Rp ${total.toLocaleString('id-ID')}`];
       values.forEach((v, idx) => { doc.text(String(v), x, y, { width: colWidths[idx], align: idx === 2 ? 'left' : 'center' }); x += colWidths[idx]; });
       y += 14;
@@ -564,14 +637,16 @@ app.get('/unduh-pdf-store', (req, res) => {
     doc.text('Barang', 160, y, { width: 150 }); doc.text('Harga', 315, y, { width: 70 });
     doc.text('Jumlah', 390, y, { width: 50 }); doc.text('Total', 445, y, { width: 70 }); doc.text('Status', 520, y, { width: 70 });
     y += 15; doc.moveTo(25, y).lineTo(590, y).stroke(); y += 8;
-    doc.fontSize(10).font('Helvetica');
+    doc.fontSize(10).font('Helvetica'); let grandTotal = 0;
     data.forEach((row, i) => {
       if (y > 720) { doc.addPage(); y = 40; }
+      const total = (row.jumlah || 0) * (row.harga || 0); grandTotal += total;
       doc.text(String(i+1), 25, y); doc.text(row.kategori || '-', 55, y, { width: 100 });
       doc.text(row.nama_barang || '-', 160, y, { width: 150 }); doc.text(`Rp ${(row.harga || 0).toLocaleString('id-ID')}`, 315, y, { width: 70 });
-      doc.text(String(row.jumlah || 0), 390, y, { width: 50 }); doc.text(`Rp ${(row.total_harga || 0).toLocaleString('id-ID')}`, 445, y, { width: 70 }); doc.text(row.status || 'Pending', 520, y, { width: 70 });
+      doc.text(String(row.jumlah || 0), 390, y, { width: 50 }); doc.text(`Rp ${total.toLocaleString('id-ID')}`, 445, y, { width: 70 }); doc.text(row.status || 'Pending', 520, y, { width: 70 });
       y += 18;
-    }); doc.end();
+    });
+    y += 10; doc.fontSize(11).font('Helvetica-Bold'); doc.text(`GRAND TOTAL: Rp ${grandTotal.toLocaleString('id-ID')}`, 25, y); doc.end();
   });
 });
 
